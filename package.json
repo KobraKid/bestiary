@@ -1,0 +1,39 @@
+{
+  "name": "bestiary",
+  "version": "1.0.0",
+  "description": "Bestiary - flexible and customizable",
+  "main": "index.js",
+  "scripts": {
+    "start": "chcp 65001 && npm run build && concurrently \"npm:electron\" \"npm:watch\"",
+    "build": "webpack --config ./webpack.config.js",
+    "electron": "electron ./dist/index.js",
+    "watch": "webpack --config ./webpack.config.js --watch",
+    "package": "copy package.json dist\\package.json && npx electron-packager ./dist --overwrite",
+    "prod": ".\\bestiary-win32-x64\\bestiary.exe"
+  },
+  "keywords": [],
+  "author": "KobraKid",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^17.0.23",
+    "@types/react": "^17.0.41",
+    "@types/react-dom": "^17.0.14",
+    "css-loader": "^6.7.1",
+    "electron": "^17.1.2",
+    "electron-packager": "^15.4.0",
+    "html-webpack-plugin": "^5.5.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "sass": "^1.52.2",
+    "sass-loader": "^13.0.0",
+    "style-loader": "^3.3.1",
+    "ts-loader": "^9.2.8",
+    "typescript": "^4.6.2",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.9.2"
+  },
+  "dependencies": {
+    "concurrently": "^7.2.1",
+    "env-paths": "^3.0.0"
+  }
+}
