@@ -1,3 +1,5 @@
+import IPackage from "./IPackage";
+
 export const enum LAYOUT_TYPE {
   /* groupings */
   horizontal = "horizontal",
@@ -11,10 +13,20 @@ export const enum LAYOUT_TYPE {
   /* relation */
   link = "link",
   chain = "chain",
+  dropTable = "dropTable",
 }
 
 export interface ILayoutElement {
+  /**
+   * The layout type to render
+   */
   type?: LAYOUT_TYPE,
-  data?: any,
-  path?: string,
+  /**
+   * The selected package
+   */
+  pkg?: IPackage,
+  /**
+   * The entry's attributes
+   */
+  data: object,
 }

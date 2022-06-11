@@ -9,9 +9,15 @@ export interface IStringProps extends ILayoutElement {
 }
 
 export const String = (props: IStringProps) => {
-  const { type, path, data, value } = props;
+  const { type: _, pkg: _pkg, data, value } = props;
 
-  return <p>{data[value]}</p>;
+  return (
+    (value in data) ? 
+      <p>
+        {data[value as keyof typeof data]}
+      </p>
+      : null
+  );
 }
 // =============================================================================
 // | Ratio
@@ -23,9 +29,17 @@ export interface IRatioProps extends ILayoutElement {
 }
 
 export const Ratio = (props: IRatioProps) => {
-  const { type, path, data, a, b, showAsPercent } = props;
+  const { type: _, pkg: _pkg, data, a, b, showAsPercent } = props;
 
-  return <p>{showAsPercent ? `${data[a] / (data[a] + data[b])}% - ${data[b] / (data[a] + data[b])}` : `${data[a]} : ${data[b]}`}</p>;
+  return (
+    (a in data && b in data) ?
+      <p>
+        {showAsPercent ? 
+          `${data[a as keyof typeof data] / (data[a as keyof typeof data] + data[b as keyof typeof data])}% - ${data[b as keyof typeof data] / (data[a as keyof typeof data] + data[b as keyof typeof data])}` 
+          : `${data[a as keyof typeof data]} : ${data[b as keyof typeof data]}`}
+      </p>
+      : null
+  );
 }
 // =============================================================================
 // | Percent
@@ -35,7 +49,13 @@ export interface IPercentProps extends ILayoutElement {
 }
 
 export const Percent = (props: IPercentProps) => {
-  const { type, path, data, value } = props;
+  const { type: _, pkg: _pkg, data, value } = props;
 
-  return <p>{`${data[value]}%`}</p>;
+  return (
+    (value in data) ?
+      <p>
+        {`${data[value as keyof typeof data]}%`}
+      </p>
+      : null
+  );
 }

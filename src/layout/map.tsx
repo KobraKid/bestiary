@@ -7,12 +7,12 @@ export interface IMapProps extends ILayoutElement {
 }
 
 export const Map = (props: IMapProps) => {
-  const { type, path, data, src, poi } = props;
+  const { type: _, pkg, data, src, poi } = props;
 
   return (
     <div>
       <img src={src} />
-      {poi.map((point, i) => <PointOfInterest name={poi.name} location={poi.location} />)}
+      {poi.map((point, i) => <PointOfInterest key={i} pkg={pkg} data={data} name={point.name} location={point.location} />)}
     </div>
   );
 }
@@ -23,7 +23,7 @@ export interface IPointOfInterestProps extends ILayoutElement {
 }
 
 export const PointOfInterest = (props: IPointOfInterestProps) => {
-  const { type, path, data, name, location } = props;
+  const { type: _, pkg, data, name, location } = props;
 
   return <div>{name}</div>;
 }

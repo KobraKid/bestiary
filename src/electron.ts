@@ -41,21 +41,21 @@ function createWindow() {
 /**
  * Load a single package
  */
-function parsePackage(pkgPath: string): IPackage | null {
+function parsePackage(pkgPath: string, isLoadAll: boolean = false): IPackage | null {
   let pkg = null;
   try {
     const data = fs.readFileSync(pkgPath + '\\package.json');
     const parsedData = JSON.parse(data);
     if (parsedData?.metadata?.name) {
-      console.log("✔ Loaded package \"" + JSON.parse(data).metadata.name + "\"");
+      if (isLoadAll) { console.log("✔ Loaded package \"" + JSON.parse(data).metadata.name + "\""); }
       pkg = parsedData;
       pkg.metadata.path = pkgPath;
     }
     else {
-      console.log("❌ Error loading package at \"" + pkgPath + "\"");
+      if (isLoadAll) { console.log("❌ Error loading package at \"" + pkgPath + "\""); }
     }
   } catch (err: any) {
-    console.log(pkgPath, err);
+    if (isLoadAll) { console.log("❌ Error loading package at \"" + pkgPath + "\"", err); }
   }
   return pkg;
 }
@@ -82,7 +82,7 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
     const files = await readdir(paths.data, { withFileTypes: true });
     for (const file of files) {
       if (file.isDirectory()) {
-        const pkg = parsePackage(paths.data + '\\' + file.name);
+        const pkg = parsePackage(paths.data + '\\' + file.name, true);
         if (pkg !== null) {
           pkgs.push(pkg.metadata);
         }

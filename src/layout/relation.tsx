@@ -1,31 +1,58 @@
 import React from 'react';
+import { Entry } from '../entry';
 import { ILayoutElement } from '../interfaces/ILayout';
+import { ICollection, IEntry } from '../interfaces/IPackage';
 
 export interface ILinkProps extends ILayoutElement {
-  id: string,
-  layout: ILayoutElement,
+  link: string,
 }
 
 export const Link = (props: ILinkProps) => {
-  const { type, path, data, id, layout } = props;
-  return <Base path={path} data={data} layout={layout} />;
+  const { type: _, pkg, data, link } = props;
+
+  const linkInfo: [string, string] = data[link as keyof typeof data];
+
+  const linkedCollection = pkg?.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
+  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
+
+  return (
+    (linkedCollection && linkedEntry) ?
+      <Entry
+          pkg={pkg!}
+          attributes={linkedEntry.attributes}
+          layout={linkedCollection.layoutPreview}
+          className="preview-item" />
+      : null
+  );
 }
 
 export interface IChainProps extends ILayoutElement {
-  id: string,
   previous?: string[],
   next?: string[],
-  linkLayout: ILayoutElement,
 }
 
 export const Chain = (props: IChainProps) => {
-  const { type, path, data, id, previous, next, linkLayout } = props;
+  const { type: _, pkg, data, previous, next } = props;
 
   return (
     <React.Fragment>
-      {previous.map((linkId: string) => <Link id={linkId} layout={linkLayout} />)}
-      <Link id={id} layout={linkLayout} />
-      {next.map((linkId: string) => <Link id={linkId} layout={linkLayout} />)}
-    </React.Fragment
+      {previous?.map((link: string) => <Link pkg={pkg} data={data} link={link} />)}
+      <p>(Current Entry)</p>
+      {next?.map((link: string) => <Link pkg={pkg} data={data} link={link} />)}
+    </React.Fragment>
+  );
+}
+
+export interface IDropTableProps extends ILayoutElement {
+  dropList: object[],
+}
+
+export const DropTable = (props: IDropTableProps) => {
+  const { type: _, pkg, data, dropList } = props;
+
+  return (
+    <ul>
+      {dropList}
+    </ul>
   );
 }

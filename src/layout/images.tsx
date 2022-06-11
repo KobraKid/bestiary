@@ -8,7 +8,11 @@ export interface ISpriteProps extends ILayoutElement {
 }
 
 export const Sprite = (props: ISpriteProps) => {
-  const { type, path, data, value, width, height } = props;
+  const { type: _, pkg, data, value, width, height } = props;
 
-  return <img src={path + "\\" + data[value]} width={width} height={height} />;
+  return (
+    (value in data) ?
+      <img src={pkg?.metadata.path + "\\" + data[value as keyof typeof data]} width={width} height={height} />
+      : null
+  );
 }

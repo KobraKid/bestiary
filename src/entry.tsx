@@ -1,26 +1,23 @@
 import React from 'react';
 import { ILayoutElement } from './interfaces/ILayout';
+import IPackage from './interfaces/IPackage';
 import { Base } from './layout/base';
 import './styles/collection.scss';
 
 interface IEntryProps {
-  data: any,
-  layout: ILayoutElement | null | undefined,
-  path: string,
+  pkg: IPackage,
+  attributes: object,
+  layout: ILayoutElement,
   className?: string,
   onClick?: () => void | null | undefined,
 }
 
 export const Entry = (props: IEntryProps) => {
-  const { data, layout, path, className, onClick } = props;
-
-  if (!layout) {
-    return null;
-  }
+  const { pkg, attributes, layout, className, onClick } = props;
 
   return (
     <div className={className} onClick={onClick}>
-      <Base data={data} layout={layout} path={path} />
+      <Base pkg={pkg} data={attributes} layout={layout} />
     </div>
   );
 }

@@ -8,11 +8,11 @@ export interface IHorizontalProps extends ILayoutElement {
 }
 
 export const Horizontal = (props: IHorizontalProps) => {
-  const { type, path, data, elements } = props;
+  const { type: _, pkg, data, elements } = props;
 
   return (
     <div className="horizontal">
-      {elements.map((element, i) => <Base key={i} path={path} data={data} layout={element} />)}
+      {elements.map((element, i) => <Base key={i} pkg={pkg} data={data} layout={element} />)}
     </div>
   );
 }
@@ -22,11 +22,11 @@ export interface IVerticalProps extends ILayoutElement {
 }
 
 export const Vertical = (props: IVerticalProps) => {
-  const { type, path, data, elements } = props;
+  const { type: _, pkg, data, elements } = props;
 
   return (
     <div className="vertical">
-      {elements.map((element, i) => <Base key={i} path={path} data={data} layout={element} />)}
+      {elements.map((element, i) => <Base key={i} pkg={pkg} data={data} layout={element} />)}
     </div>
   );
 }
