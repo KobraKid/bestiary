@@ -1,10 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { Fragment, useCallback, useState } from 'react';
 import * as ReactDOM from 'react-dom';
-import { ToolbarCollectionList, ToolbarPackageList } from './toolbar';
+import { CSSTransition } from 'react-transition-group';
+import { CollectionMenu, PackageMenu } from './menu';
 import { Collection } from './collection';
 import { Details } from './details';
 import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
 import './styles/app.scss';
+import './styles/transitions.scss';
 
 const enum DISPLAY_MODE {
   collection,
@@ -12,6 +14,7 @@ const enum DISPLAY_MODE {
 }
 
 const App = () => {
+  const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<IPackage | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<ICollection | null>(null);
   const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
@@ -28,24 +31,28 @@ const App = () => {
   }, []);
 
   return (
-    <React.Fragment>
-      <ToolbarPackageList
+    <Fragment>
+      <PackageMenu
+        expanded={pkgMenuExpanded}
+        setExpanded={setPkgMenuExpanded}
         onPackageClicked={onPkgClickedCallback} />
-      {selectedPkg ? 
-        <ToolbarCollectionList
-          collections={selectedPkg.collections} 
-          onCollectionClicked={onCollectionClickedCallback} /> 
+      {selectedPkg ?
+        <CollectionMenu
+          collections={selectedPkg.collections}
+          pkgMenuExpanded={pkgMenuExpanded}
+          onCollectionClicked={onCollectionClickedCallback} />
         : null
       }
       {(selectedPkg && selectedCollection) ?
         <Page
-          pkg={selectedPkg} 
+          pkg={selectedPkg}
+          pkgMenuexpanded={pkgMenuExpanded}
           collection={selectedCollection}
           displayMode={displayMode}
           setDisplayMode={setDisplayMode} />
         : null
       }
-    </React.Fragment>
+    </Fragment>
   );
 };
 
@@ -54,10 +61,11 @@ interface IPageProps {
   collection: ICollection,
   displayMode: DISPLAY_MODE,
   setDisplayMode: (mode: DISPLAY_MODE) => void,
+  pkgMenuexpanded: boolean,
 }
 
 const Page = (props: IPageProps) => {
-  const { pkg, collection, displayMode, setDisplayMode } = props;
+  const { pkg, collection, displayMode, setDisplayMode, pkgMenuexpanded } = props;
 
   const [selectedEntry, setSelectedEntry] = useState<IEntry | null>(null);
 
@@ -71,25 +79,25 @@ const Page = (props: IPageProps) => {
     setSelectedEntry(null);
   }, []);
 
-  switch (displayMode) {
-    case DISPLAY_MODE.collection:
-      return (
+  return (
+    <Fragment>
+      <CSSTransition in={displayMode === DISPLAY_MODE.collection} timeout={600} appear unmountOnExit classNames='transition-fade'>
         <Collection
           pkg={pkg}
+          pkgMenuExpanded={pkgMenuexpanded}
           collection={collection}
           onEntryClicked={onEntryClickedCallback} />
-      );
-    case DISPLAY_MODE.entry:
-      return (
+      </CSSTransition>
+      <CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={300} appear unmountOnExit classNames='transition-fade'>
         <Details
-            pkg={pkg}
-            collection={collection}
-            entry={selectedEntry}
-            onReturnToCollectionClicked={onReturnToCollectionCallback} />
-      );
-    default:
-      return null;
-  }
+          pkg={pkg}
+          pkgMenuExpanded={pkgMenuexpanded}
+          collection={collection}
+          entry={selectedEntry}
+          onReturnToCollectionClicked={onReturnToCollectionCallback} />
+      </CSSTransition>
+    </Fragment>
+  );
 }
 
 ReactDOM.render(<App />, document.getElementById('app'));

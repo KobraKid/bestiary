@@ -2,6 +2,7 @@ import React from 'react';
 import { Entry } from '../entry';
 import { ILayoutElement } from '../interfaces/ILayout';
 import { ICollection, IEntry } from '../interfaces/IPackage';
+import '../styles/collection.scss';
 
 export interface ILinkProps extends ILayoutElement {
   link: string,
@@ -12,16 +13,18 @@ export const Link = (props: ILinkProps) => {
 
   const linkInfo: [string, string] = data[link as keyof typeof data];
 
+  if (!linkInfo || linkInfo.length < 2) { return null; }
+
   const linkedCollection = pkg?.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
 
   return (
     (linkedCollection && linkedEntry) ?
       <Entry
-          pkg={pkg!}
-          attributes={linkedEntry.attributes}
-          layout={linkedCollection.layoutPreview}
-          className="preview-item" />
+        pkg={pkg!}
+        attributes={linkedEntry.attributes}
+        layout={linkedCollection.layoutPreview}
+        className="preview-item" />
       : null
   );
 }

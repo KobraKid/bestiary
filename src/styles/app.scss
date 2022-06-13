@@ -1,5 +1,51 @@
-$app-color: #994444;
+@use "colors";
+
+@font-face {
+  font-family: Dosis;
+  src: url("../assets/fonts/Dosis-VariableFont_wght.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
 
 body {
-  background-color: $app-color;
+  background-color: colors.$dark;
+  margin: 0px;
+  font-family: Dosis;
+  height: 100vh;
+}
+
+button {
+  font-family: Dosis;
+}
+
+#app {
+  height: 100%;
+}
+
+:not(input):not(textarea),
+:not(input):not(textarea)::after,
+:not(input):not(textarea)::before {
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+input,
+button,
+textarea,
+:focus {
+  outline: none;
+}
+
+a:not([draggable=true]),
+img:not([draggable=true]) {
+  -webkit-user-drag: none;
+  user-drag: none; // Technically not supported in Electron yet
+}
+
+a[href^="http://"],
+a[href^="https://"],
+a[href^="ftp://"] {
+  -webkit-user-drag: auto;
+  user-drag: auto; // Technically not supported in Electron yet
 }

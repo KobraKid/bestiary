@@ -1,32 +1,48 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
 import { Entry } from './entry';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import './styles/transitions.scss';
 
 interface ICollectionProps {
   pkg: IPackage,
+  pkgMenuExpanded: boolean,
   collection: ICollection,
   onEntryClicked: (entry: IEntry) => void,
 }
 
 export const Collection = (props: ICollectionProps) => {
-  const { pkg, collection, onEntryClicked } = props;
+  const { pkg, pkgMenuExpanded, collection, onEntryClicked } = props;
 
-  const entryList = [];
-  for (let entry of collection.data) {
-    entryList.push(
-      <Entry
-        key={entry.id}
-        pkg={pkg}
-        attributes={entry.attributes}
-        layout={collection.layoutPreview}
-        className="preview-item"
-        onClick={() => onEntryClicked(entry)} />
-    );
-  }
+  const [entries, setEntries] = useState<Array<IEntry>>([]);
+
+  useEffect(() => {
+    setEntries([]);
+  }, [pkg, collection]);
+
+  useEffect(() => {
+    for (let entry of collection.data) {
+      if (entries.find(e => e.id === entry.id)) {
+        continue;
+      }
+      console.log("adding " + entry.id);
+      setTimeout(() => setEntries(entries.concat(entry)), 50);
+      break;
+    }
+  }, [entries]);
 
   return (
-    <div className="collection-grid">
-      {entryList}
-    </div>
+    <TransitionGroup className={`collection-grid-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
+      {entries.map((entry) =>
+        <CSSTransition key={collection.name + entry.id} in timeout={600} appear unmountOnExit classNames="transition-slide-up">
+          <Entry
+            pkg={pkg}
+            attributes={entry.attributes}
+            layout={collection.layoutPreview}
+            className='preview-item'
+            onClick={() => onEntryClicked(entry)} />
+        </CSSTransition>
+      )}
+    </TransitionGroup>
   );
 }

@@ -1,8 +1,7 @@
-const { app, BrowserWindow, ipcMain, session } = require('electron');
-const path = require('path');
-const fs = require('fs');
+import { app, BrowserWindow, ipcMain } from 'electron';
+import path from 'path';
+import { readFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
-const os = require ('os');
 import envPaths from 'env-paths';
 import IPackage, { IPackageMetadata } from './interfaces/IPackage';
 
@@ -10,10 +9,6 @@ import IPackage, { IPackageMetadata } from './interfaces/IPackage';
  * Setup and logging
  */
 const paths = envPaths("Bestiary", { suffix: "" });
-const reactDevToolsPath = path.join(
-  os.homedir(),
-  '/AppData/Local/Google/Chrome/User Data/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/4.24.0_0'
-);
 console.log(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ Electron: ${process.versions.electron}\n📦 Package directory: ${paths.data}\n`);
 
 /**
@@ -35,7 +30,7 @@ function createWindow() {
   });
 
   win.loadFile('index.html');
-  win.openDevTools({ mode: 'detach' });
+  win.webContents.openDevTools({ mode: 'detach' });
 }
 
 /**
@@ -44,7 +39,7 @@ function createWindow() {
 function parsePackage(pkgPath: string, isLoadAll: boolean = false): IPackage | null {
   let pkg = null;
   try {
-    const data = fs.readFileSync(pkgPath + '\\package.json');
+    const data = readFileSync(pkgPath + '\\package.json', { encoding: "utf-8" });
     const parsedData = JSON.parse(data);
     if (parsedData?.metadata?.name) {
       if (isLoadAll) { console.log("✔ Loaded package \"" + JSON.parse(data).metadata.name + "\""); }
@@ -64,8 +59,6 @@ function parsePackage(pkgPath: string, isLoadAll: boolean = false): IPackage | n
  * Create the main window
  */
 app.whenReady().then(async () => {
-  // console.log("Loading React DevTools");
-  // await session.defaultSession.loadExtension(reactDevToolsPath);
   createWindow();
 });
 

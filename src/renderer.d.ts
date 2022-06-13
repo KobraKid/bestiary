@@ -5,8 +5,13 @@ export interface IElectronAPI {
   loadPackage: (path: string) => Promise<IPackage | null>
 }
 
+export interface IPathAPI {
+  join: (...paths: string[]) => string
+}
+
 declare global {
   interface Window {
-    electronAPI: IElectronAPI
+    electronAPI: IElectronAPI,
+    path: IPathAPI,
   }
 }

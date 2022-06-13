@@ -1,18 +1,21 @@
 import React from 'react';
 import { ILayoutElement } from '../interfaces/ILayout';
+import { getValueOrLiteral } from './base';
 
 export interface ISpriteProps extends ILayoutElement {
   value: string,
-  width: number,
-  height: number,
+  width: string,
+  height: string,
 }
 
 export const Sprite = (props: ISpriteProps) => {
-  const { type: _, pkg, data, value, width, height } = props;
+  const { type: _, pkg, data } = props;
+
+  let value = getValueOrLiteral(data, props.value);
+  let width = getValueOrLiteral(data, props.width);
+  let height = getValueOrLiteral(data, props.height);
 
   return (
-    (value in data) ?
-      <img src={pkg?.metadata.path + "\\" + data[value as keyof typeof data]} width={width} height={height} />
-      : null
+    <img src={window.path.join(pkg!.metadata.path, value)} width={width} height={height} />
   );
 }

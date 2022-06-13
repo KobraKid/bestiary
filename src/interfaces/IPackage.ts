@@ -30,6 +30,10 @@ export interface IPackageMetadata {
    * Package icon
    */
   icon: string,
+  /**
+   * Package background color
+   */
+  color: string,
 }
 
 /**

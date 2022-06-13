@@ -22,23 +22,34 @@ export const Base = (props: IBaseProps) => {
   switch (layout.type) {
     /* Groupings */
     case LAYOUT_TYPE.horizontal:
-      return <Horizontal pkg={pkg} data={data} elements={(layout as IHorizontalProps).elements} />;
+      const horizontalL = (layout as IHorizontalProps);
+      return <Horizontal pkg={pkg} data={data} elements={horizontalL.elements} />;
     case LAYOUT_TYPE.vertical:
-      return <Vertical pkg={pkg} data={data} elements={(layout as IVerticalProps).elements} />;
+      const verticalL = (layout as IVerticalProps);
+      return <Vertical pkg={pkg} data={data} elements={verticalL.elements} />;
     /* Basic */
     case LAYOUT_TYPE.string:
-      return <String data={data} value={(layout as IStringProps).value} />;
+      const stringL = (layout as IStringProps);
+      return <String data={data} value={stringL.value} color={stringL.color} backgroundColor={stringL.backgroundColor} />;
     case LAYOUT_TYPE.ratio:
-      return <Ratio data={data} a={(layout as IRatioProps).a} b={(layout as IRatioProps).b} />;
+      const ratioL = (layout as IRatioProps);
+      return <Ratio data={data} a={ratioL.a} b={ratioL.b} />;
     case LAYOUT_TYPE.percent:
-      return <Percent data={data} value={(layout as IPercentProps).value} />;
+      const percentL = (layout as IPercentProps);
+      return <Percent data={data} value={percentL.value} />;
     /* Images */
     case LAYOUT_TYPE.sprite:
-      return <Sprite pkg={pkg} data={data} value={(layout as ISpriteProps).value} width={(layout as ISpriteProps).width} height={(layout as ISpriteProps).height} />;
+      const spriteL = (layout as ISpriteProps);
+      return <Sprite pkg={pkg} data={data} value={spriteL.value} width={spriteL.width} height={spriteL.height} />;
     /* Relations */
     case LAYOUT_TYPE.link:
-      return <Link pkg={pkg} data={data} link={(layout as ILinkProps).link} />
+      const linkL = (layout as ILinkProps);
+      return <Link pkg={pkg} data={data} link={linkL.link} />
     default:
       return null;
   }
+}
+
+export function getValueOrLiteral(data: object, value?: string): string {
+  return value?.startsWith("!") ? value.substring(1) : data[value as keyof typeof data];
 }

@@ -1,0 +1,20 @@
+@use "menu";
+@use "colors";
+
+@mixin details {
+  position: absolute;
+  left: menu.$menu-button-collapsed-size;
+  display: flex;
+  transition: top .5s ease;
+  background-color: colors.$dark;
+}
+
+.details-collapsed {
+  @include details;
+  top: menu.$menu-button-collapsed-size;
+}
+
+.details-expanded {
+  @include details;
+  top: menu.$menu-button-expanded-size;
+}

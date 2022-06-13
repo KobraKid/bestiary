@@ -1,22 +1,27 @@
 import React from 'react';
 import { ILayoutElement } from '../interfaces/ILayout';
+import { getValueOrLiteral } from './base';
 
 // =============================================================================
 // | String
 // =============================================================================
 export interface IStringProps extends ILayoutElement {
   value: string,
+  color?: string,
+  backgroundColor?: string,
 }
 
 export const String = (props: IStringProps) => {
-  const { type: _, pkg: _pkg, data, value } = props;
+  const { type: _, pkg: _pkg, data } = props;
+
+  let value = getValueOrLiteral(data, props.value);
+  let color = getValueOrLiteral(data, props.color);
+  let backgroundColor = getValueOrLiteral(data, props.backgroundColor);
 
   return (
-    (value in data) ? 
-      <p>
-        {data[value as keyof typeof data]}
-      </p>
-      : null
+    <p style={{ color: color, backgroundColor: backgroundColor }}>
+      {value}
+    </p>
   );
 }
 // =============================================================================
@@ -31,14 +36,15 @@ export interface IRatioProps extends ILayoutElement {
 export const Ratio = (props: IRatioProps) => {
   const { type: _, pkg: _pkg, data, a, b, showAsPercent } = props;
 
+  let aVal = +getValueOrLiteral(data, a);
+  let bVal = +getValueOrLiteral(data, b);
+
   return (
-    (a in data && b in data) ?
-      <p>
-        {showAsPercent ? 
-          `${data[a as keyof typeof data] / (data[a as keyof typeof data] + data[b as keyof typeof data])}% - ${data[b as keyof typeof data] / (data[a as keyof typeof data] + data[b as keyof typeof data])}` 
-          : `${data[a as keyof typeof data]} : ${data[b as keyof typeof data]}`}
-      </p>
-      : null
+    <p>
+      {showAsPercent ?
+        `${aVal / (aVal + bVal)}% - ${bVal / (aVal + bVal)}`
+        : `${aVal} : ${bVal}`}
+    </p>
   );
 }
 // =============================================================================
@@ -49,13 +55,13 @@ export interface IPercentProps extends ILayoutElement {
 }
 
 export const Percent = (props: IPercentProps) => {
-  const { type: _, pkg: _pkg, data, value } = props;
+  const { type: _, pkg: _pkg, data } = props;
+
+  let value = +getValueOrLiteral(data, props.value);
 
   return (
-    (value in data) ?
-      <p>
-        {`${data[value as keyof typeof data]}%`}
-      </p>
-      : null
+    <p>
+      {`${value}%`}
+    </p>
   );
 }

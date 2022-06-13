@@ -1,7 +1,27 @@
-.collection-grid {
+@use "menu";
+
+@mixin collection-grid {
+  position: absolute;
+  left: menu.$menu-button-collapsed-size;
+  width: calc(100% - menu.$menu-button-collapsed-size);
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  transition: top .5s ease;
+}
+
+.collection-grid-collapsed {
+  @include collection-grid;
+  top: menu.$menu-button-collapsed-size;
+  height: calc(100% - menu.$menu-button-collapsed-size);
+}
+
+.collection-grid-expanded {
+  @include collection-grid;
+  top: menu.$menu-button-expanded-size;
+  height: calc(100% - menu.$menu-button-expanded-size);
 }
 
 .preview-item {
-  border: 1px solid black;
+  padding: 4px;
 }
