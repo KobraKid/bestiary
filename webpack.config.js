@@ -24,7 +24,7 @@ module.exports = [
     entry: './src/app.tsx',
     target: 'electron-renderer',
     devtool: 'source-map',
-    resolve: { extensions: ['.ts', '.tsx', '.scss', '...'] },
+    resolve: { extensions: ['.ts', '.tsx', '.scss', '.png', '.ttf', '...'] },
     module: {
       rules: [
         {
@@ -35,6 +35,14 @@ module.exports = [
         {
           test: /\.s[ac]ss$/i,
           use: ['style-loader', 'css-loader', 'sass-loader']
+        },
+        {
+          test: /\.(png|svg|jpg|jpeg|gif)$/i,
+          type: 'asset/resource'
+        },
+        {
+          test: /\.(ttf)$/i,
+          type: 'asset/resource'
         }
       ]
     },
