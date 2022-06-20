@@ -8,7 +8,7 @@ interface ICollectionProps {
   pkg: IPackage,
   pkgMenuExpanded: boolean,
   collection: ICollection,
-  onEntryClicked: (entry: IEntry) => void,
+  onEntryClicked: (entry: IEntry, collection: ICollection) => void,
 }
 
 export const Collection = (props: ICollectionProps) => {
@@ -25,7 +25,6 @@ export const Collection = (props: ICollectionProps) => {
       if (entries.find(e => e.id === entry.id)) {
         continue;
       }
-      console.log("adding " + entry.id);
       setTimeout(() => setEntries(entries.concat(entry)), 50);
       break;
     }
@@ -34,13 +33,14 @@ export const Collection = (props: ICollectionProps) => {
   return (
     <TransitionGroup className={`collection-grid-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
       {entries.map((entry) =>
-        <CSSTransition key={collection.name + entry.id} in timeout={600} appear unmountOnExit classNames="transition-slide-up">
+        <CSSTransition key={collection.name + entry.id} in timeout={600} appear unmountOnExit classNames='transition-slide-up'>
           <Entry
             pkg={pkg}
             attributes={entry.attributes}
             layout={collection.layoutPreview}
             className='preview-item'
-            onClick={() => onEntryClicked(entry)} />
+            onLinkClicked={onEntryClicked}
+            onClick={() => onEntryClicked(entry, collection)} />
         </CSSTransition>
       )}
     </TransitionGroup>

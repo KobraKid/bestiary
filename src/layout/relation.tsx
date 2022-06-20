@@ -3,15 +3,19 @@ import { Entry } from '../entry';
 import { ILayoutElement } from '../interfaces/ILayout';
 import { ICollection, IEntry } from '../interfaces/IPackage';
 import '../styles/collection.scss';
+import { getValueOrLiteral } from './base';
+
+type Link = [string, string];
 
 export interface ILinkProps extends ILayoutElement {
-  link: string,
+  link: string | Link,
+  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
 }
 
 export const Link = (props: ILinkProps) => {
-  const { type: _, pkg, data, link } = props;
+  const { type: _, pkg, data, link, onLinkClicked } = props;
 
-  const linkInfo: [string, string] = data[link as keyof typeof data];
+  const linkInfo: Link = getValueOrLiteral<Link>(data, link);
 
   if (!linkInfo || linkInfo.length < 2) { return null; }
 
@@ -24,24 +28,30 @@ export const Link = (props: ILinkProps) => {
         pkg={pkg!}
         attributes={linkedEntry.attributes}
         layout={linkedCollection.layoutPreview}
-        className="preview-item" />
+        onLinkClicked={onLinkClicked}
+        onClick={() => {
+          console.log(linkedEntry, linkedCollection);
+          onLinkClicked(linkedEntry, linkedCollection);
+        }}
+        className='preview-item' />
       : null
   );
 }
 
 export interface IChainProps extends ILayoutElement {
-  previous?: string[],
-  next?: string[],
+  previous?: string,
+  next?: string,
+  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
 }
 
 export const Chain = (props: IChainProps) => {
-  const { type: _, pkg, data, previous, next } = props;
+  const { type: _, pkg, data, previous, next, onLinkClicked } = props;
 
   return (
     <React.Fragment>
-      {previous?.map((link: string) => <Link pkg={pkg} data={data} link={link} />)}
+      {previous ? getValueOrLiteral<Link[]>(data, previous).map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
       <p>(Current Entry)</p>
-      {next?.map((link: string) => <Link pkg={pkg} data={data} link={link} />)}
+      {next ? getValueOrLiteral<Link[]>(data, next).map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
     </React.Fragment>
   );
 }

@@ -9,11 +9,12 @@ interface IDetailsProps {
   pkgMenuExpanded: boolean,
   collection: ICollection,
   entry: IEntry | null,
+  onEntryClicked: (entry: IEntry, collection: ICollection) => void,
   onReturnToCollectionClicked: () => void,
 }
 
 export const Details = (props: IDetailsProps) => {
-  const { pkg, pkgMenuExpanded, collection, entry, onReturnToCollectionClicked } = props;
+  const { pkg, pkgMenuExpanded, collection, entry, onEntryClicked, onReturnToCollectionClicked } = props;
 
   if (!entry) {
     return null;
@@ -27,7 +28,8 @@ export const Details = (props: IDetailsProps) => {
       <Entry
         pkg={pkg}
         attributes={entry.attributes}
-        layout={collection.layout} />
+        layout={collection.layout}
+        onLinkClicked={onEntryClicked} />
     </div>
   );
 }

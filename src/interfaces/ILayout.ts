@@ -1,19 +1,19 @@
-import IPackage from "./IPackage";
+import IPackage from './IPackage';
 
 export const enum LAYOUT_TYPE {
   /* groupings */
-  horizontal = "horizontal",
-  vertical = "vertical",
+  horizontal = 'horizontal',
+  vertical = 'vertical',
   /* basic */
-  string = "string",
-  ratio = "ratio",
-  percent = "percent",
+  string = 'string',
+  ratio = 'ratio',
+  percent = 'percent',
   /* images */
-  sprite = "sprite",
+  sprite = 'sprite',
   /* relation */
-  link = "link",
-  chain = "chain",
-  dropTable = "dropTable",
+  link = 'link',
+  chain = 'chain',
+  dropTable = 'dropTable',
 }
 
 export interface ILayoutElement {

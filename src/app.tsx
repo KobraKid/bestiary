@@ -20,9 +20,9 @@ const App = () => {
   const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
 
   const onPkgClickedCallback = useCallback((pkg: IPackage) => {
+    setSelectedCollection(pkg.collections.length > 0 ? pkg.collections[0]! : null);
     setSelectedPkg(pkg);
-    setSelectedCollection(null);
-    setDisplayMode(DISPLAY_MODE.entry);
+    setDisplayMode(DISPLAY_MODE.collection);
   }, []);
 
   const onCollectionClickedCallback = useCallback((collection: ICollection) => {
@@ -48,6 +48,7 @@ const App = () => {
           pkg={selectedPkg}
           pkgMenuexpanded={pkgMenuExpanded}
           collection={selectedCollection}
+          setCollection={setSelectedCollection}
           displayMode={displayMode}
           setDisplayMode={setDisplayMode} />
         : null
@@ -59,19 +60,21 @@ const App = () => {
 interface IPageProps {
   pkg: IPackage,
   collection: ICollection,
+  setCollection: (collection: ICollection) => void,
   displayMode: DISPLAY_MODE,
   setDisplayMode: (mode: DISPLAY_MODE) => void,
   pkgMenuexpanded: boolean,
 }
 
 const Page = (props: IPageProps) => {
-  const { pkg, collection, displayMode, setDisplayMode, pkgMenuexpanded } = props;
+  const { pkg, collection, setCollection, displayMode, setDisplayMode, pkgMenuexpanded } = props;
 
   const [selectedEntry, setSelectedEntry] = useState<IEntry | null>(null);
 
-  const onEntryClickedCallback = useCallback((entry: IEntry) => {
+  const onEntryClickedCallback = useCallback((e: IEntry, c: ICollection) => {
     setDisplayMode(DISPLAY_MODE.entry);
-    setSelectedEntry(entry);
+    setSelectedEntry(e);
+    setCollection(c);
   }, []);
 
   const onReturnToCollectionCallback = useCallback(() => {
@@ -94,6 +97,7 @@ const Page = (props: IPageProps) => {
           pkgMenuExpanded={pkgMenuexpanded}
           collection={collection}
           entry={selectedEntry}
+          onEntryClicked={onEntryClickedCallback}
           onReturnToCollectionClicked={onReturnToCollectionCallback} />
       </CSSTransition>
     </Fragment>

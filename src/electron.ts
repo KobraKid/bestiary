@@ -4,12 +4,13 @@ import { readFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import IPackage, { IPackageMetadata } from './interfaces/IPackage';
+import chalk from 'chalk';
 
 /**
  * Setup and logging
  */
-const paths = envPaths("Bestiary", { suffix: "" });
-console.log(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ Electron: ${process.versions.electron}\n📦 Package directory: ${paths.data}\n`);
+const paths = envPaths('Bestiary', { suffix: '' });
+console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ Electron: ${process.versions.electron}\n📦 Package directory: ${paths.data}\n`));
 
 /**
  * Set up the main window
@@ -39,18 +40,18 @@ function createWindow() {
 function parsePackage(pkgPath: string, isLoadAll: boolean = false): IPackage | null {
   let pkg = null;
   try {
-    const data = readFileSync(pkgPath + '\\package.json', { encoding: "utf-8" });
+    const data = readFileSync(pkgPath + '\\package.json', { encoding: 'utf-8' });
     const parsedData = JSON.parse(data);
     if (parsedData?.metadata?.name) {
-      if (isLoadAll) { console.log("✔ Loaded package \"" + JSON.parse(data).metadata.name + "\""); }
+      if (isLoadAll) { console.log(chalk.green('✔ Loaded package "' + JSON.parse(data).metadata.name + '"')); }
       pkg = parsedData;
       pkg.metadata.path = pkgPath;
     }
     else {
-      if (isLoadAll) { console.log("❌ Error loading package at \"" + pkgPath + "\""); }
+      if (isLoadAll) { console.log(chalk.white.bgRed('❌ Error loading package at "' + pkgPath + '"')); }
     }
   } catch (err: any) {
-    if (isLoadAll) { console.log("❌ Error loading package at \"" + pkgPath + "\"", err); }
+    if (isLoadAll) { console.log(chalk.white.bgRed('❌ Error loading package at "' + pkgPath + '"', err)); }
   }
   return pkg;
 }
@@ -82,7 +83,7 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
       }
     }
   } catch (err: any) {
-    console.log(err);
+    console.log(chalk.white.bgRed(err));
   }
 
   return pkgs;

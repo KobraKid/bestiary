@@ -11,9 +11,9 @@ export interface ISpriteProps extends ILayoutElement {
 export const Sprite = (props: ISpriteProps) => {
   const { type: _, pkg, data } = props;
 
-  let value = getValueOrLiteral(data, props.value);
-  let width = getValueOrLiteral(data, props.width);
-  let height = getValueOrLiteral(data, props.height);
+  let value = getValueOrLiteral<string>(data, props.value);
+  let width = getValueOrLiteral<string>(data, props.width);
+  let height = getValueOrLiteral<string>(data, props.height);
 
   return (
     <img src={window.path.join(pkg!.metadata.path, value)} width={width} height={height} />

@@ -14,9 +14,9 @@ export interface IStringProps extends ILayoutElement {
 export const String = (props: IStringProps) => {
   const { type: _, pkg: _pkg, data } = props;
 
-  let value = getValueOrLiteral(data, props.value);
-  let color = getValueOrLiteral(data, props.color);
-  let backgroundColor = getValueOrLiteral(data, props.backgroundColor);
+  let value = getValueOrLiteral<string>(data, props.value);
+  let color = getValueOrLiteral<string>(data, props.color);
+  let backgroundColor = getValueOrLiteral<string>(data, props.backgroundColor);
 
   return (
     <p style={{ color: color, backgroundColor: backgroundColor }}>
@@ -36,8 +36,8 @@ export interface IRatioProps extends ILayoutElement {
 export const Ratio = (props: IRatioProps) => {
   const { type: _, pkg: _pkg, data, a, b, showAsPercent } = props;
 
-  let aVal = +getValueOrLiteral(data, a);
-  let bVal = +getValueOrLiteral(data, b);
+  let aVal = +getValueOrLiteral<number>(data, a);
+  let bVal = +getValueOrLiteral<number>(data, b);
 
   return (
     <p>
@@ -57,7 +57,7 @@ export interface IPercentProps extends ILayoutElement {
 export const Percent = (props: IPercentProps) => {
   const { type: _, pkg: _pkg, data } = props;
 
-  let value = +getValueOrLiteral(data, props.value);
+  let value = +getValueOrLiteral<number>(data, props.value);
 
   return (
     <p>
