@@ -49,9 +49,9 @@ export const Chain = (props: IChainProps) => {
 
   return (
     <React.Fragment>
-      {previous ? getValueOrLiteral<Link[]>(data, previous).map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
+      {previous ? getValueOrLiteral<Link[] | undefined>(data, previous)?.map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
       <p>(Current Entry)</p>
-      {next ? getValueOrLiteral<Link[]>(data, next).map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
+      {next ? getValueOrLiteral<Link[] | undefined>(data, next)?.map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
     </React.Fragment>
   );
 }
