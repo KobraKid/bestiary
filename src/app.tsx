@@ -20,9 +20,9 @@ const App = () => {
   const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
 
   const onPkgClickedCallback = useCallback((pkg: IPackage) => {
-    setSelectedPkg(pkg);
     setSelectedCollection(null);
-    setDisplayMode(DISPLAY_MODE.entry);
+    setSelectedPkg(pkg);
+    setDisplayMode(DISPLAY_MODE.collection);
   }, []);
 
   const onCollectionClickedCallback = useCallback((collection: ICollection) => {

@@ -21,13 +21,9 @@ export const Collection = (props: ICollectionProps) => {
   }, [pkg, collection]);
 
   useEffect(() => {
-    for (let entry of collection.data) {
-      if (entries.find(e => e.id === entry.id)) {
-        continue;
-      }
-      console.log("adding " + entry.id);
-      setTimeout(() => setEntries(entries.concat(entry)), 50);
-      break;
+    const index = entries.length;
+    if (index < collection.data.length) {
+      setTimeout(() => setEntries(entries.concat(collection.data[index]!)), 50);
     }
   }, [entries]);
 
