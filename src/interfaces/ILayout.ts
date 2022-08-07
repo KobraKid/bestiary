@@ -1,4 +1,4 @@
-import IPackage from './IPackage';
+import IPackage, { ICollection, IEntry } from './IPackage';
 
 export const enum LAYOUT_TYPE {
   /* groupings */
@@ -14,6 +14,8 @@ export const enum LAYOUT_TYPE {
   link = 'link',
   chain = 'chain',
   dropTable = 'dropTable',
+  /* maps */
+  map = 'map',
 }
 
 export interface ILayoutElement {
@@ -21,12 +23,18 @@ export interface ILayoutElement {
    * The layout type to render
    */
   type?: LAYOUT_TYPE,
-  /**
-   * The selected package
-   */
-  pkg?: IPackage,
-  /**
-   * The entry's attributes
-   */
-  data: object,
+  data: {
+    /**
+     * The selected package
+     */
+    pkg: IPackage,
+    /**
+     * The selected collection
+     */
+    collection: ICollection,
+    /**
+     * The selected entry
+     */
+    entry: IEntry,
+  }
 }

@@ -4,24 +4,31 @@ import { Entry } from './entry';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './styles/transitions.scss';
 
+/**
+ * Props for the Collection
+ */
 interface ICollectionProps {
-  pkg: IPackage,
+  data: {
+    pkg: IPackage,
+    collection: ICollection
+  }
+  /** Whether the package menu is expanded */
   pkgMenuExpanded: boolean,
-  collection: ICollection,
-  onEntryClicked: (entry: IEntry, collection: ICollection) => void,
+  /** Callback function for when an entry is clicked */
+  onEntryClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
 export const Collection = (props: ICollectionProps) => {
-  const { pkg, pkgMenuExpanded, collection, onEntryClicked } = props;
+  const { data, pkgMenuExpanded, onEntryClicked } = props;
 
   const [entries, setEntries] = useState<Array<IEntry>>([]);
 
   useEffect(() => {
     setEntries([]);
-  }, [pkg, collection]);
+  }, [data]);
 
   useEffect(() => {
-    for (let entry of collection.data) {
+    for (let entry of data.collection.data) {
       if (entries.find(e => e.id === entry.id)) {
         continue;
       }
@@ -33,14 +40,13 @@ export const Collection = (props: ICollectionProps) => {
   return (
     <TransitionGroup className={`collection-grid-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
       {entries.map((entry) =>
-        <CSSTransition key={collection.name + entry.id} in timeout={600} appear unmountOnExit classNames='transition-slide-up'>
+        <CSSTransition key={data.collection.name + entry.id} in timeout={600} appear unmountOnExit classNames='transition-slide-up'>
           <Entry
-            pkg={pkg}
-            attributes={entry.attributes}
-            layout={collection.layoutPreview}
+            data={{ entry: entry, ...data }}
+            isPreview
             className='preview-item'
             onLinkClicked={onEntryClicked}
-            onClick={() => onEntryClicked(entry, collection)} />
+            onClick={() => onEntryClicked(entry, data.collection, null, data.collection)} />
         </CSSTransition>
       )}
     </TransitionGroup>

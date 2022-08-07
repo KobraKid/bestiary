@@ -3,31 +3,31 @@ import { ILayoutElement, LAYOUT_TYPE } from '../interfaces/ILayout';
 import { Horizontal, IHorizontalProps, Vertical, IVerticalProps } from './groupings';
 import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps } from './basic';
 import { Sprite, ISpriteProps } from './images';
-import IPackage, { ICollection, IEntry } from '../interfaces/IPackage';
 import { Chain, IChainProps, ILinkProps, Link } from './relation';
+import { Map, IMapProps } from './map';
+import IPackage, { ICollection, IEntry } from '../interfaces/IPackage';
 
 interface IBaseProps {
-  pkg?: IPackage,
-  data: object,
+  data: {
+    pkg: IPackage,
+    collection: ICollection,
+    entry: IEntry,
+  }
   layout: ILayoutElement,
-  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
+  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
 export const Base = (props: IBaseProps) => {
-  const { pkg, data, layout, onLinkClicked } = props;
-
-  if (!pkg) {
-    return null;
-  }
+  const { data,layout, onLinkClicked } = props;
 
   switch (layout.type) {
     /* Groupings */
     case LAYOUT_TYPE.horizontal:
       const horizontalL = (layout as IHorizontalProps);
-      return <Horizontal pkg={pkg} data={data} elements={horizontalL.elements} onLinkClicked={onLinkClicked} />;
+      return <Horizontal data={data} elements={horizontalL.elements} onLinkClicked={onLinkClicked} />;
     case LAYOUT_TYPE.vertical:
       const verticalL = (layout as IVerticalProps);
-      return <Vertical pkg={pkg} data={data} elements={verticalL.elements} onLinkClicked={onLinkClicked} />;
+      return <Vertical data={data} elements={verticalL.elements} onLinkClicked={onLinkClicked} />;
     /* Basic */
     case LAYOUT_TYPE.string:
       const stringL = (layout as IStringProps);
@@ -41,14 +41,18 @@ export const Base = (props: IBaseProps) => {
     /* Images */
     case LAYOUT_TYPE.sprite:
       const spriteL = (layout as ISpriteProps);
-      return <Sprite pkg={pkg} data={data} value={spriteL.value} width={spriteL.width} height={spriteL.height} />;
+      return <Sprite data={data} value={spriteL.value} width={spriteL.width} height={spriteL.height} />;
     /* Relations */
     case LAYOUT_TYPE.link:
       const linkL = (layout as ILinkProps);
-      return <Link pkg={pkg} data={data} link={linkL.link} onLinkClicked={onLinkClicked} />
+      return <Link data={data} link={linkL.link} onLinkClicked={onLinkClicked} />
     case LAYOUT_TYPE.chain:
       const chainL = (layout as IChainProps);
-      return <Chain pkg={pkg} data={data} previous={chainL.previous} next={chainL.next} onLinkClicked={onLinkClicked} />
+      return <Chain data={data} previous={chainL.previous} next={chainL.next} onLinkClicked={onLinkClicked} />
+    /* Maps */
+    case LAYOUT_TYPE.map: 
+      const mapL = (layout as IMapProps);
+      return <Map data={data} value={mapL.value} poi={mapL.poi} onLocationClicked={onLinkClicked} />
     default:
       return null;
   }

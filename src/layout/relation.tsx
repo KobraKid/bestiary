@@ -9,30 +9,26 @@ type Link = [string, string];
 
 export interface ILinkProps extends ILayoutElement {
   link: string | Link,
-  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
+  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
 export const Link = (props: ILinkProps) => {
-  const { type: _, pkg, data, link, onLinkClicked } = props;
+  const { type: _, data, link, onLinkClicked } = props;
 
-  const linkInfo: Link = getValueOrLiteral<Link>(data, link);
+  const linkInfo: Link = getValueOrLiteral<Link>(data.entry.attributes, link);
 
   if (!linkInfo || linkInfo.length < 2) { return null; }
 
-  const linkedCollection = pkg?.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
+  const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
 
   return (
     (linkedCollection && linkedEntry) ?
       <Entry
-        pkg={pkg!}
-        attributes={linkedEntry.attributes}
-        layout={linkedCollection.layoutPreview}
+        data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
+        isPreview
         onLinkClicked={onLinkClicked}
-        onClick={() => {
-          console.log(linkedEntry, linkedCollection);
-          onLinkClicked(linkedEntry, linkedCollection);
-        }}
+        onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
         className='preview-item' />
       : null
   );
@@ -41,17 +37,17 @@ export const Link = (props: ILinkProps) => {
 export interface IChainProps extends ILayoutElement {
   previous?: string,
   next?: string,
-  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
+  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
 export const Chain = (props: IChainProps) => {
-  const { type: _, pkg, data, previous, next, onLinkClicked } = props;
+  const { type: _, data, previous, next, onLinkClicked } = props;
 
   return (
     <React.Fragment>
-      {previous ? getValueOrLiteral<Link[] | undefined>(data, previous)?.map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
+      {previous ? getValueOrLiteral<Link[] | undefined>(data.entry.attributes, previous)?.map((link: Link) => <Link key={link[1]} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
       <p>(Current Entry)</p>
-      {next ? getValueOrLiteral<Link[] | undefined>(data, next)?.map((link: Link) => <Link key={link[1]} pkg={pkg} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
+      {next ? getValueOrLiteral<Link[] | undefined>(data.entry.attributes, next)?.map((link: Link) => <Link key={link[1]} data={data} link={link} onLinkClicked={onLinkClicked} />) : null}
     </React.Fragment>
   );
 }
@@ -61,7 +57,7 @@ export interface IDropTableProps extends ILayoutElement {
 }
 
 export const DropTable = (props: IDropTableProps) => {
-  const { type: _, pkg, data, dropList } = props;
+  const { type: _, data, dropList } = props;
 
   return (
     <ul>

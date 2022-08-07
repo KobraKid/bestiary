@@ -49,3 +49,24 @@ a[href^="ftp://"] {
   -webkit-user-drag: auto;
   user-drag: auto; // Technically not supported in Electron yet
 }
+
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+  display: none; // TODO - only needed for Map View
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

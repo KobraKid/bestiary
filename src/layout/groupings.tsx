@@ -6,30 +6,30 @@ import { ICollection, IEntry } from '../interfaces/IPackage';
 
 export interface IHorizontalProps extends ILayoutElement {
   elements: ILayoutElement[],
-  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
+  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
 export const Horizontal = (props: IHorizontalProps) => {
-  const { type: _, pkg, data, elements, onLinkClicked } = props;
+  const { type: _, data, elements, onLinkClicked } = props;
 
   return (
     <div className='horizontal'>
-      {elements.map((element, i) => <Base key={i} pkg={pkg} data={data} layout={element} onLinkClicked={onLinkClicked} />)}
+      {elements.map((element, i) => <Base key={i} data={data} layout={element} onLinkClicked={onLinkClicked} />)}
     </div>
   );
 }
 
 export interface IVerticalProps extends ILayoutElement {
   elements: ILayoutElement[],
-  onLinkClicked: (entry: IEntry, collection: ICollection) => void,
+  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
 export const Vertical = (props: IVerticalProps) => {
-  const { type: _, pkg, data, elements, onLinkClicked } = props;
+  const { type: _, data, elements, onLinkClicked } = props;
 
   return (
     <div className='vertical'>
-      {elements.map((element, i) => <Base key={i} pkg={pkg} data={data} layout={element} onLinkClicked={onLinkClicked} />)}
+      {elements.map((element, i) => <Base key={i} data={data} layout={element} onLinkClicked={onLinkClicked} />)}
     </div>
   );
 }
