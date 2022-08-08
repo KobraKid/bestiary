@@ -4,7 +4,7 @@
   "description": "Bestiary - flexible and customizable",
   "main": "index.js",
   "scripts": {
-    "start": "chcp 65001 && npm run build && concurrently \"npm:electron\" \"npm:watch\"",
+    "start": "chcp 65001 && npm run build && concurrently \"npm:electron\" \"npm:watch\" -k -c \"yellow,gray\"",
     "build": "webpack --config ./webpack.config.js",
     "electron": "electron ./dist/index.js",
     "watch": "webpack --config ./webpack.config.js --watch",
@@ -34,8 +34,10 @@
     "webpack-cli": "^4.9.2"
   },
   "dependencies": {
+    "chalk": "^5.0.1",
     "concurrently": "^7.2.1",
     "env-paths": "^3.0.0",
+    "react-indiana-drag-scroll": "^2.2.0",
     "react-transition-group": "^4.4.2"
   }
 }

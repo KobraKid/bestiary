@@ -6,7 +6,7 @@ $menu-button-expanded-size: 128px;
 $menu-font-expanded-size: 1.75em;
 
 .package-menu {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   display: flex;

@@ -1,23 +1,26 @@
 import React from 'react';
-import { ILayoutElement } from './interfaces/ILayout';
-import IPackage from './interfaces/IPackage';
+import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
 import { Base } from './layout/base';
 import './styles/collection.scss';
 
 interface IEntryProps {
-  pkg: IPackage,
-  attributes: object,
-  layout: ILayoutElement,
+  data: {
+    pkg: IPackage,
+    collection: ICollection,
+    entry: IEntry,
+  }
+  isPreview: boolean,
+  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
   className?: string,
   onClick?: () => void | null | undefined,
 }
 
 export const Entry = (props: IEntryProps) => {
-  const { pkg, attributes, layout, className, onClick } = props;
+  const { data, isPreview, onLinkClicked, className, onClick } = props;
 
   return (
     <div className={className} onClick={onClick}>
-      <Base pkg={pkg} data={attributes} layout={layout} />
+      <Base data={data} layout={isPreview ? data.collection.layoutPreview : data.collection.layout} onLinkClicked={onLinkClicked} />
     </div>
   );
 }

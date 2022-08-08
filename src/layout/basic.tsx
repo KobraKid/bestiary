@@ -12,11 +12,9 @@ export interface IStringProps extends ILayoutElement {
 }
 
 export const String = (props: IStringProps) => {
-  const { type: _, pkg: _pkg, data } = props;
-
-  let value = getValueOrLiteral(data, props.value);
-  let color = getValueOrLiteral(data, props.color);
-  let backgroundColor = getValueOrLiteral(data, props.backgroundColor);
+  let value = getValueOrLiteral<string>(props.data.entry.attributes, props.value);
+  let color = getValueOrLiteral<string>(props.data.entry.attributes, props.color);
+  let backgroundColor = getValueOrLiteral<string>(props.data.entry.attributes, props.backgroundColor);
 
   return (
     <p style={{ color: color, backgroundColor: backgroundColor }}>
@@ -34,14 +32,12 @@ export interface IRatioProps extends ILayoutElement {
 }
 
 export const Ratio = (props: IRatioProps) => {
-  const { type: _, pkg: _pkg, data, a, b, showAsPercent } = props;
-
-  let aVal = +getValueOrLiteral(data, a);
-  let bVal = +getValueOrLiteral(data, b);
+  let aVal = +getValueOrLiteral<number>(props.data.entry.attributes, props.a);
+  let bVal = +getValueOrLiteral<number>(props.data.entry.attributes, props.b);
 
   return (
     <p>
-      {showAsPercent ?
+      {props.showAsPercent ?
         `${aVal / (aVal + bVal)}% - ${bVal / (aVal + bVal)}`
         : `${aVal} : ${bVal}`}
     </p>
@@ -55,9 +51,7 @@ export interface IPercentProps extends ILayoutElement {
 }
 
 export const Percent = (props: IPercentProps) => {
-  const { type: _, pkg: _pkg, data } = props;
-
-  let value = +getValueOrLiteral(data, props.value);
+  let value = +getValueOrLiteral<number>(props.data.entry.attributes, props.value);
 
   return (
     <p>

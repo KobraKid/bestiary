@@ -9,13 +9,13 @@ export interface ISpriteProps extends ILayoutElement {
 }
 
 export const Sprite = (props: ISpriteProps) => {
-  const { type: _, pkg, data } = props;
+  let value = getValueOrLiteral<string>(props.data.entry.attributes, props.value);
+  if (!value) { return null; }
 
-  let value = getValueOrLiteral(data, props.value);
-  let width = getValueOrLiteral(data, props.width);
-  let height = getValueOrLiteral(data, props.height);
+  let width = getValueOrLiteral<string>(props.data.entry.attributes, props.width);
+  let height = getValueOrLiteral<string>(props.data.entry.attributes, props.height);
 
   return (
-    <img src={window.path.join(pkg!.metadata.path, value)} width={width} height={height} />
+    <img src={window.path.join(props.data.pkg.metadata.path, value)} width={width} height={height} />
   );
 }
