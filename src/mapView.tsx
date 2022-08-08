@@ -23,8 +23,10 @@ export const MapView = (props: IMapViewProps) => {
     if (!data.entry) { return null; }
 
     return (
-        <div className={`details-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
-            <Entry data={{ ...data, entry: data.entry }} isPreview={false} onLinkClicked={onEntryClicked} />
-        </div>
+        <Entry
+            data={{ ...data, entry: data.entry }}
+            className={`details-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}
+            isPreview={false}
+            onLinkClicked={onEntryClicked} />
     );
 }
