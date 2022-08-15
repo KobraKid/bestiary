@@ -18,7 +18,7 @@ export const Map = (props: IMapProps) => {
 
   if (!image) { return null; }
 
-  const size = getValueOrLiteral<string>(data.entry.attributes, "size").split(",");
+  const size = getValueOrLiteral<string>(data.entry.attributes, "!size").split(",");
   const pointOfInterest = getValueOrLiteral<IPointOfInterestProps[] | null | undefined>(data.entry.attributes, props.poi);
   const [scale, setScale] = useState<number>(100);
 
