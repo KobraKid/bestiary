@@ -5,6 +5,9 @@ import { ICollection, IEntry } from '../interfaces/IPackage';
 import { getValueOrLiteral } from './base';
 import '../styles/collection.scss';
 
+// =============================================================================
+// | Map
+// =============================================================================
 export interface IMapProps extends ILayoutElement {
   value: string,
   poi: IPointOfInterestProps[] | null | undefined,
@@ -18,7 +21,7 @@ export const Map = (props: IMapProps) => {
 
   if (!image) { return null; }
 
-  const size = getValueOrLiteral<string>(data.entry.attributes, "size").split(",");
+  const size = getValueOrLiteral<string>(data.entry.attributes, "!size").split(",");
   const pointOfInterest = getValueOrLiteral<IPointOfInterestProps[] | null | undefined>(data.entry.attributes, props.poi);
   const [scale, setScale] = useState<number>(100);
 
@@ -54,6 +57,9 @@ export const Map = (props: IMapProps) => {
   );
 }
 
+// =============================================================================
+// | Point of Interest
+// =============================================================================
 interface IPointOfInterestProps extends ILayoutElement {
   link: [string, string],
   location: string,

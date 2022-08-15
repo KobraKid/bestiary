@@ -31,17 +31,17 @@ export const Base = (props: IBaseProps) => {
     /* Basic */
     case LAYOUT_TYPE.string:
       const stringL = (layout as IStringProps);
-      return <String data={data} value={stringL.value} color={stringL.color} backgroundColor={stringL.backgroundColor} />;
+      return <String data={data} value={stringL.value} style={stringL.style} />;
     case LAYOUT_TYPE.ratio:
       const ratioL = (layout as IRatioProps);
-      return <Ratio data={data} a={ratioL.a} b={ratioL.b} />;
+      return <Ratio data={data} a={ratioL.a} b={ratioL.b} style={ratioL.style} />;
     case LAYOUT_TYPE.percent:
       const percentL = (layout as IPercentProps);
-      return <Percent data={data} value={percentL.value} />;
+      return <Percent data={data} label={percentL.label} value={percentL.value} style={percentL.style} />;
     /* Images */
     case LAYOUT_TYPE.sprite:
       const spriteL = (layout as ISpriteProps);
-      return <Sprite data={data} value={spriteL.value} width={spriteL.width} height={spriteL.height} />;
+      return <Sprite data={data} value={spriteL.value} style={spriteL.style} />;
     /* Relations */
     case LAYOUT_TYPE.link:
       const linkL = (layout as ILinkProps);
@@ -62,11 +62,32 @@ export const Base = (props: IBaseProps) => {
  * Retrieve the value of an attribute or a literal value for display in a layout component.
  * @param data The list of attributes available for the current entry
  * @param value The attribute to search for.
- * @returns The value of an attribute. If `value` starts with '!', the literal value following '!' will be returned instead.
+ * @returns The value of an attribute. If `value` starts with '!', the value will be looked up from the entry's attributes.
+ *          Otherwise, the literal value will be returned.
  */
 export function getValueOrLiteral<T>(data: object, value?: string | T): T {
-  if (typeof value === 'string') {
-    return value?.startsWith('!') ? value.substring(1) as any as T : data[value as keyof typeof data] as T;
+  try {
+    if (typeof value === 'string') {
+      return value?.startsWith('!') ? data[value.substring(1) as keyof typeof data] as T : value as unknown as T;
+    }
+  } catch (e: unknown) {
+    if (typeof e === 'string') {
+      console.log(e);
+    }
+    else if (e instanceof Error) {
+      console.log(e.name, e.message, e.stack);
+    }
+      return e as T;
   }
   return value as T;
+}
+
+export function getStyle(data: object, style: React.CSSProperties): React.CSSProperties {
+  const translatedStyle: React.CSSProperties = {};
+  for (const props in style) {
+    const value = style[props as keyof React.CSSProperties];
+    // @ts-expect-error: Expression produces a union type that is too complex to represent
+    translatedStyle[props as keyof React.CSSProperties] = getValueOrLiteral<string | number | (string & {}) | (number & {}) | undefined>(data, value);
+  }
+  return translatedStyle;
 }
