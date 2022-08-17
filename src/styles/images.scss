@@ -1,0 +1,8 @@
+.slideshowRegion {
+    background-color: rgba(#808080, 0);
+}
+
+.slideshowRegion:hover {
+    background-color: rgba(#808080, 0.33);
+    transition: background-color 0.4s linear;
+}

@@ -5,6 +5,9 @@ import { ICollection, IEntry } from '../interfaces/IPackage';
 import '../styles/collection.scss';
 import { getValueOrLiteral } from './base';
 
+// =============================================================================
+// | Link
+// =============================================================================
 type Link = [string, string];
 
 export interface ILinkProps extends ILayoutElement {
@@ -34,6 +37,9 @@ export const Link = (props: ILinkProps) => {
   );
 }
 
+// =============================================================================
+// | Chain
+// =============================================================================
 export interface IChainProps extends ILayoutElement {
   previous?: string,
   next?: string,

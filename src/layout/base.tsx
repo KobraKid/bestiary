@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ILayoutElement, LAYOUT_TYPE } from '../interfaces/ILayout';
 import { Horizontal, IHorizontalProps, Vertical, IVerticalProps } from './groupings';
 import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps } from './basic';
-import { Sprite, ISpriteProps } from './images';
+import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';
 import { Chain, IChainProps, ILinkProps, Link } from './relation';
 import { Map, IMapProps } from './map';
 import IPackage, { ICollection, IEntry } from '../interfaces/IPackage';
@@ -18,41 +18,44 @@ interface IBaseProps {
 }
 
 export const Base = (props: IBaseProps) => {
-  const { data,layout, onLinkClicked } = props;
+  const { data, layout, onLinkClicked } = props;
 
   switch (layout.type) {
     /* Groupings */
     case LAYOUT_TYPE.horizontal:
       const horizontalL = (layout as IHorizontalProps);
-      return <Horizontal data={data} elements={horizontalL.elements} onLinkClicked={onLinkClicked} />;
+      return <Horizontal data={data} style={horizontalL.style} elements={horizontalL.elements} onLinkClicked={onLinkClicked} />;
     case LAYOUT_TYPE.vertical:
       const verticalL = (layout as IVerticalProps);
-      return <Vertical data={data} elements={verticalL.elements} onLinkClicked={onLinkClicked} />;
+      return <Vertical data={data} style={verticalL.style} elements={verticalL.elements} onLinkClicked={onLinkClicked} />;
     /* Basic */
     case LAYOUT_TYPE.string:
       const stringL = (layout as IStringProps);
-      return <String data={data} value={stringL.value} style={stringL.style} />;
+      return <String data={data} style={stringL.style} value={stringL.value} />;
     case LAYOUT_TYPE.ratio:
       const ratioL = (layout as IRatioProps);
-      return <Ratio data={data} a={ratioL.a} b={ratioL.b} style={ratioL.style} />;
+      return <Ratio data={data} style={ratioL.style} a={ratioL.a} b={ratioL.b} />;
     case LAYOUT_TYPE.percent:
       const percentL = (layout as IPercentProps);
-      return <Percent data={data} label={percentL.label} value={percentL.value} style={percentL.style} />;
+      return <Percent data={data} style={percentL.style} label={percentL.label} value={percentL.value} />;
     /* Images */
     case LAYOUT_TYPE.sprite:
       const spriteL = (layout as ISpriteProps);
-      return <Sprite data={data} value={spriteL.value} style={spriteL.style} />;
+      return <Sprite data={data} style={spriteL.style} value={spriteL.value} />;
+    case LAYOUT_TYPE.spritelist:
+      const spritelistL = (layout as ISpriteListProps);
+      return <SpriteList data={data} style={spritelistL.style} values={spritelistL.values} />;
     /* Relations */
     case LAYOUT_TYPE.link:
       const linkL = (layout as ILinkProps);
-      return <Link data={data} link={linkL.link} onLinkClicked={onLinkClicked} />
+      return <Link data={data} style={linkL.style} link={linkL.link} onLinkClicked={onLinkClicked} />
     case LAYOUT_TYPE.chain:
       const chainL = (layout as IChainProps);
-      return <Chain data={data} previous={chainL.previous} next={chainL.next} onLinkClicked={onLinkClicked} />
+      return <Chain data={data} style={chainL.style} previous={chainL.previous} next={chainL.next} onLinkClicked={onLinkClicked} />
     /* Maps */
-    case LAYOUT_TYPE.map: 
+    case LAYOUT_TYPE.map:
       const mapL = (layout as IMapProps);
-      return <Map data={data} value={mapL.value} poi={mapL.poi} onLocationClicked={onLinkClicked} />
+      return <Map data={data} style={mapL.style} value={mapL.value} poi={mapL.poi} onLocationClicked={onLinkClicked} />
     default:
       return null;
   }
@@ -77,12 +80,12 @@ export function getValueOrLiteral<T>(data: object, value?: string | T): T {
     else if (e instanceof Error) {
       console.log(e.name, e.message, e.stack);
     }
-      return e as T;
+    return e as T;
   }
   return value as T;
 }
 
-export function getStyle(data: object, style: React.CSSProperties): React.CSSProperties {
+export function getStyle(data: object, style: React.CSSProperties | undefined): React.CSSProperties {
   const translatedStyle: React.CSSProperties = {};
   for (const props in style) {
     const value = style[props as keyof React.CSSProperties];

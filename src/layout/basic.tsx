@@ -7,7 +7,6 @@ import { getStyle, getValueOrLiteral } from './base';
 // =============================================================================
 export interface IStringProps extends ILayoutElement {
   value: string,
-  style: React.CSSProperties,
 }
 
 export const String = (props: IStringProps) => {
@@ -20,14 +19,14 @@ export const String = (props: IStringProps) => {
     </span>
   );
 }
+
 // =============================================================================
 // | Ratio
 // =============================================================================
 export interface IRatioProps extends ILayoutElement {
-  a: string,
-  b: string,
+  a: number,
+  b: number,
   showAsPercent?: boolean,
-  style: React.CSSProperties,
 }
 
 export const Ratio = (props: IRatioProps) => {
@@ -43,13 +42,13 @@ export const Ratio = (props: IRatioProps) => {
     </span>
   );
 }
+
 // =============================================================================
 // | Percent
 // =============================================================================
 export interface IPercentProps extends ILayoutElement {
   label: string,
-  value: string,
-  style: React.CSSProperties,
+  value: number,
 }
 
 export const Percent = (props: IPercentProps) => {
@@ -60,6 +59,28 @@ export const Percent = (props: IPercentProps) => {
   return (
     <span style={style}>
       {`${label}: ${value * 100}%`}
+    </span>
+  );
+}
+
+// =============================================================================
+// | Range
+// =============================================================================
+export interface IRangeProps extends ILayoutElement {
+  label: string,
+  min: number,
+  max: number,
+}
+
+export const Range = (props: IRangeProps) => {
+  let label = getValueOrLiteral<string>(props.data.entry.attributes, props.label);
+  let min = getValueOrLiteral<number>(props.data.entry.attributes, props.min);
+  let max = getValueOrLiteral<number>(props.data.entry.attributes, props.max);
+  let style = getStyle(props.data.entry.attributes, props.style);
+
+  return (
+    <span style={style}>
+      {`${label}: ${min}  - ${max}`}
     </span>
   );
 }

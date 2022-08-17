@@ -1,3 +1,4 @@
+import React from 'react';
 import IPackage, { ICollection, IEntry } from './IPackage';
 
 export const enum LAYOUT_TYPE {
@@ -10,6 +11,7 @@ export const enum LAYOUT_TYPE {
   percent = 'percent',
   /* images */
   sprite = 'sprite',
+  spritelist = 'spritelist',
   /* relation */
   link = 'link',
   chain = 'chain',
@@ -23,6 +25,13 @@ export interface ILayoutElement {
    * The layout type to render
    */
   type?: LAYOUT_TYPE,
+  /**
+   * Custom style attributes
+   */
+  style?: React.CSSProperties,
+  /**
+   * Data required to parse layout parameters
+   */
   data: {
     /**
      * The selected package
