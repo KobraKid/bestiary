@@ -7,7 +7,7 @@ import { Details } from './details';
 import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
 import './styles/app.scss';
 import './styles/transitions.scss';
-import { LAYOUT_TYPE } from './interfaces/ILayout';
+import { LAYOUT_TYPE } from './interfaces/IEntry';
 import { MapView } from './mapView';
 
 /**

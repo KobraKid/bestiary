@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ILayoutElement } from '../interfaces/ILayout';
+import { ILayoutElement, ILayoutProps } from '../interfaces/IEntry';
 import { getStyle, getValueOrLiteral } from './base';
 import '../styles/images.scss';
 
@@ -7,14 +7,17 @@ import '../styles/images.scss';
 // | Sprite
 // =============================================================================
 export interface ISpriteProps extends ILayoutElement {
-  value: string,
+  layout: ILayoutProps & {
+    value: string,
+  }
 }
 
 export const Sprite = (props: ISpriteProps) => {
-  let value = getValueOrLiteral<string>(props.data.entry.attributes, props.value);
+  const { layout } = props;
+  let value = getValueOrLiteral<string>(props.data.entry.attributes, layout.value);
   if (!value) { return null; }
 
-  let style = getStyle(props.data.entry.attributes, props.style);
+  let style = getStyle(props.data.entry.attributes, layout.style);
 
   return (
     <img src={window.path.join(props.data.pkg.metadata.path, value)} style={style} />
@@ -25,12 +28,15 @@ export const Sprite = (props: ISpriteProps) => {
 // | Sprite List
 // =============================================================================
 export interface ISpriteListProps extends ILayoutElement {
-  values: string[],
+  layout: ILayoutProps & {
+    values: string[],
+  }
 }
 
 export const SpriteList = (props: ISpriteListProps) => {
+  const { layout } = props;
   let values: string[] = [];
-  props.values.forEach(image => values.push(
+  layout.values.forEach(image => values.push(
     window.path.join(
       props.data.pkg.metadata.path,
       getValueOrLiteral<string>(props.data.entry.attributes, image)
@@ -39,7 +45,7 @@ export const SpriteList = (props: ISpriteListProps) => {
 
   const [currentImage, setCurrentImage] = useState<number>(0);
 
-  let style = getStyle(props.data.entry.attributes, props.style);
+  let style = getStyle(props.data.entry.attributes, layout.style);
 
   const onNextClicked = useCallback(() => {
     setCurrentImage(i => i < values.length - 1 ? i + 1 : 0);

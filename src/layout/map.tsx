@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, WheelEvent } from 'react';
 import ScrollContainer from 'react-indiana-drag-scroll';
-import { ILayoutElement } from '../interfaces/ILayout';
+import { IDataProps, ILayoutElement, ILayoutProps, ILinkableProps } from '../interfaces/IEntry';
 import { ICollection, IEntry } from '../interfaces/IPackage';
 import { getValueOrLiteral } from './base';
 import '../styles/collection.scss';
@@ -9,19 +9,20 @@ import '../styles/collection.scss';
 // | Map
 // =============================================================================
 export interface IMapProps extends ILayoutElement {
-  value: string,
-  poi: IPointOfInterestProps[] | null | undefined,
-  onLocationClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
+  layout: ILayoutProps & {
+    value: string,
+    poi: IPoint[] | null | undefined,
+  }
 }
 
 export const Map = (props: IMapProps) => {
-  const { type: _, data, value, poi, onLocationClicked } = props;
+  const { layout, data, onLinkClicked } = props;
 
-  const image = getValueOrLiteral<string>(data.entry.attributes, value);
+  const image = getValueOrLiteral<string>(data.entry.attributes, layout.value);
   if (!image) { return null; }
 
   const size = getValueOrLiteral<string>(data.entry.attributes, "!size").split(",");
-  const pointOfInterest = getValueOrLiteral<IPointOfInterestProps[] | null | undefined>(data.entry.attributes, poi);
+  const pointOfInterest = getValueOrLiteral<IPoint[] | null | undefined>(data.entry.attributes, layout.poi);
   const [scale, setScale] = useState<number>(100);
 
   useEffect(() => setScale(100), [image]);
@@ -51,14 +52,12 @@ export const Map = (props: IMapProps) => {
           pointOfInterest?.map((point, i) =>
             <PointOfInterest
               key={i}
-              data={data}
-              link={point.link}
-              location={point.location}
-              size={point.size}
+              point={point}
               scale={scale}
               parentWidth={size[0]!}
               parentHeight={size[1]!}
-              onLocationClicked={onLocationClicked} />)
+              data={data}
+              onLinkClicked={onLinkClicked} />)
         }
       </ScrollContainer>
     </div>
@@ -68,27 +67,30 @@ export const Map = (props: IMapProps) => {
 // =============================================================================
 // | Point of Interest
 // =============================================================================
-interface IPointOfInterestProps extends ILayoutElement {
+interface IPoint {
   link: [string, string],
   location: string,
   size: string,
+}
+interface IPointOfInterestProps extends ILinkableProps {
+  data: IDataProps,
+  point: IPoint
   scale: number,
-  parentHeight: string,
   parentWidth: string,
-  onLocationClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
+  parentHeight: string,
 }
 
 export const PointOfInterest = (props: IPointOfInterestProps) => {
-  const { type: _, data } = props;
+  const { onLinkClicked, data, point, parentHeight } = props;
 
-  const location = props.location.split(",");
-  const size = props.size.split(",");
+  const location = point.location.split(",");
+  const size = point.size.split(",");
   const scale = props.scale / 100;
 
-  const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === props.link[0]);
-  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === props.link[1]);
+  const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === point.link[0]);
+  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === point.link[1]);
 
-  if (!linkedCollection || !linkedEntry) { return null; }
+  if (!linkedCollection || !linkedEntry || !onLinkClicked) { return null; }
 
   // extra div to prevent siblings' heights from stacking
   return (
@@ -98,11 +100,11 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
         style={{
           position: "relative",
           left: `${+(location[0]!) * scale}px`,
-          top: `calc(-${props.parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px)`,
+          top: `calc(-${parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px)`,
           width: `${+(size[0]!) * scale}px`,
           height: `${+(size[1]!) * scale}px`,
         }}
-        onClick={() => props.onLocationClicked(linkedEntry, linkedCollection, null, data.collection)} />
+        onClick={() => onLinkClicked(linkedEntry, linkedCollection, null, data.collection)} />
     </div>
   );
 }

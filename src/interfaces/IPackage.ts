@@ -1,4 +1,4 @@
-import { ILayoutElement } from './ILayout';
+import { ILayoutElement, ILayoutProps } from './IEntry';
 
 /**
  * Represents a package
@@ -47,11 +47,11 @@ export interface ICollection {
   /**
    * Layout for displaying a single entry in the collection
    */
-  layout: ILayoutElement,
+  layout: ILayoutProps,
   /**
    * Layout for previewing a single entry in the collection
    */
-  layoutPreview: ILayoutElement,
+  layoutPreview: ILayoutProps,
   /**
    * Collection's entries
    */

@@ -5,8 +5,10 @@ export const enum LAYOUT_TYPE {
   /* groupings */
   horizontal = 'horizontal',
   vertical = 'vertical',
+  list = 'list',
   /* basic */
   string = 'string',
+  number = 'number',
   ratio = 'ratio',
   percent = 'percent',
   /* images */
@@ -20,7 +22,7 @@ export const enum LAYOUT_TYPE {
   map = 'map',
 }
 
-export interface ILayoutElement {
+export interface ILayoutProps {
   /**
    * The layout type to render
    */
@@ -29,21 +31,31 @@ export interface ILayoutElement {
    * Custom style attributes
    */
   style?: React.CSSProperties,
+}
+
+export interface IDataProps  {
+  /**
+   * The selected package
+   */
+  pkg: IPackage,
+  /**
+   * The selected collection
+   */
+  collection: ICollection,
+  /**
+   * The selected entry
+   */
+  entry: IEntry,
+}
+
+export interface ILinkableProps {
+  onLinkClicked?: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void
+}
+
+export interface ILayoutElement extends ILinkableProps {
+  layout: ILayoutProps,
   /**
    * Data required to parse layout parameters
    */
-  data: {
-    /**
-     * The selected package
-     */
-    pkg: IPackage,
-    /**
-     * The selected collection
-     */
-    collection: ICollection,
-    /**
-     * The selected entry
-     */
-    entry: IEntry,
-  }
+  data: IDataProps,
 }

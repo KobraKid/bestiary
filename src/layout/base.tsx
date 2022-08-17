@@ -1,61 +1,42 @@
 import * as React from 'react';
-import { ILayoutElement, LAYOUT_TYPE } from '../interfaces/ILayout';
-import { Horizontal, IHorizontalProps, Vertical, IVerticalProps } from './groupings';
-import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps } from './basic';
+import { ILayoutElement, LAYOUT_TYPE } from '../interfaces/IEntry';
+import { Horizontal, IHorizontalProps, Vertical, IVerticalProps, IListProps, List } from './groupings';
+import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps, Number, INumberProps } from './basic';
 import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';
 import { Chain, IChainProps, ILinkProps, Link } from './relation';
 import { Map, IMapProps } from './map';
-import IPackage, { ICollection, IEntry } from '../interfaces/IPackage';
 
-interface IBaseProps {
-  data: {
-    pkg: IPackage,
-    collection: ICollection,
-    entry: IEntry,
-  }
-  layout: ILayoutElement,
-  onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
-}
-
-export const Base = (props: IBaseProps) => {
-  const { data, layout, onLinkClicked } = props;
-
-  switch (layout.type) {
+export const Base = (props: ILayoutElement) => {
+  switch (props.layout.type) {
     /* Groupings */
     case LAYOUT_TYPE.horizontal:
-      const horizontalL = (layout as IHorizontalProps);
-      return <Horizontal data={data} style={horizontalL.style} elements={horizontalL.elements} onLinkClicked={onLinkClicked} />;
+      return <Horizontal {...(props as IHorizontalProps)} />;
     case LAYOUT_TYPE.vertical:
-      const verticalL = (layout as IVerticalProps);
-      return <Vertical data={data} style={verticalL.style} elements={verticalL.elements} onLinkClicked={onLinkClicked} />;
+      return <Vertical {...(props as IVerticalProps)} />;
+    case LAYOUT_TYPE.list:
+      return <List {...(props as IListProps)} />;
     /* Basic */
     case LAYOUT_TYPE.string:
-      const stringL = (layout as IStringProps);
-      return <String data={data} style={stringL.style} value={stringL.value} />;
+      return <String {...(props as IStringProps)} />;
+    case LAYOUT_TYPE.number:
+      return <Number {...(props as INumberProps)} />;
     case LAYOUT_TYPE.ratio:
-      const ratioL = (layout as IRatioProps);
-      return <Ratio data={data} style={ratioL.style} a={ratioL.a} b={ratioL.b} />;
+      return <Ratio {...(props as IRatioProps)} />;
     case LAYOUT_TYPE.percent:
-      const percentL = (layout as IPercentProps);
-      return <Percent data={data} style={percentL.style} label={percentL.label} value={percentL.value} />;
+      return <Percent {...(props as IPercentProps)} />;
     /* Images */
     case LAYOUT_TYPE.sprite:
-      const spriteL = (layout as ISpriteProps);
-      return <Sprite data={data} style={spriteL.style} value={spriteL.value} />;
+      return <Sprite {...(props as ISpriteProps)} />;
     case LAYOUT_TYPE.spritelist:
-      const spritelistL = (layout as ISpriteListProps);
-      return <SpriteList data={data} style={spritelistL.style} values={spritelistL.values} />;
+      return <SpriteList {...(props as ISpriteListProps)} />;
     /* Relations */
     case LAYOUT_TYPE.link:
-      const linkL = (layout as ILinkProps);
-      return <Link data={data} style={linkL.style} link={linkL.link} onLinkClicked={onLinkClicked} />
+      return <Link {...(props as ILinkProps)} />
     case LAYOUT_TYPE.chain:
-      const chainL = (layout as IChainProps);
-      return <Chain data={data} style={chainL.style} previous={chainL.previous} next={chainL.next} onLinkClicked={onLinkClicked} />
+      return <Chain {...(props as IChainProps)} />
     /* Maps */
     case LAYOUT_TYPE.map:
-      const mapL = (layout as IMapProps);
-      return <Map data={data} style={mapL.style} value={mapL.value} poi={mapL.poi} onLocationClicked={onLinkClicked} />
+      return <Map {...(props as IMapProps)} />
     default:
       return null;
   }
