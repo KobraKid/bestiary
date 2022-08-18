@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { ILayoutElement, LAYOUT_TYPE } from '../interfaces/IEntry';
+import { IDataProps, ILayoutElement, LAYOUT_TYPE } from '../interfaces/IEntry';
 import { Horizontal, IHorizontalProps, Vertical, IVerticalProps, IListProps, List } from './groupings';
 import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps, Number, INumberProps } from './basic';
 import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';
 import { Chain, IChainProps, ILinkProps, Link } from './relation';
 import { Map, IMapProps } from './map';
+import { Grid, IGridProps } from './grid';
 
 export const Base = (props: ILayoutElement) => {
   switch (props.layout.type) {
@@ -37,6 +38,9 @@ export const Base = (props: ILayoutElement) => {
     /* Maps */
     case LAYOUT_TYPE.map:
       return <Map {...(props as IMapProps)} />
+    /* Grids */
+    case LAYOUT_TYPE.grid:
+      return <Grid {...(props as IGridProps)} />
     default:
       return null;
   }
@@ -49,24 +53,29 @@ export const Base = (props: ILayoutElement) => {
  * @returns The value of an attribute. If `value` starts with '!', the value will be looked up from the entry's attributes.
  *          Otherwise, the literal value will be returned.
  */
-export function getValueOrLiteral<T>(data: object, value?: string | T): T {
+export function getValueOrLiteral<T>(data: IDataProps, value?: string | T): T {
+  let val: T = value as unknown as T;
+
+  const defs = data.pkg.metadata.defs;
+
   try {
-    if (typeof value === 'string') {
-      return value?.startsWith('!') ? data[value.substring(1) as keyof typeof data] as T : value as unknown as T;
+    if (typeof value === 'string' && value?.startsWith('!')) {
+      val = data.entry.attributes[value.substring(1) as keyof typeof data.entry.attributes];
     }
   } catch (e: unknown) {
-    if (typeof e === 'string') {
-      console.log(e);
-    }
-    else if (e instanceof Error) {
-      console.log(e.name, e.message, e.stack);
-    }
+    if (typeof e === 'string') { console.log(e); }
+    else if (e instanceof Error) { console.log(e.name, e.message, e.stack); }
     return e as T;
   }
-  return value as T;
+
+  if (typeof val === 'string' && val?.startsWith('@')) {
+    val = defs[val.substring(1) as keyof typeof defs];
+  }
+
+  return val;
 }
 
-export function getStyle(data: object, style: React.CSSProperties | undefined): React.CSSProperties {
+export function getStyle(data: IDataProps, style: React.CSSProperties | undefined): React.CSSProperties {
   const translatedStyle: React.CSSProperties = {};
   for (const props in style) {
     const value = style[props as keyof React.CSSProperties];

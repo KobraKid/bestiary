@@ -18,11 +18,11 @@ export interface IMapProps extends ILayoutElement {
 export const Map = (props: IMapProps) => {
   const { layout, data, onLinkClicked } = props;
 
-  const image = getValueOrLiteral<string>(data.entry.attributes, layout.value);
+  const image = getValueOrLiteral<string>(data, layout.value);
   if (!image) { return null; }
 
-  const size = getValueOrLiteral<string>(data.entry.attributes, "!size").split(",");
-  const pointOfInterest = getValueOrLiteral<IPoint[] | null | undefined>(data.entry.attributes, layout.poi);
+  const size = getValueOrLiteral<string>(data, "!size").split(",");
+  const pointOfInterest = getValueOrLiteral<IPoint[] | null | undefined>(data, layout.poi);
   const [scale, setScale] = useState<number>(100);
 
   useEffect(() => setScale(100), [image]);

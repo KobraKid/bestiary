@@ -48,14 +48,17 @@ const App = () => {
     if (selectedPkg?.metadata.name === pkg.metadata.name) { return; }
 
     setViewStack([]);
+    setSelectedCollection(null);
+
     const collection = pkg.collections.length > 0 ? pkg.collections[0]! : null;
-    setSelectedCollection(collection);
-    setSelectedPkg(pkg);
     if (collection?.layout.type === LAYOUT_TYPE.map) {
       setDisplayMode(DISPLAY_MODE.map);
     } else {
       setDisplayMode(DISPLAY_MODE.collection);
     }
+
+    setSelectedPkg(pkg);
+    setSelectedCollection(collection);
   }, [selectedPkg]);
 
   // Switch to a different collection
@@ -63,12 +66,15 @@ const App = () => {
     if (selectedCollection?.name === collection.name) { return; }
 
     setViewStack([]);
-    setSelectedCollection(collection);
+    setSelectedCollection(null);
+
     if (isMapView(collection)) {
       setDisplayMode(DISPLAY_MODE.map);
     } else {
       setDisplayMode(DISPLAY_MODE.collection);
     }
+
+    setSelectedCollection(collection);
   }, [selectedCollection, selectedPkg]);
 
   return (
@@ -146,8 +152,10 @@ const Page = (props: IPageProps) => {
     } else {
       setDisplayMode(DISPLAY_MODE.entry);
     }
-    setSelectedEntry(newEntry);
+
+    setSelectedEntry(null);
     setCollection(newCollection);
+    setSelectedEntry(newEntry);
 
     addViewStackframe(view);
     console.log("→ going from", prevCollection.name, prevEntry?.id ?? "collection", "to", newCollection.name, newEntry.id);
@@ -169,6 +177,8 @@ const Page = (props: IPageProps) => {
     } else {
       setDisplayMode(DISPLAY_MODE.collection);
     }
+
+    setSelectedEntry(null);
     setCollection(view.collection);
     setSelectedEntry(view.entry);
 
@@ -177,20 +187,20 @@ const Page = (props: IPageProps) => {
 
   return (
     <Fragment>
-      <CSSTransition in={displayMode === DISPLAY_MODE.collection} timeout={600} appear unmountOnExit classNames='transition-fade'>
+      <CSSTransition in={displayMode === DISPLAY_MODE.collection} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>
         <Collection
           data={{ pkg: pkg, collection: collection }}
           pkgMenuExpanded={pkgMenuexpanded}
           onEntryClicked={onEntryClickedCallback} />
       </CSSTransition>
-      <CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={300} appear unmountOnExit classNames='transition-fade'>
+      <CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={600} appear unmountOnExit exit={false} classNames='transition-slide-in'>
         <Details
           data={{ pkg: pkg, collection: collection, entry: selectedEntry }}
           pkgMenuExpanded={pkgMenuexpanded}
           onEntryClicked={onEntryClickedCallback}
           onReturnToCollectionClicked={() => onReturnClickedCallback(viewStack)} />
       </CSSTransition>
-      <CSSTransition in={displayMode === DISPLAY_MODE.map} timeout={300} appear unmountOnExit classNames='transition-fade'>
+      <CSSTransition in={displayMode === DISPLAY_MODE.map} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>
         <MapView
           data={{ pkg: pkg, collection: collection, entry: selectedEntry }}
           pkgMenuExpanded={pkgMenuexpanded}

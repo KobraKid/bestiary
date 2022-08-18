@@ -87,7 +87,7 @@ $menu-font-expanded-size: 1.75em;
 }
 
 @mixin collection-menu {
-  position: absolute;
+  position: fixed;
   display: flex;
   flex-direction: column;
   background-color: rgba(colors.$medium, .5);

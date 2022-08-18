@@ -34,6 +34,10 @@ export interface IPackageMetadata {
    * Package background color
    */
   color: string,
+  /**
+   * Definitions to be used package-wide
+   */
+  defs: object,
 }
 
 /**

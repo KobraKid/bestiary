@@ -20,6 +20,8 @@ export const enum LAYOUT_TYPE {
   dropTable = 'dropTable',
   /* maps */
   map = 'map',
+  /* grids */
+  grid = 'grid',
 }
 
 export interface ILayoutProps {

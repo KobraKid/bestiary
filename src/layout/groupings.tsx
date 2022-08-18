@@ -16,7 +16,7 @@ export interface IHorizontalProps extends ILayoutElement {
 
 export const Horizontal = (props: IHorizontalProps) => {
   const { layout, data, onLinkClicked } = props;
-  let style = getStyle(data.entry.attributes, layout.style);
+  let style = getStyle(data, layout.style);
 
   return (
     <div className='horizontal' style={style}>
@@ -36,7 +36,7 @@ export interface IVerticalProps extends ILayoutElement {
 
 export const Vertical = (props: IVerticalProps) => {
   const { layout, data, onLinkClicked } = props;
-  let style = getStyle(data.entry.attributes, layout.style);
+  let style = getStyle(data, layout.style);
 
   return (
     <div className='vertical' style={style}>
@@ -57,15 +57,16 @@ export interface IListProps extends ILayoutElement {
 
 export const List = (props: IListProps) => {
   const { layout, data, onLinkClicked } = props;
-  let style = getStyle(data.entry.attributes, layout.style);
-  const elements = getValueOrLiteral<any[]>(data.entry.attributes, layout.elements);
+  let style = getStyle(data, layout.style);
+  const elements = getValueOrLiteral<any[]>(data, layout.elements);
+  if (!elements) { return null; }
 
   switch (layout.processAs) {
     case LAYOUT_TYPE.string:
       return (
         <React.Fragment>
           {elements.map((element, i) =>
-            <String key={i} layout={{type: layout.processAs, style: style, value: element}} data={data} />)}
+            <String key={i} layout={{ type: layout.processAs, style: style, value: element }} data={data} />)}
         </React.Fragment>
       );
     case LAYOUT_TYPE.link:

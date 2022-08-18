@@ -19,7 +19,7 @@ export interface ILinkProps extends ILayoutElement {
 export const Link = (props: ILinkProps) => {
   const { layout, data, onLinkClicked } = props;
 
-  const linkInfo: Link = getValueOrLiteral<Link>(data.entry.attributes, layout.link);
+  const linkInfo: Link = getValueOrLiteral<Link>(data, layout.link);
 
   if (!linkInfo || linkInfo.length < 2 || !onLinkClicked) { return null; }
 
@@ -28,12 +28,12 @@ export const Link = (props: ILinkProps) => {
 
   return (
     (linkedCollection && linkedEntry) ?
-      <Entry
-        data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
-        isPreview
-        onLinkClicked={onLinkClicked}
-        onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
-        className='preview-item' />
+        <Entry
+          data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
+          isPreview
+          onLinkClicked={onLinkClicked}
+          onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
+          className='preview-item' />
       : null
   );
 }
@@ -43,8 +43,8 @@ export const Link = (props: ILinkProps) => {
 // =============================================================================
 export interface IChainProps extends ILayoutElement {
   layout: ILayoutProps & {
-  previous?: string,
-  next?: string,
+    previous?: string,
+    next?: string,
   }
 }
 
@@ -53,9 +53,9 @@ export const Chain = (_props: IChainProps) => {
 
   return (
     <React.Fragment>
-      {/* {layout.previous ? getValueOrLiteral<Link[] | undefined>(data.entry.attributes, layout.previous)?.map((link: Link) => <Link key={link[1]} data={data} link={layout.link} onLinkClicked={onLinkClicked} />) : null}
+      {/* {layout.previous ? getValueOrLiteral<Link[] | undefined>(data, layout.previous)?.map((link: Link) => <Link key={link[1]} data={data} link={layout.link} onLinkClicked={onLinkClicked} />) : null}
       <p>(Current Entry)</p>
-      {layout.next ? getValueOrLiteral<Link[] | undefined>(data.entry.attributes, layout.next)?.map((link: Link) => <Link key={link[1]} {...link} />) : null} */}
+      {layout.next ? getValueOrLiteral<Link[] | undefined>(data, layout.next)?.map((link: Link) => <Link key={link[1]} {...link} />) : null} */}
     </React.Fragment>
   );
 }

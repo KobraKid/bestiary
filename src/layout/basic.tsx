@@ -14,9 +14,9 @@ export interface IStringProps extends ILayoutElement {
 
 export const String = (props: IStringProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<string>(data.entry.attributes, layout.label);
-  let value = getValueOrLiteral<string>(data.entry.attributes, layout.value);
-  let style = getStyle(data.entry.attributes, layout.style);
+  let label = getValueOrLiteral<string>(data, layout.label);
+  let value = getValueOrLiteral<string>(data, layout.value);
+  let style = getStyle(data, layout.style);
 
   return (
     <span style={style}>
@@ -37,9 +37,9 @@ export interface INumberProps extends ILayoutElement {
 
 export const Number = (props: INumberProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<number>(data.entry.attributes, layout.label);
-  let value = getValueOrLiteral<number>(data.entry.attributes, layout.value);
-  let style = getStyle(data.entry.attributes, layout.style);
+  let label = getValueOrLiteral<number>(data, layout.label);
+  let value = getValueOrLiteral<number>(data, layout.value);
+  let style = getStyle(data, layout.style);
 
   return (
     <span style={style}>
@@ -61,9 +61,9 @@ export interface IRatioProps extends ILayoutElement {
 
 export const Ratio = (props: IRatioProps) => {
   const { layout, data } = props;
-  let aVal = getValueOrLiteral<number>(data.entry.attributes, layout.a);
-  let bVal = getValueOrLiteral<number>(data.entry.attributes, layout.b);
-  let style = getStyle(data.entry.attributes, layout.style);
+  let aVal = getValueOrLiteral<number>(data, layout.a);
+  let bVal = getValueOrLiteral<number>(data, layout.b);
+  let style = getStyle(data, layout.style);
 
   return (
     <span style={style}>
@@ -86,9 +86,9 @@ export interface IPercentProps extends ILayoutElement {
 
 export const Percent = (props: IPercentProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<string>(data.entry.attributes, layout.label);
-  let value = getValueOrLiteral<number>(data.entry.attributes, layout.value);
-  let style = getStyle(data.entry.attributes, layout.style);
+  let label = getValueOrLiteral<string>(data, layout.label);
+  let value = getValueOrLiteral<number>(data, layout.value);
+  let style = getStyle(data, layout.style);
 
   return (
     <span style={style}>
@@ -110,10 +110,10 @@ export interface IRangeProps extends ILayoutElement {
 
 export const Range = (props: IRangeProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<string>(data.entry.attributes, layout.label);
-  let min = getValueOrLiteral<number>(data.entry.attributes, layout.min);
-  let max = getValueOrLiteral<number>(data.entry.attributes, layout.max);
-  let style = getStyle(data.entry.attributes, layout.style);
+  let label = getValueOrLiteral<string>(data, layout.label);
+  let min = getValueOrLiteral<number>(data, layout.min);
+  let max = getValueOrLiteral<number>(data, layout.max);
+  let style = getStyle(data, layout.style);
 
   return (
     <span style={style}>
