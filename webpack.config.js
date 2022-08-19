@@ -21,7 +21,10 @@ module.exports = [
   },
   {
     mode: 'development',
-    entry: './src/app.tsx',
+    entry: {
+      app: './src/app.tsx', 
+      pkgBuilder: './src/pkgBuilder.tsx'
+    },
     target: 'electron-renderer',
     devtool: 'source-map',
     resolve: { extensions: ['.ts', '.tsx', '.scss', '.png', '.ttf', '...'] },
@@ -48,11 +51,18 @@ module.exports = [
     },
     output: {
       path: __dirname + '/dist',
-      filename: 'app.js'
+      filename: '[name].js'
     },
     plugins: [
       new HtmlWebpackPlugin({
-        template: './src/index.html'
+        template: './src/index.html',
+        filename: 'index.html',
+        chunks: ['app']
+      }),
+      new HtmlWebpackPlugin({
+        template: './src/index.html',
+        filename: 'pkgBuilder.html',
+        chunks: ['pkgBuilder']
       })
     ],
     stats: 'errors-only'

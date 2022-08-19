@@ -15,11 +15,11 @@ console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ El
 /**
  * Set up the main window
  */
-function createWindow() {
+function createWindow(page: string, title: string, openDevTools: boolean = false) {
   let win = new BrowserWindow({
     width: 1280,
     height: 720,
-    title: `Bestiary ${process.env.npm_package_version}`,
+    title: `${title} | ${process.env.npm_package_version}`,
     darkTheme: true,
     autoHideMenuBar: true,
     // frame: false,
@@ -30,8 +30,8 @@ function createWindow() {
     },
   });
 
-  win.loadFile('index.html');
-  win.webContents.openDevTools({ mode: 'detach' });
+  win.loadFile(page);
+  if (openDevTools) { win.webContents.openDevTools({ mode: 'detach' }); }
 }
 
 /**
@@ -60,7 +60,8 @@ function parsePackage(pkgPath: string, isLoadAll: boolean = false): IPackage | n
  * Create the main window
  */
 app.whenReady().then(async () => {
-  createWindow();
+  createWindow('index.html', 'Bestiary', true);
+  createWindow('pkgBuilder.html', 'Package Builder');
 });
 
 /**
