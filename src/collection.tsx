@@ -29,9 +29,13 @@ export const Collection = (props: ICollectionProps) => {
 
   useEffect(() => {
     const index = entries.length;
+    let timer: NodeJS.Timeout;
     if (index < data.collection.data.length) {
-      setTimeout(() => setEntries(entries.concat(data.collection.data[index]!)), 50);
+      timer = setTimeout(() => setEntries(entries.concat(data.collection.data[index]!)), 50);
     }
+    return (() => {
+      clearTimeout(timer);
+    });
   }, [entries]);
 
   return (
