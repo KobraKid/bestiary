@@ -15,11 +15,12 @@ console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ El
 /**
  * Set up the main window
  */
-function createWindow(page: string, title: string, openDevTools: boolean = false) {
+function createWindow(openDevTools: boolean = false) {
+  console.log(chalk.bold.gray.bgYellow('Starting main app'));
   let win = new BrowserWindow({
     width: 1280,
     height: 720,
-    title: `${title} | ${process.env.npm_package_version}`,
+    title: `Bestiary | ${process.env.npm_package_version}`,
     darkTheme: true,
     autoHideMenuBar: true,
     // frame: false,
@@ -27,11 +28,30 @@ function createWindow(page: string, title: string, openDevTools: boolean = false
       contextIsolation: true,
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.js')
-    },
+    }
   });
 
-  win.loadFile(page);
+  win.loadFile('index.html');
   if (openDevTools) { win.webContents.openDevTools({ mode: 'detach' }); }
+}
+
+function createBuilderWindow(openDevTools: boolean = false) {
+  console.log(chalk.bold.yellow.bgGrey('Starting package builder'));
+  let win = new BrowserWindow({
+    width: 1920,
+    height: 1280,
+    title: `Package Builder | ${process.env.npm_package_version}`,
+    darkTheme: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  win.loadFile('pkgBuilder.html');
+  if (openDevTools) { win.webContents.openDevTools({ mode: 'right' }); }
 }
 
 /**
@@ -55,14 +75,6 @@ function parsePackage(pkgPath: string, isLoadAll: boolean = false): IPackage | n
   }
   return pkg;
 }
-
-/**
- * Create the main window
- */
-app.whenReady().then(async () => {
-  createWindow('index.html', 'Bestiary', true);
-  createWindow('pkgBuilder.html', 'Package Builder');
-});
 
 /**
  * Load all packages
@@ -91,3 +103,17 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
 });
 
 ipcMain.handle('load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => parsePackage(pkgPath));
+
+/**
+ * Create the main window
+ */
+app.whenReady().then(async () => {
+  const launchedBuilder = app.commandLine.getSwitchValue('builder') === '1'
+  const openDevTools = app.commandLine.getSwitchValue('dev') === '1';
+
+  if (launchedBuilder) {
+    createBuilderWindow(openDevTools);
+  } else {
+    createWindow(openDevTools);
+  }
+});
