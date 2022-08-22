@@ -5,7 +5,8 @@ import chalk from 'chalk';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   loadPackages: (): Promise<IPackageMetadata[]> => ipcRenderer.invoke('load-pkgs'),
-  loadPackage: (dir: string): Promise<IPackage | null> => ipcRenderer.invoke('load-pkg', dir)
+  loadPackage: (dir: string): Promise<IPackage | null> => ipcRenderer.invoke('load-pkg', dir),
+  parsePackage: (data: string): Promise<IPackage | null> => ipcRenderer.invoke('parse-pkg', data)
 });
 
 contextBridge.exposeInMainWorld('path', {

@@ -3,6 +3,7 @@ import IPackage, { IPackageMetadata } from './interfaces/IPackage';
 export interface IElectronAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,
   loadPackage: (path: string) => Promise<IPackage | null>
+  parsePackage: (data: string) => Promise<IPackage | null>
 }
 
 export interface IPathAPI {
