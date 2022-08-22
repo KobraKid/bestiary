@@ -7,11 +7,14 @@ enum ATTR_TYPE {
     NUMBER = 'NUMBER',
     BOOLEAN = 'BOOLEAN',
     ARRAY = 'ARRAY',
+    LINK = 'LINK',
 }
 
 type Attribute = [string, ATTR_TYPE];
 
 type AttributeValue = [string, any];
+
+type Link = [string, string];
 
 const PkgBuilder = () => {
     const [name, setName] = useState<string>('<Name>');
@@ -212,7 +215,11 @@ const PkgBuilder = () => {
             </label>
             <label>
                 New collection:&nbsp;
-                <input type='text' value={newCollectionName} onChange={e => { setNewCollectionName(e.target.value); setErrorMessage(''); }} />
+                <input
+                    type='text'
+                    placeholder='Collection name'
+                    value={newCollectionName}
+                    onChange={e => { setNewCollectionName(e.target.value); setErrorMessage(''); }} />
             </label>
             <button onClick={onNewCollectionCallback}>Add Collection</button>
             <span style={{ backgroundColor: 'red', color: 'black', marginLeft: '8px', padding: '2px', display: errorMessage.length > 0 ? 'initial' : 'none' }}>
@@ -324,7 +331,11 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
                     </label>
                     <label>
                         New entry:&nbsp;
-                        <input type='text' value={newEntryName} onChange={e => setNewEntryName(e.target.value)} />
+                        <input
+                            type='text'
+                            placeholder='Entry name'
+                            value={newEntryName}
+                            onChange={e => setNewEntryName(e.target.value)} />
                     </label>
                     <button onClick={() => updateCollectionDataEntryId(collection.data.length, newEntryName)}>New entry</button>
                     <br />
@@ -420,13 +431,32 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
                 <React.Fragment>
                     {
                         (attrVal[1] as any[]).map((val, i) =>
-                            <input type='text' value={val} onChange={e => {
-                                let newVal = Object.assign([], attrVal[1]);
-                                newVal[i] = e.target.value;
-                                updateAttributeValue([attrVal[0], newVal]);
-                            }} />
+                            <input
+                                type='text'
+                                value={val}
+                                onChange={e => {
+                                    let newVal = Object.assign([], attrVal[1]);
+                                    newVal[i] = e.target.value;
+                                    updateAttributeValue([attrVal[0], newVal]);
+                                }} />
                         )
                     }
+                </React.Fragment>
+            );
+            break;
+        case ATTR_TYPE.LINK:
+            value = (
+                <React.Fragment>
+                    <input
+                        type='text'
+                        placeholder='Linked collection'
+                        value={(attrVal[1] as Link)[0]}
+                        onChange={e => updateAttributeValue([attrVal[0], [e.target.value, (attrVal[1] as Link)[1]]])} />
+                    <input
+                        type='text'
+                        placeholder='Linked ID'
+                        value={(attrVal[1] as Link)[1]}
+                        onChange={e => updateAttributeValue([attrVal[0], [(attrVal[1] as Link)[0], e.target.value]])} />
                 </React.Fragment>
             );
             break;
@@ -498,6 +528,11 @@ function buildEntryFromModel(id: string, model: Attribute[]): IEntry {
                     [attribute[0]]: []
                 };
                 break;
+            case ATTR_TYPE.LINK:
+                entry.attributes = {
+                    ...entry.attributes,
+                    [attribute[0]]: ['', '']
+                }
         }
     });
     return entry;
@@ -539,6 +574,11 @@ function updateEntryAttributesOnModelChange(entry: IEntry, model: Attribute[]): 
             case ATTR_TYPE.ARRAY:
                 if (!Array.isArray(val)) {
                     val = [];
+                }
+                break;
+            case ATTR_TYPE.LINK:
+                if (!Array.isArray(val)) {
+                    val = ['', ''];
                 }
                 break;
         }
