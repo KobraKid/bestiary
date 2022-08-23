@@ -2,15 +2,10 @@ import React, { MouseEvent, useCallback, useMemo, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import IPackage, { ICollection, IEntry, IPackageMetadata } from './interfaces/IPackage';
 
-enum ATTR_TYPE {
-    STRING = 'STRING',
-    NUMBER = 'NUMBER',
-    BOOLEAN = 'BOOLEAN',
-    ARRAY = 'ARRAY',
-    LINK = 'LINK',
-}
+const attributeTypes = ['string', 'number', 'boolean'] as const;
+type AttributeType = typeof attributeTypes[number] | Array<AttributeType | typeof attributeTypes[number]>;
 
-type Attribute = [string, ATTR_TYPE];
+type Attribute = [string, AttributeType];
 
 type AttributeValue = [string, any];
 
@@ -33,7 +28,7 @@ const PkgBuilder = () => {
     const onNewCollectionCallback = (e: MouseEvent) => {
         e.preventDefault();
 
-        setModels(models => models.concat([[["name", ATTR_TYPE.STRING]]]));
+        setModels(models => models.concat([[["name", 'string']]]));
 
         setCollections(collections => {
             let name = newCollectionName.trim();
@@ -166,40 +161,7 @@ const PkgBuilder = () => {
                 setIcon(pkg.metadata.icon);
                 setColor(pkg.metadata.color);
                 setDefs(pkg.metadata.defs);
-                setModels(() => {
-                    let importedModels: Attribute[][] = [];
-                    pkg.collections.forEach(collection => {
-                        let importedModel: Attribute[] = [];
-                        collection.data.forEach(entry => {
-                            let attributes = entry.attributes;
-                            Object.keys(attributes).forEach(key => {
-                                // This attribute already exists on the model
-                                if (importedModel.find(attr => attr[0] === key)) { return; }
-
-                                let val = attributes![key as keyof typeof attributes];
-                                if (typeof val === 'string') {
-                                    importedModel.push([key, ATTR_TYPE.STRING]);
-                                }
-                                else if (typeof val === 'number') {
-                                    importedModel.push([key, ATTR_TYPE.NUMBER]);
-                                }
-                                else if (typeof val === 'boolean') {
-                                    importedModel.push([key, ATTR_TYPE.BOOLEAN]);
-                                }
-                                else if (Array.isArray(val)) {
-                                    if ((val as any[]).length === 2) {
-                                        importedModel.push([key, ATTR_TYPE.LINK]);
-                                    }
-                                    else {
-                                        importedModel.push([key, ATTR_TYPE.ARRAY]);
-                                    }
-                                }
-                            });
-                        });
-                        importedModels.push(importedModel);
-                    });
-                    return importedModels;
-                });
+                setModels(pkg.collections.map(collection => parseImportedDataToDataModel(collection.data)));
                 setCollections(pkg.collections);
             }
         }));
@@ -252,7 +214,7 @@ const PkgBuilder = () => {
                             </label>
                         </td>
                         <td>
-                            <textarea rows={5} cols={50} value={buildStringFromDefs(defs)} onChange={e => setDefs(buildDefsFromString(e.target.value))} />
+                            <textarea rows={8} cols={80} value={buildStringFromDefs(defs)} onChange={e => setDefs(buildDefsFromString(e.target.value))} />
                         </td>
                     </tr>
                 </tbody>
@@ -358,7 +320,7 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
             <button onClick={() => setTab(1)}>Layout</button>
             <button onClick={() => setTab(2)}>Entries</button>
             <br />
-            <div style={{ height: '500px', overflow: 'auto' }}>
+            <div style={{ height: '460px', overflow: 'auto' }}>
                 {tab === 0 ?
                     <React.Fragment>
                         <span>Layout preview: {JSON.stringify(collection.layoutPreview, null, '\t')}</span>
@@ -374,15 +336,23 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
                 {tab === 2 ?
                     <React.Fragment>
                         <span>Model:</span>
-                        <div>
-                            {model.map((attribute, i) =>
-                                <AttributeDisplay
-                                    key={i}
-                                    attr={attribute}
-                                    updateAttribute={(update: Attribute) => updateModel(i, update)} />
-                            )}
-                        </div>
-                        <button onClick={() => updateModel(model.length, ['attribute', ATTR_TYPE.STRING])}>New attribute</button>
+                        <table style={{ width: '100%' }}>
+                            <tbody>
+                                {model.map((attribute, i) =>
+                                    <tr key={i} style={{ backgroundColor: i % 2 == 0 ? 'lightgray' : 'none' }}>
+                                        <td style={{ width: '180px', padding: '4px' }}>
+                                            <input type='text' value={attribute[0]} onChange={e => updateModel(i, [e.target.value, attribute[1]])} />
+                                        </td>
+                                        <td>
+                                            <AttributeDisplay
+                                                attr={attribute[1]}
+                                                updateAttribute={(update: AttributeType) => updateModel(i, [attribute[0], update])} />
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                        <button onClick={() => updateModel(model.length, ['attribute', 'string'])}>New attribute</button>
                         <hr />
                         <label>
                             Selected entry:&nbsp;
@@ -416,20 +386,32 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
 }
 
 interface IAttributeDisplayProps {
-    attr: Attribute,
-    updateAttribute: (update: Attribute) => void
+    attr: AttributeType,
+    updateAttribute: (update: AttributeType) => void
 }
 
 const AttributeDisplay = (props: IAttributeDisplayProps) => {
     const { attr, updateAttribute } = props;
 
     return (
-        <div>
-            <input type='text' value={attr[0]} onChange={e => updateAttribute([e.target.value, attr[1]])} />
-            <select value={attr[1]} onChange={e => updateAttribute([attr[0], e.target.value as ATTR_TYPE])}>
-                {Object.keys(ATTR_TYPE).map((attr, i) => <option key={i} value={attr}>{attr.toLowerCase()}</option>)}
-            </select>
-        </div>
+        <React.Fragment>
+            {(attr === 'string' || attr === 'number' || attr === 'boolean') ?
+                <select value={attr} onChange={e => updateAttribute(e.target.value as AttributeType)}>
+                    {attributeTypes.map((attr, i) => <option key={i} value={attr}>{attr.toLowerCase()}</option>)}
+                    <option value={[]}>array</option>
+                </select> :
+                (attr as AttributeType[]).map((attrType, i) =>
+                    <React.Fragment>
+                        <AttributeDisplay key={i} attr={attrType} updateAttribute={update => {
+                            let newAttribute: AttributeType[] = Object.assign([], attr);
+                            newAttribute[i] = update;
+                            updateAttribute(newAttribute);
+                        }} />
+                        <br />
+                    </React.Fragment>
+                )
+            }
+        </React.Fragment>
     );
 }
 
@@ -459,11 +441,16 @@ const EntryDisplay = (props: IEntryDisplayProps) => {
                 </tr>
                 {Object.keys(entry.attributes).map((key, i) =>
                     <tr key={key} style={{ backgroundColor: i % 2 == 0 ? 'lightgray' : 'none' }}>
-                        <AttributeValueDisplay
-                            attr={model[i]!}
-                            attrVal={[key, entry.attributes[key as keyof typeof entry.attributes]]}
-                            defs={defs}
-                            updateAttributeValue={(update: AttributeValue) => updateAttributeValue(update)} />
+                        <td style={{ width: '100px' }}>
+                            {`${key}:`}
+                        </td>
+                        <td>
+                            <AttributeValueDisplay
+                                attr={model[i]![1]}
+                                val={entry.attributes[key as keyof typeof entry.attributes]}
+                                defs={defs}
+                                updateAttributeValue={(update: any) => updateAttributeValue([key, update])} />
+                        </td>
                     </tr>
                 )}
             </tbody>
@@ -472,92 +459,67 @@ const EntryDisplay = (props: IEntryDisplayProps) => {
 }
 
 interface IAttributeValueDisplayProps {
-    attr: Attribute,
-    attrVal: AttributeValue,
+    attr: AttributeType,
+    val: any,
     defs: object,
-    updateAttributeValue: (update: AttributeValue) => void
+    updateAttributeValue: (update: any) => void
 }
 
 const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
-    const { attr, attrVal, defs, updateAttributeValue } = props;
+    const { attr, val, defs, updateAttributeValue } = props;
 
-    let value: JSX.Element | null = null;
-    switch (attr[1]) {
-        case ATTR_TYPE.STRING:
-            value = (
-                <React.Fragment>
-                    <input type='text' value={attrVal[1]} onChange={e => updateAttributeValue([attrVal[0], e.target.value])} />
-                    {(attrVal[1] as string).startsWith('@') ?
-                        <React.Fragment>
-                            {defs[(attrVal[1] as string).substring(1) as keyof typeof defs] ?
-                                <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
-                                    {defs[(attrVal[1] as string).substring(1) as keyof typeof defs]}
-                                </span> :
-                                <span style={{ fontWeight: 'bold', color: 'red', marginLeft: '8px' }}>
-                                    Package-level definition not found
-                                </span>
-                            }
-                        </React.Fragment>
-                        : null
-                    }
-                </React.Fragment>
-            );
-            break;
-        case ATTR_TYPE.NUMBER:
-            value = <input type='number' value={attrVal[1]} onChange={e => updateAttributeValue([attrVal[0], e.target.value])} />;
-            break;
-        case ATTR_TYPE.BOOLEAN:
-            value = <input type='checkbox' checked={attrVal[1]} onChange={e => updateAttributeValue([attrVal[0], e.target.checked])} />;
-            break;
-        case ATTR_TYPE.ARRAY:
-            value = (
-                <React.Fragment>
-                    {
-                        (attrVal[1] as any[]).map((val, i) =>
-                            <React.Fragment key={i}>
-                                <input
-                                    type='text'
-                                    value={val}
-                                    onChange={e => {
-                                        let newVal = Object.assign([], attrVal[1]);
-                                        newVal[i] = e.target.value;
-                                        updateAttributeValue([attrVal[0], newVal]);
-                                    }} />
-                                <br />
-                            </React.Fragment>
-                        )
-                    }
-                </React.Fragment>
-            );
-            break;
-        case ATTR_TYPE.LINK:
-            value = (
-                <React.Fragment>
-                    <input
-                        type='text'
-                        placeholder='Linked collection'
-                        value={(attrVal[1] as Link)[0]}
-                        onChange={e => updateAttributeValue([attrVal[0], [e.target.value, (attrVal[1] as Link)[1]]])} />
-                    <input
-                        type='text'
-                        placeholder='Linked ID'
-                        value={(attrVal[1] as Link)[1]}
-                        onChange={e => updateAttributeValue([attrVal[0], [(attrVal[1] as Link)[0], e.target.value]])} />
-                </React.Fragment>
-            );
-            break;
+    if (attr === 'string') {
+        return (
+            <React.Fragment>
+                <input type='text' value={val} onChange={e => updateAttributeValue(e.target.value)} />
+                {(val as string).startsWith('@') &&
+                    <React.Fragment>
+                        {defs[(val as string).substring(1) as keyof typeof defs] ?
+                            <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
+                                {defs[(val as string).substring(1) as keyof typeof defs]}
+                            </span> :
+                            <span style={{ fontWeight: 'bold', color: 'red', marginLeft: '8px' }}>
+                                Package-level definition not found
+                            </span>
+                        }
+                    </React.Fragment>
+                }
+                {(val as string).startsWith('~') &&
+                    <React.Fragment>
+                        <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
+                            {`link [${(val as string).substring(1).split('|')[0]} ~ ${(val as string).substring(1).split('|')[1]}]`}
+                        </span>
+                    </React.Fragment>
+                }
+            </React.Fragment>
+        );
     }
-
-    return (
-        <React.Fragment>
-            <td style={{ width: '100px' }}>
-                {`${attrVal[0]}:`}
-            </td>
-            <td>
-                {value}
-            </td>
-        </React.Fragment>
-    );
+    else if (attr === 'number') {
+        return <input type='number' value={val} onChange={e => updateAttributeValue(e.target.value)} />;
+    }
+    else if (attr === 'boolean') {
+        return <input type='checkbox' checked={val} onChange={e => updateAttributeValue(e.target.checked)} />;
+    }
+    else {
+        return (
+            <React.Fragment>
+                {(attr as AttributeType[]).map((attr, i) =>
+                    <React.Fragment key={i}>
+                        <AttributeValueDisplay
+                            attr={attr}
+                            val={val[i]}
+                            defs={defs}
+                            updateAttributeValue={update => {
+                                let newAttrVal = Object.assign([], val);
+                                newAttrVal[i] = update;
+                                updateAttributeValue(newAttrVal);
+                            }} />
+                        <br />
+                    </React.Fragment>
+                )}
+            </React.Fragment>
+        );
+    }
 }
 
 function copyEntry(entry: IEntry): IEntry {
@@ -589,7 +551,7 @@ function buildDefsFromString(defString: string): object {
 
 function buildStringFromDefs(defs: object): string {
     let defString = '';
-    Object.keys(defs).forEach(key => defString += `${key}: ${defs[key as keyof typeof defs]}`);
+    Object.keys(defs).forEach(key => defString += `${key}: ${defs[key as keyof typeof defs]}\n`);
     return defString;
 }
 
@@ -600,31 +562,26 @@ function buildEntryFromModel(id: string, model: Attribute[]): IEntry {
     }
     model.forEach(attribute => {
         switch (attribute[1]) {
-            case ATTR_TYPE.STRING:
+            case 'string':
                 entry.attributes = {
                     ...entry.attributes,
                     [attribute[0]]: ''
                 };
                 break;
-            case ATTR_TYPE.NUMBER:
+            case 'number':
                 entry.attributes = {
                     ...entry.attributes,
                     [attribute[0]]: 0
                 };
                 break;
-            case ATTR_TYPE.BOOLEAN:
+            case 'boolean':
                 entry.attributes = {
                     ...entry.attributes,
                     [attribute[0]]: false
                 };
                 break;
-            case ATTR_TYPE.ARRAY:
-                entry.attributes = {
-                    ...entry.attributes,
-                    [attribute[0]]: []
-                };
-                break;
-            case ATTR_TYPE.LINK:
+            default:
+                console.log('Array type:', attribute[1], '' + attribute[1]);
                 entry.attributes = {
                     ...entry.attributes,
                     [attribute[0]]: ['', '']
@@ -652,30 +609,24 @@ function updateEntryAttributesOnModelChange(entry: IEntry, model: Attribute[]): 
         let key = Object.keys(entry.attributes).find(key => key === attr[0]);
         let val = entry.attributes[key as keyof typeof entry.attributes] as any;
         switch (attr[1]) {
-            case ATTR_TYPE.STRING:
+            case 'string':
                 if (typeof val !== 'string') {
                     val = (val ? '' + val : '');
                 }
                 break;
-            case ATTR_TYPE.NUMBER:
+            case 'number':
                 if (typeof val !== 'number') {
                     val = isNaN(+val) ? 0 : +val;
                 }
                 break;
-            case ATTR_TYPE.BOOLEAN:
+            case 'boolean':
                 if (typeof val !== 'boolean') {
                     val = !!val;
                 }
                 break;
-            case ATTR_TYPE.ARRAY:
-                if (!Array.isArray(val)) {
-                    val = [];
-                }
-                break;
-            case ATTR_TYPE.LINK:
-                if (!Array.isArray(val)) {
-                    val = ['', ''];
-                }
+            default:
+                console.log('Array type:', attr[1], '' + attr[1]);
+                val = [];
                 break;
         }
         updatedEntry.attributes = {
@@ -685,6 +636,45 @@ function updateEntryAttributesOnModelChange(entry: IEntry, model: Attribute[]): 
     });
 
     return updatedEntry;
+}
+
+function parseImportedDataToDataModel(data: IEntry[]): Attribute[] {
+    let model: Attribute[] = [];
+    data.forEach(entry => {
+        let attributes = entry.attributes;
+        Object.keys(attributes).forEach(key => {
+            if (model.find(attr => attr[0] === key)) { return; } // This attribute already exists on the model
+
+            let val = attributes![key as keyof typeof attributes] as any;
+            let attributeType = parseImportedAttributeToDataModel(val);
+            if (Array.isArray(attributeType) && attributeType.length < 1) {
+                console.log(`Couldn't parse ${key}`);
+            }
+            else {
+                model.push([key, attributeType]);
+            }
+        });
+    });
+    console.log(model);
+    return model;
+}
+
+function parseImportedAttributeToDataModel(val: any): AttributeType {
+    if (typeof val === 'string') {
+        return 'string';
+    }
+    else if (typeof val === 'number') {
+        return 'number';
+    }
+    else if (typeof val === 'boolean') {
+        return 'boolean';
+    }
+    else if (Array.isArray(val)) {
+        return val.map(arrayVal => parseImportedAttributeToDataModel(arrayVal));
+    }
+    else {
+        return [];
+    }
 }
 
 ReactDOM.render(<PkgBuilder />, document.getElementById('app'));
