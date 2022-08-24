@@ -12,7 +12,7 @@ type Link = [string, string];
 
 export interface ILinkProps extends ILayoutElement {
   layout: ILayoutProps & {
-    link: string | Link,
+    link: string,
   }
 }
 

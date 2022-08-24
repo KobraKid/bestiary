@@ -72,6 +72,11 @@ export function getValueOrLiteral<T>(data: IDataProps, value?: string | T): T {
     val = defs[val.substring(1) as keyof typeof defs];
   }
 
+  if (typeof val === 'string' && val?.startsWith('~')) {
+    let link = val.split('|');
+    val = [(link[0] ?? '~').substring(1), link[1] ?? ''] as unknown as T;
+  }
+
   return val;
 }
 
