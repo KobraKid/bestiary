@@ -5,6 +5,7 @@ import { getValueOrLiteral } from './base';
 import ICollection from '../model/Collection';
 import IEntry from '../model/Entry';
 import '../styles/collection.scss';
+import { AttributeValue } from '../model/Attribute';
 
 // =============================================================================
 // | Map
@@ -12,18 +13,18 @@ import '../styles/collection.scss';
 export interface IMapProps extends ILayoutElement {
   layout: ILayoutProps & {
     value: string,
-    poi: IPoint[] | null | undefined,
+    poi: AttributeValue[],
   }
 }
 
 export const Map = (props: IMapProps) => {
   const { layout, data, onLinkClicked } = props;
 
-  const image = getValueOrLiteral<string>(data, layout.value);
+  const image = getValueOrLiteral(data, layout.value);
   if (!image) { return null; }
 
-  const size = getValueOrLiteral<string>(data, "!size").split(",");
-  const pointOfInterest = getValueOrLiteral<IPoint[] | null | undefined>(data, layout.poi);
+  const size = (getValueOrLiteral(data, "!size") as string).split(",");
+  const pointOfInterest = getValueOrLiteral(data, layout.poi) as AttributeValue[];
   const [scale, setScale] = useState<number>(100);
 
   useEffect(() => setScale(100), [image]);
@@ -44,21 +45,20 @@ export const Map = (props: IMapProps) => {
       <ScrollContainer
         style={{ height: "calc(100vh - 72px)", width: "calc(100vw - 72px)", padding: "4px" }}>
         <img
-          src={window.path.join(data.pkg.metadata.path, image)}
+          src={window.path.join(data.pkg.metadata.path, "" + image)}
           style={{
             width: `${+(size[0]!) * scale / 100}px`,
             height: `${+(size[1]!) * scale / 100}px`,
           }} />
-        {
-          pointOfInterest?.map((point, i) =>
-            <PointOfInterest
-              key={i}
-              point={point}
-              scale={scale}
-              parentWidth={size[0]!}
-              parentHeight={size[1]!}
-              data={data}
-              onLinkClicked={onLinkClicked} />)
+        {pointOfInterest && pointOfInterest?.map((point, i) =>
+          <PointOfInterest
+            key={i}
+            point={point as AttributeValue[]}
+            scale={scale}
+            parentWidth={size[0]!}
+            parentHeight={size[1]!}
+            data={data}
+            onLinkClicked={onLinkClicked} />)
         }
       </ScrollContainer>
     </div>
@@ -68,14 +68,9 @@ export const Map = (props: IMapProps) => {
 // =============================================================================
 // | Point of Interest
 // =============================================================================
-interface IPoint {
-  link: [string, string],
-  location: string,
-  size: string,
-}
 interface IPointOfInterestProps extends ILinkableProps {
   data: IDataProps,
-  point: IPoint
+  point: AttributeValue[],
   scale: number,
   parentWidth: string,
   parentHeight: string,
@@ -84,12 +79,13 @@ interface IPointOfInterestProps extends ILinkableProps {
 export const PointOfInterest = (props: IPointOfInterestProps) => {
   const { onLinkClicked, data, point, parentHeight } = props;
 
-  const location = point.location.split(",");
-  const size = point.size.split(",");
+  const link = (point[0] as string).split('|');
+  const location = (point[1] as string).split(',');
+  const size = (point[2] as string).split(',');
   const scale = props.scale / 100;
 
-  const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === point.link[0]);
-  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === point.link[1]);
+  const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === link[0]?.substring(1));
+  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]);
 
   if (!linkedCollection || !linkedEntry || !onLinkClicked) { return null; }
 

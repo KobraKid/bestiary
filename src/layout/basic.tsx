@@ -14,8 +14,8 @@ export interface IStringProps extends ILayoutElement {
 
 export const String = (props: IStringProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<string>(data, layout.label);
-  let value = getValueOrLiteral<string>(data, layout.value);
+  let label = getValueOrLiteral(data, layout.label);
+  let value = getValueOrLiteral(data, layout.value);
   let style = getStyle(data, layout.style);
 
   return (
@@ -37,8 +37,8 @@ export interface INumberProps extends ILayoutElement {
 
 export const Number = (props: INumberProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<number>(data, layout.label);
-  let value = getValueOrLiteral<number>(data, layout.value);
+  let label = getValueOrLiteral(data, layout.label);
+  let value = getValueOrLiteral(data, layout.value);
   let style = getStyle(data, layout.style);
 
   return (
@@ -61,8 +61,8 @@ export interface IRatioProps extends ILayoutElement {
 
 export const Ratio = (props: IRatioProps) => {
   const { layout, data } = props;
-  let aVal = getValueOrLiteral<number>(data, layout.a);
-  let bVal = getValueOrLiteral<number>(data, layout.b);
+  let aVal = +getValueOrLiteral(data, layout.a);
+  let bVal = +getValueOrLiteral(data, layout.b);
   let style = getStyle(data, layout.style);
 
   return (
@@ -86,8 +86,8 @@ export interface IPercentProps extends ILayoutElement {
 
 export const Percent = (props: IPercentProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<string>(data, layout.label);
-  let value = getValueOrLiteral<number>(data, layout.value);
+  let label = getValueOrLiteral(data, layout.label);
+  let value = +getValueOrLiteral(data, layout.value);
   let style = getStyle(data, layout.style);
 
   return (
@@ -110,9 +110,9 @@ export interface IRangeProps extends ILayoutElement {
 
 export const Range = (props: IRangeProps) => {
   const { layout, data } = props;
-  let label = getValueOrLiteral<string>(data, layout.label);
-  let min = getValueOrLiteral<number>(data, layout.min);
-  let max = getValueOrLiteral<number>(data, layout.max);
+  let label = getValueOrLiteral(data, layout.label);
+  let min = +getValueOrLiteral(data, layout.min);
+  let max = +getValueOrLiteral(data, layout.max);
   let style = getStyle(data, layout.style);
 
   return (

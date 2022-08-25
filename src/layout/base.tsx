@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { IDataProps, ILayoutElement, LAYOUT_TYPE } from '../model/Layout';
-import { Horizontal, IHorizontalProps, Vertical, IVerticalProps, IListProps, List } from './groupings';
+import { Horizontal, IHorizontalProps, Vertical, IVerticalProps } from './groupings';
 import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps, Number, INumberProps } from './basic';
 import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';
-import { Chain, IChainProps, ILinkProps, Link } from './relation';
+import { ILinkProps, Link } from './relation';
 import { Map, IMapProps } from './map';
 import { Grid, IGridProps } from './grid';
+import { AttributeValue } from '../model/Attribute';
 
 export const Base = (props: ILayoutElement) => {
   switch (props.layout.type) {
@@ -14,8 +15,6 @@ export const Base = (props: ILayoutElement) => {
       return <Horizontal {...(props as IHorizontalProps)} />;
     case LAYOUT_TYPE.vertical:
       return <Vertical {...(props as IVerticalProps)} />;
-    case LAYOUT_TYPE.list:
-      return <List {...(props as IListProps)} />;
     /* Basic */
     case LAYOUT_TYPE.string:
       return <String {...(props as IStringProps)} />;
@@ -33,8 +32,6 @@ export const Base = (props: ILayoutElement) => {
     /* Relations */
     case LAYOUT_TYPE.link:
       return <Link {...(props as ILinkProps)} />
-    case LAYOUT_TYPE.chain:
-      return <Chain {...(props as IChainProps)} />
     /* Maps */
     case LAYOUT_TYPE.map:
       return <Map {...(props as IMapProps)} />
@@ -53,28 +50,23 @@ export const Base = (props: ILayoutElement) => {
  * @returns The value of an attribute. If `value` starts with '!', the value will be looked up from the entry's attributes.
  *          Otherwise, the literal value will be returned.
  */
-export function getValueOrLiteral<T>(data: IDataProps, value?: string | T): T {
-  let val: T = value as unknown as T;
+export function getValueOrLiteral(data: IDataProps, value?: string | AttributeValue | undefined): AttributeValue {
+  let val: AttributeValue = value ?? '';
 
   const defs = data.pkg.metadata.defs;
 
   try {
-    if (typeof value === 'string' && value?.startsWith('!')) {
-      val = data.entry.attributes[value.substring(1) as keyof typeof data.entry.attributes];
+    if (typeof val === 'string' && val?.startsWith('!')) {
+      val = data.entry.attributes[val.substring(1) as keyof typeof data.entry.attributes] ?? '';
     }
   } catch (e: unknown) {
     if (typeof e === 'string') { console.log(e); }
     else if (e instanceof Error) { console.log(e.name, e.message, e.stack); }
-    return e as T;
+    return "" + e;
   }
 
-  if (typeof val === 'string' && val?.startsWith('@')) {
+  if (typeof val === 'string' && val.startsWith('@')) {
     val = defs[val.substring(1) as keyof typeof defs];
-  }
-
-  if (typeof val === 'string' && val?.startsWith('~')) {
-    let link = val.split('|');
-    val = [(link[0] ?? '~').substring(1), link[1] ?? ''] as unknown as T;
   }
 
   return val;

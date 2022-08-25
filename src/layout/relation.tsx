@@ -4,6 +4,7 @@ import { ILayoutElement, ILayoutProps } from '../model/Layout';
 import { getValueOrLiteral } from './base';
 import ICollection from '../model/Collection';
 import IEntry from '../model/Entry';
+import { AttributeValue } from '../model/Attribute';
 import '../styles/collection.scss';
 
 // =============================================================================
@@ -17,12 +18,20 @@ export interface ILinkProps extends ILayoutElement {
   }
 }
 
+export function parseLink(link: AttributeValue): Link {
+  if (typeof link === 'string' && link.startsWith('~') && link.includes('|', 1)) {
+    const splitLink = link.split('|');
+    return [splitLink[0]?.substring(1) ?? '', splitLink[1] ?? ''];
+  }
+  return ['', ''];
+}
+
 export const Link = (props: ILinkProps) => {
   const { layout, data, onLinkClicked } = props;
 
-  const linkInfo: Link = getValueOrLiteral<Link>(data, layout.link);
+  const linkInfo = parseLink(getValueOrLiteral(data, layout.link));
 
-  if (!linkInfo || linkInfo.length < 2 || !onLinkClicked) { return null; }
+  if (!Array.isArray(linkInfo) || linkInfo.length < 2 || !onLinkClicked) { return null; }
 
   const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
@@ -36,27 +45,5 @@ export const Link = (props: ILinkProps) => {
           onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
           className='preview-item' />
       : null
-  );
-}
-
-// =============================================================================
-// | Chain
-// =============================================================================
-export interface IChainProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    previous?: string,
-    next?: string,
-  }
-}
-
-export const Chain = (_props: IChainProps) => {
-  // const { layout, data, onLinkClicked } = props;
-
-  return (
-    <React.Fragment>
-      {/* {layout.previous ? getValueOrLiteral<Link[] | undefined>(data, layout.previous)?.map((link: Link) => <Link key={link[1]} data={data} link={layout.link} onLinkClicked={onLinkClicked} />) : null}
-      <p>(Current Entry)</p>
-      {layout.next ? getValueOrLiteral<Link[] | undefined>(data, layout.next)?.map((link: Link) => <Link key={link[1]} {...link} />) : null} */}
-    </React.Fragment>
   );
 }

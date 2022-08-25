@@ -7,7 +7,6 @@ export const enum LAYOUT_TYPE {
   /* groupings */
   horizontal = 'horizontal',
   vertical = 'vertical',
-  list = 'list',
   /* basic */
   string = 'string',
   number = 'number',
@@ -18,8 +17,6 @@ export const enum LAYOUT_TYPE {
   spritelist = 'spritelist',
   /* relation */
   link = 'link',
-  chain = 'chain',
-  dropTable = 'dropTable',
   /* maps */
   map = 'map',
   /* grids */

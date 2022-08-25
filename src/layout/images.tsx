@@ -14,13 +14,14 @@ export interface ISpriteProps extends ILayoutElement {
 
 export const Sprite = (props: ISpriteProps) => {
   const { layout } = props;
-  let value = getValueOrLiteral<string>(props.data, layout.value);
+  // console.log(layout.value);
+  let value = getValueOrLiteral(props.data, layout.value);
   if (!value) { return null; }
 
   let style = getStyle(props.data, layout.style);
 
   return (
-    <img src={window.path.join(props.data.pkg.metadata.path, value)} style={style} />
+    <img src={window.path.join(props.data.pkg.metadata.path, "" + value)} style={style} />
   );
 }
 
@@ -39,7 +40,7 @@ export const SpriteList = (props: ISpriteListProps) => {
   layout.values.forEach(image => values.push(
     window.path.join(
       props.data.pkg.metadata.path,
-      getValueOrLiteral<string>(props.data, image)
+      "" + getValueOrLiteral(props.data, image)
     )
   ));
 

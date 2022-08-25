@@ -44,39 +44,3 @@ export const Vertical = (props: IVerticalProps) => {
     </div>
   );
 }
-
-// =============================================================================
-// | List
-// =============================================================================
-export interface IListProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    elements: string | ILayoutProps[],
-    processAs: LAYOUT_TYPE,
-  }
-}
-
-export const List = (props: IListProps) => {
-  const { layout, data, onLinkClicked } = props;
-  let style = getStyle(data, layout.style);
-  const elements = getValueOrLiteral<any[]>(data, layout.elements);
-  if (!elements) { return null; }
-
-  switch (layout.processAs) {
-    case LAYOUT_TYPE.string:
-      return (
-        <React.Fragment>
-          {elements.map((element, i) =>
-            <String key={i} layout={{ type: layout.processAs, style: style, value: element }} data={data} />)}
-        </React.Fragment>
-      );
-    case LAYOUT_TYPE.link:
-      return (
-        <React.Fragment>
-          {elements.map((element, i) =>
-            <Link key={i} layout={{ type: layout.processAs, style: style, link: element }} data={data} onLinkClicked={onLinkClicked} />)}
-        </React.Fragment>
-      );
-    default:
-      return null;
-  }
-}
