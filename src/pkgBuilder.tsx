@@ -489,7 +489,7 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
                 {((val as string)?.length > 0 && (val as string).startsWith('@')) &&
                     <React.Fragment>
                         {defs[(val as string).substring(1) as keyof typeof defs] ?
-                            <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
+                            <span style={{ fontStyle: 'italic', color: 'blue', marginLeft: '8px' }}>
                                 {defs[(val as string).substring(1) as keyof typeof defs]}
                             </span> :
                             <span style={{ fontWeight: 'bold', color: 'red', marginLeft: '8px' }}>
@@ -500,8 +500,8 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
                 }
                 {((val as string)?.length > 0 && (val as string).startsWith('~')) &&
                     <React.Fragment>
-                        <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
-                            {`link [${(val as string).substring(1).split('|')[0]} ~ ${(val as string).substring(1).split('|')[1]}]`}
+                        <span style={{ color: 'blue', marginLeft: '8px' }}>
+                            {`▶ ${(val as string).substring(1).split('|')[1]} (${(val as string).substring(1).split('|')[0]})`}
                         </span>
                     </React.Fragment>
                 }
@@ -537,12 +537,22 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
 }
 
 function buildDefsFromString(defString: string): object {
-    return Object.assign({}, ...defString.split('\n').map(val => ({ [val.split(': ')[0] as string]: val.split(': ')[1] as string })))
+    return Object.assign({}, ...defString.split('\n').map(val => {
+        if (val) {
+            return { [val.split(': ')[0] as string]: (val.split(': ')[1] ?? "") as string };
+        } else {
+            return {};
+        }
+    }));
 }
 
 function buildStringFromDefs(defs: object): string {
     let defString = '';
-    Object.keys(defs).forEach(key => defString += `${key}: ${defs[key as keyof typeof defs]}\n`);
+    Object.keys(defs).forEach(key => {
+        if (key) {
+            defString += `${key}: ${defs[key as keyof typeof defs]}\n`
+        }
+    });
     return defString;
 }
 
