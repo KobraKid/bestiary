@@ -1,15 +1,10 @@
 import React, { MouseEvent, useCallback, useMemo, useState } from 'react';
 import * as ReactDOM from 'react-dom';
-import IPackage, { ICollection, IEntry, IPackageMetadata } from './interfaces/IPackage';
-
-const attributeTypes = ['string', 'number', 'boolean'] as const;
-type AttributeType = typeof attributeTypes[number] | Array<AttributeType | typeof attributeTypes[number]>;
-
-type Attribute = [string, AttributeType];
-
-type AttributeValue = [string, any];
-
-type Link = [string, string];
+import IPackage, { IPackageMetadata } from './model/Package';
+import ICollection, { buildCollection, copyCollection } from './model/Collection';
+import IEntry, { buildEntry } from './model/Entry';
+import { buildModel, copyModel, parseImportedDataToDataModel } from './model/Model';
+import { Attribute, AttributeData, AttributeType, attributeTypes, AttributeValue } from './model/Attribute';
 
 const PkgBuilder = () => {
     const [name, setName] = useState<string>('<Name>');
@@ -28,10 +23,11 @@ const PkgBuilder = () => {
     const onNewCollectionCallback = (e: MouseEvent) => {
         e.preventDefault();
 
-        setModels(models => models.concat([[["name", 'string']]]));
+        setModels(models => models.concat(buildModel()));
 
         setCollections(collections => {
             let name = newCollectionName.trim();
+
             if (name.length < 1) {
                 setErrorMessage(`Invalid collection name`);
                 return collections;
@@ -40,13 +36,9 @@ const PkgBuilder = () => {
                 setErrorMessage(`Collection '${name}' already exists`);
                 return collections;
             }
+
             setErrorMessage('');
-            return collections.concat({
-                name: name,
-                layout: {},
-                layoutPreview: {},
-                data: []
-            });
+            return collections.concat(buildCollection(name));
         });
     };
 
@@ -54,6 +46,16 @@ const PkgBuilder = () => {
     const updateCollectionName = useCallback((collectionIndex: number, update: string) => {
         setCollections(collections => {
             let updatedCollections: ICollection[] = collections.map(collection => copyCollection(collection));
+            let name = newCollectionName.trim();
+
+            if (name.length < 1) {
+                setErrorMessage(`Invalid collection name`);
+                return collections;
+            }
+            else if (collections.find(collection => collection.name === name)) {
+                setErrorMessage(`Collection '${name}' already exists`);
+                return collections;
+            }
 
             if (collectionIndex >= 0 && collectionIndex < updatedCollections.length) {
                 let collectionToUpdate = updatedCollections[collectionIndex];
@@ -69,12 +71,17 @@ const PkgBuilder = () => {
     /* Update an entry ID */
     const updateCollectionDataEntryId = useCallback((collectionIndex: number, entryIndex: number, model: Attribute[], update: string) => {
         setCollections(collections => {
-            let id = update.trim();
             let updatedCollections: ICollection[] = collections.map(collection => copyCollection(collection));
+            let id = update.trim();
 
             if (collectionIndex >= 0 && collectionIndex < updatedCollections.length) {
                 let collectionToUpdate = updatedCollections[collectionIndex];
                 if (collectionToUpdate) {
+                    if (collectionToUpdate.data.find(entry => entry.id === id)) {
+                        setErrorMessage(`An entry with id ${id} already exists`);
+                        return collections;
+                    }
+
                     if (entryIndex >= 0 && entryIndex < collectionToUpdate.data.length) {
                         let entryToUpdate = collectionToUpdate.data[entryIndex];
                         if (entryToUpdate) {
@@ -92,7 +99,7 @@ const PkgBuilder = () => {
     }, []);
 
     /* Update an entry attribute */
-    const updateCollectionDataEntryAttributeValue = useCallback((collectionIndex: number, entryIndex: number, update: AttributeValue) => {
+    const updateCollectionDataEntryAttribute = useCallback((collectionIndex: number, entryIndex: number, update: AttributeData) => {
         setCollections(collections => {
             let updatedCollections: ICollection[] = collections.map(collection => copyCollection(collection));
 
@@ -104,7 +111,7 @@ const PkgBuilder = () => {
                         if (entryToUpdate) {
                             entryToUpdate.attributes = {
                                 ...entryToUpdate.attributes,
-                                [update[0]]: update[1]
+                                ...update
                             };
                         }
                     }
@@ -119,7 +126,6 @@ const PkgBuilder = () => {
     const updateModel = useCallback((collectionIndex: number, attributeIndex: number, update: Attribute) => {
         setModels(models => {
             let updatedModels: Attribute[][] = models.map(model => copyModel(model));
-            let error = '';
 
             if (collectionIndex >= 0 && collectionIndex < updatedModels.length) {
                 let modelToUpdate = updatedModels[collectionIndex];
@@ -133,23 +139,23 @@ const PkgBuilder = () => {
                         if (!modelToUpdate.find(attr => attr[0] === update[0])) {
                             modelToUpdate.push(update);
                         } else {
-                            error = `Attribute '${update[0]}' already exists`;
+                            setErrorMessage(`Attribute '${update[0]}' already exists`);
+                            return models;
                         }
                     }
 
                     setCollections(collections => {
-                        let updatedCollections = collections.map(collection => copyCollection(collection));
-
-                        if (collectionIndex >= 0 && collectionIndex < updatedCollections.length) {
+                        if (collectionIndex >= 0 && collectionIndex < collections.length) {
+                            let updatedCollections = collections.map(collection => copyCollection(collection));
                             updatedCollections[collectionIndex] = updateCollectionOnModelChange(updatedCollections[collectionIndex]!, modelToUpdate!);
+                            return updatedCollections;
                         }
-
-                        return updatedCollections;
+                        return collections;
                     });
                 }
             }
 
-            setErrorMessage(error);
+            setErrorMessage('');
             return updatedModels;
         });
     }, []);
@@ -244,7 +250,7 @@ const PkgBuilder = () => {
                 collection={collections[displayedCollection]}
                 updateCollectionName={(name: string) => updateCollectionName(displayedCollection, name)}
                 updateCollectionDataEntryId={(entryIndex: number, update: string) => updateCollectionDataEntryId(displayedCollection, entryIndex, models[displayedCollection]!, update)}
-                updateCollectionDataEntryAttributeValue={(entryIndex: number, update: AttributeValue) => updateCollectionDataEntryAttributeValue(displayedCollection, entryIndex, update)}
+                updateCollectionDataEntryAttribute={(entryIndex: number, update: AttributeData) => updateCollectionDataEntryAttribute(displayedCollection, entryIndex, update)}
                 model={models[displayedCollection]}
                 updateModel={(attributeIndex: number, update: Attribute) => updateModel(displayedCollection, attributeIndex, update)}
                 defs={defs} />
@@ -289,7 +295,7 @@ interface ICollectionDisplayProps {
     collection?: ICollection | null | undefined,
     updateCollectionName: (name: string) => void,
     updateCollectionDataEntryId: (entryIndex: number, update: string) => void,
-    updateCollectionDataEntryAttributeValue: (entryIndex: number, update: AttributeValue) => void,
+    updateCollectionDataEntryAttribute: (entryIndex: number, update: AttributeData) => void,
     model?: Attribute[] | null | undefined,
     updateModel: (attributeIndex: number, update: Attribute) => void,
     defs: object
@@ -300,7 +306,7 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
         collection,
         updateCollectionName,
         updateCollectionDataEntryId,
-        updateCollectionDataEntryAttributeValue,
+        updateCollectionDataEntryAttribute,
         model,
         updateModel,
         defs
@@ -375,7 +381,7 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
                             entry={collection.data[displayedEntry]}
                             model={model}
                             updateEntryId={(update: string) => updateCollectionDataEntryId(displayedEntry, update)}
-                            updateAttributeValue={(update: AttributeValue) => updateCollectionDataEntryAttributeValue(displayedEntry, update)}
+                            updateAttribute={(update: AttributeData) => updateCollectionDataEntryAttribute(displayedEntry, update)}
                             defs={defs} />
                     </React.Fragment>
                     : null
@@ -396,20 +402,28 @@ const AttributeDisplay = (props: IAttributeDisplayProps) => {
     return (
         <React.Fragment>
             {(attr === 'string' || attr === 'number' || attr === 'boolean') ?
-                <select value={attr} onChange={e => updateAttribute(e.target.value as AttributeType)}>
+                <select value={attr} onChange={e => updateAttribute((e.target.value === 'array') ? [] : e.target.value as AttributeType)}>
                     {attributeTypes.map((attr, i) => <option key={i} value={attr}>{attr.toLowerCase()}</option>)}
-                    <option value={[]}>array</option>
+                    <option value={'array'}>array</option>
                 </select> :
-                (attr as AttributeType[]).map((attrType, i) =>
-                    <React.Fragment>
-                        <AttributeDisplay key={i} attr={attrType} updateAttribute={update => {
-                            let newAttribute: AttributeType[] = Object.assign([], attr);
-                            newAttribute[i] = update;
-                            updateAttribute(newAttribute);
-                        }} />
-                        <br />
-                    </React.Fragment>
-                )
+                <React.Fragment>
+                    <select value={'array'} onChange={e => updateAttribute((e.target.value === 'array') ? [] : e.target.value as AttributeType)}>
+                        {attributeTypes.map((attr, i) => <option key={i} value={attr}>{attr.toLowerCase()}</option>)}
+                        <option value={'array'}>array</option>
+                    </select>
+                    <button onClick={() => updateAttribute(attr.concat('string'))}>+</button>
+                    <button onClick={() => updateAttribute(attr.slice(0, (attr.length > 0 ? attr.length - 1 : 0)))}>-</button>
+                    <br />
+                    {(attr as AttributeType[]).map((attrType, i) =>
+                        <div key={i} style={{ marginLeft: '8px' }}>
+                            <AttributeDisplay attr={attrType} updateAttribute={update => {
+                                let newAttribute: AttributeType[] = Object.assign([], attr);
+                                newAttribute[i] = update;
+                                updateAttribute(newAttribute);
+                            }} />
+                        </div>
+                    )}
+                </React.Fragment>
             }
         </React.Fragment>
     );
@@ -420,11 +434,11 @@ interface IEntryDisplayProps {
     model: Attribute[],
     defs: object,
     updateEntryId: (id: string) => void,
-    updateAttributeValue: (update: AttributeValue) => void
+    updateAttribute: (update: AttributeData) => void
 }
 
 const EntryDisplay = (props: IEntryDisplayProps) => {
-    const { entry, model, defs, updateEntryId, updateAttributeValue } = props;
+    const { entry, model, defs, updateEntryId, updateAttribute } = props;
 
     if (!entry) { return null; }
 
@@ -447,9 +461,9 @@ const EntryDisplay = (props: IEntryDisplayProps) => {
                         <td>
                             <AttributeValueDisplay
                                 attr={model[i]![1]}
-                                val={entry.attributes[key as keyof typeof entry.attributes]}
+                                val={entry.attributes[key as keyof typeof entry.attributes]!}
                                 defs={defs}
-                                updateAttributeValue={(update: any) => updateAttributeValue([key, update])} />
+                                updateAttributeValue={(update: AttributeValue) => updateAttribute({ [key]: update })} />
                         </td>
                     </tr>
                 )}
@@ -460,9 +474,9 @@ const EntryDisplay = (props: IEntryDisplayProps) => {
 
 interface IAttributeValueDisplayProps {
     attr: AttributeType,
-    val: any,
+    val: AttributeValue,
     defs: object,
-    updateAttributeValue: (update: any) => void
+    updateAttributeValue: (update: AttributeValue) => void
 }
 
 const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
@@ -471,8 +485,8 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
     if (attr === 'string') {
         return (
             <React.Fragment>
-                <input type='text' value={val} onChange={e => updateAttributeValue(e.target.value)} />
-                {(val as string).startsWith('@') &&
+                <input type='text' value={val as string} onChange={e => updateAttributeValue(e.target.value)} />
+                {((val as string)?.length > 0 && (val as string).startsWith('@')) &&
                     <React.Fragment>
                         {defs[(val as string).substring(1) as keyof typeof defs] ?
                             <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
@@ -484,7 +498,7 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
                         }
                     </React.Fragment>
                 }
-                {(val as string).startsWith('~') &&
+                {((val as string)?.length > 0 && (val as string).startsWith('~')) &&
                     <React.Fragment>
                         <span style={{ fontStyle: 'italic', color: 'green', marginLeft: '8px' }}>
                             {`link [${(val as string).substring(1).split('|')[0]} ~ ${(val as string).substring(1).split('|')[1]}]`}
@@ -495,10 +509,10 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
         );
     }
     else if (attr === 'number') {
-        return <input type='number' value={val} onChange={e => updateAttributeValue(e.target.value)} />;
+        return <input type='number' value={val as number} onChange={e => updateAttributeValue(e.target.value)} />;
     }
     else if (attr === 'boolean') {
-        return <input type='checkbox' checked={val} onChange={e => updateAttributeValue(e.target.checked)} />;
+        return <input type='checkbox' checked={val as boolean} onChange={e => updateAttributeValue(e.target.checked)} />;
     }
     else {
         return (
@@ -507,10 +521,10 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
                     <React.Fragment key={i}>
                         <AttributeValueDisplay
                             attr={attr}
-                            val={val[i]}
+                            val={(val as AttributeValue[])[i]!}
                             defs={defs}
                             updateAttributeValue={update => {
-                                let newAttrVal = Object.assign([], val);
+                                let newAttrVal: AttributeValue[] = Object.assign([], val);
                                 newAttrVal[i] = update;
                                 updateAttributeValue(newAttrVal);
                             }} />
@@ -520,29 +534,6 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
             </React.Fragment>
         );
     }
-}
-
-function copyEntry(entry: IEntry): IEntry {
-    let copiedEntry: IEntry = {
-        id: entry.id,
-        attributes: { ...entry.attributes }
-    };
-    return copiedEntry;
-}
-
-function copyCollection(collection: ICollection): ICollection {
-    let copiedCollection: ICollection = {
-        name: collection.name,
-        layout: Object.assign({}, collection.layout),
-        layoutPreview: Object.assign({}, collection.layoutPreview),
-        data: collection.data.map(entry => copyEntry(entry))
-    };
-    return copiedCollection;
-}
-
-function copyModel(model: Attribute[]): Attribute[] {
-    let copiedModel: Attribute[] = Object.assign([], model);
-    return copiedModel;
 }
 
 function buildDefsFromString(defString: string): object {
@@ -556,124 +547,62 @@ function buildStringFromDefs(defs: object): string {
 }
 
 function buildEntryFromModel(id: string, model: Attribute[]): IEntry {
-    let entry: IEntry = {
-        id: id,
-        attributes: {}
-    }
+    let entry = buildEntry(id);
     model.forEach(attribute => {
-        switch (attribute[1]) {
-            case 'string':
-                entry.attributes = {
-                    ...entry.attributes,
-                    [attribute[0]]: ''
-                };
-                break;
-            case 'number':
-                entry.attributes = {
-                    ...entry.attributes,
-                    [attribute[0]]: 0
-                };
-                break;
-            case 'boolean':
-                entry.attributes = {
-                    ...entry.attributes,
-                    [attribute[0]]: false
-                };
-                break;
-            default:
-                console.log('Array type:', attribute[1], '' + attribute[1]);
-                entry.attributes = {
-                    ...entry.attributes,
-                    [attribute[0]]: ['', '']
-                }
-        }
+        entry.attributes[attribute[0]] = buildAttributeValue(attribute[1]);
     });
     return entry;
+}
+
+function buildAttributeValue(type: AttributeType): AttributeValue {
+    switch (type) {
+        case 'string':
+            return '';
+        case 'number':
+            return 0;
+        case 'boolean':
+            return false;
+        default:
+            return type.map(type => buildAttributeValue(type));
+    }
 }
 
 function updateCollectionOnModelChange(collection: ICollection, model: Attribute[]): ICollection {
     let updatedCollection = copyCollection(collection);
 
-    updatedCollection.data = updatedCollection.data.map(entry => updateEntryAttributesOnModelChange(entry, model));
+    updatedCollection.data = updatedCollection.data.map(entry => updateEntryOnModelChange(entry, model));
 
     return updatedCollection;
 }
 
-function updateEntryAttributesOnModelChange(entry: IEntry, model: Attribute[]): IEntry {
-    let updatedEntry: IEntry = {
-        id: entry.id,
-        attributes: {}
-    };
+function updateEntryOnModelChange(entry: IEntry, model: Attribute[]): IEntry {
+    let updatedEntry = buildEntry(entry.id);
 
     model.forEach(attr => {
         let key = Object.keys(entry.attributes).find(key => key === attr[0]);
-        let val = entry.attributes[key as keyof typeof entry.attributes] as any;
-        switch (attr[1]) {
-            case 'string':
-                if (typeof val !== 'string') {
-                    val = (val ? '' + val : '');
-                }
-                break;
-            case 'number':
-                if (typeof val !== 'number') {
-                    val = isNaN(+val) ? 0 : +val;
-                }
-                break;
-            case 'boolean':
-                if (typeof val !== 'boolean') {
-                    val = !!val;
-                }
-                break;
-            default:
-                console.log('Array type:', attr[1], '' + attr[1]);
-                val = [];
-                break;
-        }
-        updatedEntry.attributes = {
-            ...updatedEntry.attributes,
-            [attr[0]]: val
-        };
+        let val = key ? entry.attributes[key] as AttributeValue : '';
+        updatedEntry.attributes[attr[0]] = updateAttributeValue(attr[1], val);
     });
 
     return updatedEntry;
 }
 
-function parseImportedDataToDataModel(data: IEntry[]): Attribute[] {
-    let model: Attribute[] = [];
-    data.forEach(entry => {
-        let attributes = entry.attributes;
-        Object.keys(attributes).forEach(key => {
-            if (model.find(attr => attr[0] === key)) { return; } // This attribute already exists on the model
-
-            let val = attributes![key as keyof typeof attributes] as any;
-            let attributeType = parseImportedAttributeToDataModel(val);
-            if (Array.isArray(attributeType) && attributeType.length < 1) {
-                console.log(`Couldn't parse ${key}`);
+function updateAttributeValue(type: AttributeType, val: AttributeValue | null | undefined): AttributeValue {
+    switch (type) {
+        case 'string':
+            if (val) {
+                return '' + val;
             }
-            else {
-                model.push([key, attributeType]);
+            return '';
+        case 'number':
+            if (val && !isNaN(+val)) {
+                return +val;
             }
-        });
-    });
-    console.log(model);
-    return model;
-}
-
-function parseImportedAttributeToDataModel(val: any): AttributeType {
-    if (typeof val === 'string') {
-        return 'string';
-    }
-    else if (typeof val === 'number') {
-        return 'number';
-    }
-    else if (typeof val === 'boolean') {
-        return 'boolean';
-    }
-    else if (Array.isArray(val)) {
-        return val.map(arrayVal => parseImportedAttributeToDataModel(arrayVal));
-    }
-    else {
-        return [];
+            return 0;
+        case 'boolean':
+            return !!val;
+        default:
+            return type.map((type, i) => updateAttributeValue(type, Array.isArray(val) ? val[i] : null));
     }
 }
 

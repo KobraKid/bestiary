@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ILayoutElement, ILayoutProps } from '../interfaces/IEntry';
+import { ILayoutElement, ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
 import '../styles/images.scss';
 

@@ -1,4 +1,4 @@
-import IPackage, { IPackageMetadata } from './interfaces/IPackage';
+import IPackage, { IPackageMetadata } from './model/Package';
 
 export interface IElectronAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,

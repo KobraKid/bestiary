@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import IPackage, { ICollection, IPackageMetadata } from './interfaces/IPackage';
+import IPackage, { IPackageMetadata } from './model/Package';
+import ICollection from './model/Collection';
 import './styles/menu.scss';
 import upArrow from './assets/icons/up.png';
 import downArrow from './assets/icons/down.png';

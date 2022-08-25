@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
+import React from 'react';
+import IPackage from './model/Package';
+import ICollection from './model/Collection';
+import IEntry from './model/Entry';
 import { Entry } from './entry';
 
 /**

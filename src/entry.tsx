@@ -1,5 +1,7 @@
 import React from 'react';
-import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
+import IPackage from './model/Package';
+import ICollection from './model/Collection';
+import IEntry from './model/Entry';
 import { Base } from './layout/base';
 import './styles/collection.scss';
 

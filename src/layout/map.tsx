@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState, WheelEvent } from 'react';
 import ScrollContainer from 'react-indiana-drag-scroll';
-import { IDataProps, ILayoutElement, ILayoutProps, ILinkableProps } from '../interfaces/IEntry';
-import { ICollection, IEntry } from '../interfaces/IPackage';
+import { IDataProps, ILayoutElement, ILayoutProps, ILinkableProps } from '../model/Layout';
 import { getValueOrLiteral } from './base';
+import ICollection from '../model/Collection';
+import IEntry from '../model/Entry';
 import '../styles/collection.scss';
 
 // =============================================================================

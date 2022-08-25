@@ -1,5 +1,7 @@
 import React from 'react';
-import IPackage, { ICollection, IEntry } from './IPackage';
+import IPackage from './Package';
+import ICollection from './Collection';
+import IEntry from './Entry';
 
 export const enum LAYOUT_TYPE {
   /* groupings */
@@ -35,7 +37,7 @@ export interface ILayoutProps {
   style?: React.CSSProperties,
 }
 
-export interface IDataProps  {
+export interface IDataProps {
   /**
    * The selected package
    */

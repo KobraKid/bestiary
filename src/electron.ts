@@ -3,7 +3,7 @@ import path from 'path';
 import { readFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
 import envPaths from 'env-paths';
-import IPackage, { IPackageMetadata } from './interfaces/IPackage';
+import IPackage, { IPackageMetadata } from './model/Package';
 import chalk from 'chalk';
 
 /**

@@ -1,5 +1,7 @@
 import React from 'react';
-import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
+import IPackage from './model/Package';
+import ICollection from './model/Collection';
+import IEntry from './model/Entry';
 import { Entry } from './entry';
 import './styles/details.scss';
 import leftArrow from './assets/icons/left.png';

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Entry } from '../entry';
-import { ILayoutElement, ILayoutProps } from '../interfaces/IEntry';
-import { ICollection, IEntry } from '../interfaces/IPackage';
-import '../styles/collection.scss';
+import { ILayoutElement, ILayoutProps } from '../model/Layout';
 import { getValueOrLiteral } from './base';
+import ICollection from '../model/Collection';
+import IEntry from '../model/Entry';
+import '../styles/collection.scss';
 
 // =============================================================================
 // | Link

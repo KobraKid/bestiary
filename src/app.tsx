@@ -4,11 +4,13 @@ import { CSSTransition } from 'react-transition-group';
 import { CollectionMenu, PackageMenu } from './menu';
 import { Collection } from './collection';
 import { Details } from './details';
-import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
+import IPackage from './model/Package';
+import ICollection from './model/Collection';
+import IEntry from './model/Entry';
+import { LAYOUT_TYPE } from './model/Layout';
+import { MapView } from './mapView';
 import './styles/app.scss';
 import './styles/transitions.scss';
-import { LAYOUT_TYPE } from './interfaces/IEntry';
-import { MapView } from './mapView';
 
 /**
  * Display mode

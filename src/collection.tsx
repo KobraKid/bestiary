@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import IPackage, { ICollection, IEntry } from './interfaces/IPackage';
+import IPackage from './model/Package';
+import ICollection from './model/Collection';
+import IEntry from './model/Entry';
 import { Entry } from './entry';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './styles/transitions.scss';

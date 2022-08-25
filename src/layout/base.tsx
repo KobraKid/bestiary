@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { IDataProps, ILayoutElement, LAYOUT_TYPE } from '../interfaces/IEntry';
+import { IDataProps, ILayoutElement, LAYOUT_TYPE } from '../model/Layout';
 import { Horizontal, IHorizontalProps, Vertical, IVerticalProps, IListProps, List } from './groupings';
 import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps, Number, INumberProps } from './basic';
 import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';

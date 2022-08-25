@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ILayoutElement, ILayoutProps, LAYOUT_TYPE } from '../interfaces/IEntry';
+import { ILayoutElement, ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
 import { Base, getStyle, getValueOrLiteral } from './base';
 import { Link } from './relation';
 import { String } from './basic';

@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import path = require('path');
-import IPackage, { IPackageMetadata } from './interfaces/IPackage';
+import IPackage, { IPackageMetadata } from './model/Package';
 import chalk from 'chalk';
 
 contextBridge.exposeInMainWorld('electronAPI', {
