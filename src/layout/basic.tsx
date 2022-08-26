@@ -5,11 +5,13 @@ import { getStyle, getValueOrLiteral } from './base';
 // =============================================================================
 // | String
 // =============================================================================
+export interface IStringLayoutProps extends ILayoutProps {
+  label?: string,
+  value: string,
+}
+
 export interface IStringProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    label?: string,
-    value: string,
-  }
+  layout: IStringLayoutProps
 }
 
 export const String = (props: IStringProps) => {
@@ -28,11 +30,13 @@ export const String = (props: IStringProps) => {
 // =============================================================================
 // | Number
 // =============================================================================
+export interface INumberLayoutProps extends ILayoutProps {
+  label?: string,
+  value: string | number
+}
+
 export interface INumberProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    label?: string,
-    value: number,
-  }
+  layout: INumberLayoutProps
 }
 
 export const Number = (props: INumberProps) => {
@@ -51,12 +55,14 @@ export const Number = (props: INumberProps) => {
 // =============================================================================
 // | Ratio
 // =============================================================================
+export interface IRatioLayoutProps extends ILayoutProps {
+  a: string | number,
+  b: string | number,
+  showAsPercent?: string | boolean
+}
+
 export interface IRatioProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    a: number,
-    b: number,
-    showAsPercent?: boolean,
-  }
+  layout: IRatioLayoutProps
 }
 
 export const Ratio = (props: IRatioProps) => {
@@ -77,11 +83,13 @@ export const Ratio = (props: IRatioProps) => {
 // =============================================================================
 // | Percent
 // =============================================================================
+export interface IPercentLayoutProps extends ILayoutProps {
+  label?: string,
+  value: string | number
+}
+
 export interface IPercentProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    label?: string,
-    value: number,
-  }
+  layout: IPercentLayoutProps
 }
 
 export const Percent = (props: IPercentProps) => {
@@ -100,12 +108,14 @@ export const Percent = (props: IPercentProps) => {
 // =============================================================================
 // | Range
 // =============================================================================
+export interface IRangeLayoutProps extends ILayoutProps {
+  label?: string,
+  min: string | number,
+  max: string | number
+}
+
 export interface IRangeProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    label?: string,
-    min: number,
-    max: number,
-  }
+  layout: IRangeLayoutProps
 }
 
 export const Range = (props: IRangeProps) => {

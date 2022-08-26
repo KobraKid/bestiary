@@ -12,10 +12,12 @@ import '../styles/collection.scss';
 // =============================================================================
 type Link = [string, string];
 
+export interface ILinkLayoutProps extends ILayoutProps {
+  link: string
+}
+
 export interface ILinkProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    link: string,
-  }
+  layout: ILinkLayoutProps
 }
 
 export function parseLink(link: AttributeValue): Link {
@@ -38,12 +40,12 @@ export const Link = (props: ILinkProps) => {
 
   return (
     (linkedCollection && linkedEntry) ?
-        <Entry
-          data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
-          isPreview
-          onLinkClicked={onLinkClicked}
-          onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
-          className='preview-item' />
+      <Entry
+        data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
+        isPreview
+        onLinkClicked={onLinkClicked}
+        onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
+        className='preview-item' />
       : null
   );
 }

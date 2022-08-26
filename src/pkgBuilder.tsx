@@ -5,12 +5,19 @@ import ICollection, { buildCollection, copyCollection } from './model/Collection
 import IEntry, { buildEntry } from './model/Entry';
 import { buildModel, copyModel, parseImportedDataToDataModel } from './model/Model';
 import { Attribute, AttributeData, AttributeType, attributeTypes, AttributeValue } from './model/Attribute';
+import { copyLayoutProps, ILayoutProps, LAYOUT_TYPE } from './model/Layout';
+import { IHorizontalLayoutProps, IVerticalLayoutProps } from './layout/groupings';
+import { INumberLayoutProps, IPercentLayoutProps, IRatioLayoutProps, IStringLayoutProps } from './layout/basic';
+import { ISpriteListLayoutProps, ISpriteLayoutProps } from './layout/images';
+import { ILinkLayoutProps, parseLink } from './layout/relation';
+import { IGridLayoutProps } from './layout/grid';
 
 const PkgBuilder = () => {
     const [name, setName] = useState<string>('<Name>');
     const [icon, setIcon] = useState<string>('<Icon>');
     const [color, setColor] = useState<string>('#000000');
     const [defs, setDefs] = useState<object>({});
+    const [defString, setDefString] = useState<string>('');
 
     const [collections, setCollections] = useState<ICollection[]>([]);
     const [displayedCollection, setDisplayedCollection] = useState<number>(0);
@@ -45,7 +52,7 @@ const PkgBuilder = () => {
     /* Update a collection name */
     const updateCollectionName = useCallback((collectionIndex: number, update: string) => {
         setCollections(collections => {
-            let updatedCollections: ICollection[] = collections.map(collection => copyCollection(collection));
+            let updatedCollections = collections.map(collection => copyCollection(collection));
             let name = newCollectionName.trim();
 
             if (name.length < 1) {
@@ -122,6 +129,36 @@ const PkgBuilder = () => {
         });
     }, []);
 
+    const updateCollectionLayoutPreview = useCallback((collectionIndex: number, update: ILayoutProps) => {
+        setCollections(collections => {
+            let updatedCollections = collections.map(collection => copyCollection(collection));
+
+            if (collectionIndex >= 0 && collectionIndex < updatedCollections.length) {
+                let collectionToUpdate = updatedCollections[collectionIndex];
+                if (collectionToUpdate) {
+                    collectionToUpdate.layoutPreview = update;
+                }
+            }
+
+            return updatedCollections;
+        });
+    }, []);
+
+    const updateCollectionLayout = useCallback((collectionIndex: number, update: ILayoutProps) => {
+        setCollections(collections => {
+            let updatedCollections = collections.map(collection => copyCollection(collection));
+
+            if (collectionIndex >= 0 && collectionIndex < updatedCollections.length) {
+                let collectionToUpdate = updatedCollections[collectionIndex];
+                if (collectionToUpdate) {
+                    collectionToUpdate.layout = update;
+                }
+            }
+
+            return updatedCollections;
+        });
+    }, []);
+
     /* Update a data model */
     const updateModel = useCallback((collectionIndex: number, attributeIndex: number, update: Attribute) => {
         setModels(models => {
@@ -160,6 +197,7 @@ const PkgBuilder = () => {
         });
     }, []);
 
+    /* Import an existing package */
     const importPkg = useCallback((importedPkg: File) => {
         importedPkg.text().then(data => window.electronAPI.parsePackage(data).then((pkg: IPackage | null) => {
             if (pkg) {
@@ -167,6 +205,7 @@ const PkgBuilder = () => {
                 setIcon(pkg.metadata.icon);
                 setColor(pkg.metadata.color);
                 setDefs(pkg.metadata.defs);
+                setDefString(buildStringFromDefs(pkg.metadata.defs));
                 setModels(pkg.collections.map(collection => parseImportedDataToDataModel(collection.data)));
                 setCollections(pkg.collections);
             }
@@ -220,7 +259,14 @@ const PkgBuilder = () => {
                             </label>
                         </td>
                         <td>
-                            <textarea rows={8} cols={80} value={buildStringFromDefs(defs)} onChange={e => setDefs(buildDefsFromString(e.target.value))} />
+                            <textarea
+                                rows={8}
+                                cols={80}
+                                value={defString}
+                                onChange={e => {
+                                    setDefString(e.target.value);
+                                    setDefs(buildDefsFromString(e.target.value));
+                                }} />
                         </td>
                     </tr>
                 </tbody>
@@ -251,6 +297,8 @@ const PkgBuilder = () => {
                 updateCollectionName={(name: string) => updateCollectionName(displayedCollection, name)}
                 updateCollectionDataEntryId={(entryIndex: number, update: string) => updateCollectionDataEntryId(displayedCollection, entryIndex, models[displayedCollection]!, update)}
                 updateCollectionDataEntryAttribute={(entryIndex: number, update: AttributeData) => updateCollectionDataEntryAttribute(displayedCollection, entryIndex, update)}
+                updateCollectionLayoutPreview={(update: ILayoutProps) => updateCollectionLayoutPreview(displayedCollection, update)}
+                updateCollectionLayout={(update: ILayoutProps) => updateCollectionLayout(displayedCollection, update)}
                 model={models[displayedCollection]}
                 updateModel={(attributeIndex: number, update: Attribute) => updateModel(displayedCollection, attributeIndex, update)}
                 defs={defs} />
@@ -296,6 +344,8 @@ interface ICollectionDisplayProps {
     updateCollectionName: (name: string) => void,
     updateCollectionDataEntryId: (entryIndex: number, update: string) => void,
     updateCollectionDataEntryAttribute: (entryIndex: number, update: AttributeData) => void,
+    updateCollectionLayout: (update: ILayoutProps) => void,
+    updateCollectionLayoutPreview: (update: ILayoutProps) => void,
     model?: Attribute[] | null | undefined,
     updateModel: (attributeIndex: number, update: Attribute) => void,
     defs: object
@@ -307,6 +357,8 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
         updateCollectionName,
         updateCollectionDataEntryId,
         updateCollectionDataEntryAttribute,
+        updateCollectionLayout,
+        updateCollectionLayoutPreview,
         model,
         updateModel,
         defs
@@ -329,13 +381,17 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
             <div style={{ height: '460px', overflow: 'auto' }}>
                 {tab === 0 ?
                     <React.Fragment>
-                        <span>Layout preview: {JSON.stringify(collection.layoutPreview, null, '\t')}</span>
+                        <span>Layout preview:</span>
+                        <br />
+                        <LayoutDisplay {...collection.layoutPreview} updateLayout={updateCollectionLayoutPreview} />
                     </React.Fragment>
                     : null
                 }
                 {tab === 1 ?
                     <React.Fragment>
-                        <span>Layout: {JSON.stringify(collection.layout, null, '\t')}</span>
+                        <span>Layout:</span>
+                        <br />
+                        <LayoutDisplay {...collection.layout} updateLayout={updateCollectionLayout} />
                     </React.Fragment>
                     : null
                 }
@@ -389,6 +445,286 @@ const CollectionDisplay = (props: ICollectionDisplayProps) => {
             </div>
         </div>
     );
+}
+
+interface ILayoutDisplayProps extends ILayoutProps {
+    updateLayout: (update: ILayoutProps) => void
+}
+
+const LayoutDisplay = (props: ILayoutDisplayProps) => {
+    const { type, style, updateLayout } = props;
+
+    let placeholder = ' or @def or !attribute';
+
+    let typeSelect = (
+        <select value={type} onChange={() => { }}>
+            {Object.keys(LAYOUT_TYPE).map(key => <option key={key} value={key}>{key}</option>)}
+        </select>
+    )
+
+    switch (type) {
+        case LAYOUT_TYPE.string:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        type='text'
+                        value={(props as unknown as IStringLayoutProps).label ?? ''}
+                        placeholder={'label' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IStringLayoutProps);
+                            update.label = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <input
+                        type='text'
+                        value={(props as unknown as IStringLayoutProps).value ?? ''}
+                        placeholder={'value' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IStringLayoutProps);
+                            update.value = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <span>
+                        {(props as unknown as IStringLayoutProps).label ? (props as unknown as IStringLayoutProps).label + ': ' : ''}
+                        {(props as unknown as IStringLayoutProps).value}
+                    </span>
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.number:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        type='text'
+                        value={(props as unknown as INumberLayoutProps).label ?? ''}
+                        placeholder={'label' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as INumberLayoutProps);
+                            update.label = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <input
+                        type='text'
+                        value={(props as unknown as INumberLayoutProps).value ?? ''}
+                        placeholder={'value' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as INumberLayoutProps);
+                            update.value = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <span>
+                        {(props as unknown as INumberLayoutProps).label ? (props as unknown as INumberLayoutProps).label + ': ' : ''}
+                        {(props as unknown as INumberLayoutProps).value}
+                    </span>
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.ratio:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        type='text'
+                        value={(props as unknown as IRatioLayoutProps).a ?? ''}
+                        placeholder={'A' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IRatioLayoutProps);
+                            update.a = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <input
+                        type='text'
+                        value={(props as unknown as IRatioLayoutProps).b ?? ''}
+                        placeholder={'B' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IRatioLayoutProps);
+                            update.b = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <input
+                        type='text'
+                        value={'' + (props as unknown as IRatioLayoutProps).showAsPercent}
+                        placeholder={'show as percent' + placeholder}
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IRatioLayoutProps);
+                            update.showAsPercent = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <span>
+                        {(props as unknown as IRatioLayoutProps).a} : {(props as unknown as IRatioLayoutProps).b}
+                        {(props as unknown as IRatioLayoutProps).showAsPercent ? '(%)' : ''}
+                    </span>
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.percent:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        type='text'
+                        value={(props as unknown as IPercentLayoutProps).label ?? ''}
+                        placeholder='label or @def'
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IPercentLayoutProps);
+                            update.label = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <input
+                        type='text'
+                        value={(props as unknown as IPercentLayoutProps).value ?? ''}
+                        placeholder='value or @def or !attribute'
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IPercentLayoutProps);
+                            update.value = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <span>
+                        {(props as unknown as IPercentLayoutProps).label ? (props as unknown as IPercentLayoutProps).label + ': ' : ''}
+                        {(props as unknown as IPercentLayoutProps).value}
+                    </span>
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.sprite:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        type='text'
+                        value={(props as unknown as ISpriteLayoutProps).value ?? ''}
+                        placeholder='value or @def or !attribute'
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as ISpriteLayoutProps);
+                            update.value = e.target.value;
+                            updateLayout(update);
+                        }} />
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.spritelist:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <button onClick={() => {
+                        let update = copyLayoutProps(props as unknown as ISpriteListLayoutProps);
+                        update.values.push('');
+                        updateLayout(update);
+                    }}>+</button>
+                    <button onClick={() => {
+                        let update = copyLayoutProps(props as unknown as ISpriteListLayoutProps);
+                        update.values.pop();
+                        updateLayout(update);
+                    }}>-</button>
+                    <div style={{ marginLeft: '8px' }}>
+                        {(props as unknown as ISpriteListLayoutProps).values.map((value, i) =>
+                            <React.Fragment>
+                                <input
+                                    key={i}
+                                    value={value ?? ''}
+                                    placeholder='value or @def or !attribute'
+                                    onChange={e => {
+                                        let update = copyLayoutProps(props as unknown as ISpriteListLayoutProps);
+                                        update.values[i] = e.target.value;
+                                        updateLayout(update);
+                                    }} />
+                                <br />
+                            </React.Fragment>
+                        )}
+                    </div>
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.link:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        value={(props as unknown as ILinkLayoutProps).link ?? ''}
+                        placeholder='link or @def or !attribute'
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as ILinkLayoutProps);
+                            update.link = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    <span>
+                        {(typeof (props as unknown as ILinkLayoutProps).link === 'string'
+                            && (props as unknown as ILinkLayoutProps).link.startsWith('~'))
+                            ? parseLink((props as unknown as ILinkLayoutProps).link)
+                            : (props as unknown as ILinkLayoutProps).link}
+                    </span>
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.grid:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    <input
+                        value={(props as unknown as IGridLayoutProps).rows ?? ''}
+                        placeholder='!attribute'
+                        onChange={e => {
+                            let update = copyLayoutProps(props as unknown as IGridLayoutProps);
+                            update.rows = e.target.value;
+                            updateLayout(update);
+                        }} />
+                    {(props as unknown as IGridLayoutProps).cols.map((col, i) =>
+                        <div key={i} style={{ marginLeft: '8px' }}>
+                            |<span style={{ color: 'gray', fontSize: '0.8em' }}>Column {i}</span>
+                            <br />
+                            |<select
+                                value={col.type ?? ''}
+                                onChange={e => {
+                                    let update = copyLayoutProps(props as unknown as IGridLayoutProps);
+                                    if (update.cols[i]) {
+                                        update.cols[i]!.type = e.target.value as LAYOUT_TYPE;
+                                    }
+                                    updateLayout(update);
+                                }}>
+                                {Object.keys(LAYOUT_TYPE).map(key => <option key={key} value={key}>{key}</option>)}
+                            </select>
+                            <input
+                                value={col.header ?? ''}
+                                placeholder='header or @def or !attribute'
+                                onChange={e => {
+                                    let update = copyLayoutProps(props as unknown as IGridLayoutProps);
+                                    if (update.cols[i]) {
+                                        update.cols[i]!.header = e.target.value;
+                                    }
+                                    updateLayout(update);
+                                }} />
+                        </div>
+                    )}
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.horizontal:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    {(props as unknown as IHorizontalLayoutProps).elements.map((element, i) =>
+                        <div key={i} style={{ marginLeft: '8px' }}>
+                            <LayoutDisplay {...element} updateLayout={updatedElement => {
+                                let update = copyLayoutProps(props as unknown as IHorizontalLayoutProps);
+                                update.elements[i] = updatedElement;
+                                updateLayout(update);
+                            }} />
+                        </div>
+                    )}
+                </React.Fragment>
+            );
+        case LAYOUT_TYPE.vertical:
+            return (
+                <React.Fragment>
+                    {typeSelect}
+                    {(props as unknown as IVerticalLayoutProps).elements.map((element, i) =>
+                        <div key={i} style={{ marginLeft: '8px' }}>
+                            <LayoutDisplay {...element} updateLayout={updatedElement => {
+                                let update = copyLayoutProps(props as unknown as IVerticalLayoutProps);
+                                update.elements[i] = updatedElement;
+                                updateLayout(update);
+                            }} />
+                        </div>
+                    )}
+                </React.Fragment>
+            );
+        default:
+            return null;
+    }
 }
 
 interface IAttributeDisplayProps {
@@ -485,19 +821,36 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
     if (attr === 'string') {
         return (
             <React.Fragment>
+                {/* raw string */}
                 <input type='text' value={val as string} onChange={e => updateAttributeValue(e.target.value)} />
+                {/* package-level definition (@) */}
                 {((val as string)?.length > 0 && (val as string).startsWith('@')) &&
                     <React.Fragment>
                         {defs[(val as string).substring(1) as keyof typeof defs] ?
-                            <span style={{ fontStyle: 'italic', color: 'blue', marginLeft: '8px' }}>
-                                {defs[(val as string).substring(1) as keyof typeof defs]}
-                            </span> :
-                            <span style={{ fontWeight: 'bold', color: 'red', marginLeft: '8px' }}>
-                                Package-level definition not found
-                            </span>
+                            <React.Fragment>
+                                {/* definition -> raw string */}
+                                <span style={{ color: 'blue', marginLeft: '8px' }}>
+                                    {defs[(val as string).substring(1) as keyof typeof defs]}
+                                </span>
+                                {((defs[(val as string).substring(1) as keyof typeof defs] as string).startsWith('~')) &&
+                                    <React.Fragment>
+                                        {/* definition -> link (~) */}
+                                        <span style={{ color: 'blue', marginLeft: '8px' }}>
+                                            {`▶ ${parseLink(defs[(val as string).substring(1) as keyof typeof defs] as string)[1]} (${parseLink(defs[(val as string).substring(1) as keyof typeof defs] as string)[0]})`}
+                                        </span>
+                                    </React.Fragment>
+                                }
+                            </React.Fragment> :
+                            <React.Fragment>
+                                {/* invalid definition */}
+                                <span style={{ fontWeight: 'bold', color: 'red', marginLeft: '8px' }}>
+                                    Package-level definition not found
+                                </span>
+                            </React.Fragment>
                         }
                     </React.Fragment>
                 }
+                {/* link (~) */}
                 {((val as string)?.length > 0 && (val as string).startsWith('~')) &&
                     <React.Fragment>
                         <span style={{ color: 'blue', marginLeft: '8px' }}>
@@ -537,20 +890,48 @@ const AttributeValueDisplay = (props: IAttributeValueDisplayProps) => {
 }
 
 function buildDefsFromString(defString: string): object {
-    return Object.assign({}, ...defString.split('\n').map(val => {
-        if (val) {
-            return { [val.split(': ')[0] as string]: (val.split(': ')[1] ?? "") as string };
+    let keys: string[] = [];
+    let errors: string[] = ['Error'];
+    let defs = Object.assign({}, ...defString.split('\n').map((def, i) => {
+        if (def) {
+            const key = (def.split(':')[0] as string).trim();
+            if (key.length < 1) {
+                let errMessage = `Line ${i}: Add a key`;
+                if (!errors.find(error => error === errMessage)) {
+                    errors.push(errMessage);
+                }
+                return;
+            }
+            if (keys.find(k => k === key)) {
+                let errMessage = `Line ${i}: Duplicate key "${key}"`;
+                if (!errors.find(error => error === errMessage)) {
+                    errors.push(errMessage);
+                }
+                return;
+            }
+            keys.push(key);
+            const value = (def.split(':')[1] ?? '' as string).trim();
+            return { [key]: value };
         } else {
             return {};
         }
     }));
+    if (errors.length > 1) {
+        return errors;
+    }
+    return defs;
 }
 
 function buildStringFromDefs(defs: object): string {
     let defString = '';
     Object.keys(defs).forEach(key => {
         if (key) {
-            defString += `${key}: ${defs[key as keyof typeof defs]}\n`
+            defString += `${key}: `;
+            const value = defs[key as keyof typeof defs];
+            if (typeof value === 'string' && (value as string).length > 0) {
+                defString += value;
+            }
+            defString += '\n';
         }
     });
     return defString;

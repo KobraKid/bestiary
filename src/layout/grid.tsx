@@ -9,15 +9,17 @@ import '../styles/grid.scss';
 // =============================================================================
 // | Grid
 // =============================================================================
+export interface IGridLayoutProps extends ILayoutProps {
+    rows: string,
+    cols: {
+        type: LAYOUT_TYPE,
+        header: string,
+        style?: React.CSSProperties
+    }[]
+}
+
 export interface IGridProps extends ILayoutElement {
-    layout: ILayoutProps & {
-        cols: {
-            type: LAYOUT_TYPE,
-            header: string,
-            style?: React.CSSProperties
-        }[]
-        rows: any[]
-    }
+    layout: IGridLayoutProps
 }
 
 export const Grid = (props: IGridProps) => {
@@ -29,8 +31,8 @@ export const Grid = (props: IGridProps) => {
     const styles = layout.cols.map(col => getStyle(data, col.style));
 
     return (
-        <table>
-            <thead><tr>{layout.cols.map((col, c) => <th key={c}>{col.header}</th>)}</tr></thead>
+        <table className='grid'>
+            <thead><tr>{layout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
             <tbody>
                 {rows.map((row, r) =>
                     <tr key={r}>
@@ -40,15 +42,15 @@ export const Grid = (props: IGridProps) => {
                             if (!val) { return null; }
                             switch (col.type) {
                                 case LAYOUT_TYPE.string:
-                                    return <td key={c}><String layout={{ value: val as string, style: styles[c] }} data={data} /></td>;
+                                    return <td key={c} className='grid'><String layout={{ value: val as string, style: styles[c] }} data={data} /></td>;
                                 case LAYOUT_TYPE.number:
-                                    return <td key={c}><Number layout={{ value: val as number, style: styles[c] }} data={data} /></td>;
+                                    return <td key={c} className='grid'><Number layout={{ value: val as number, style: styles[c] }} data={data} /></td>;
                                 case LAYOUT_TYPE.percent:
-                                    return <td key={c}><Percent layout={{ value: val as number, style: styles[c] }} data={data} /></td>
+                                    return <td key={c} className='grid'><Percent layout={{ value: val as number, style: styles[c] }} data={data} /></td>
                                 case LAYOUT_TYPE.link:
-                                    return <td key={c}><Link layout={{ link: val as string, style: styles[c] }} data={data} onLinkClicked={onLinkClicked} /></td>;
+                                    return <td key={c} className='grid'><Link layout={{ link: val as string, style: styles[c] }} data={data} onLinkClicked={onLinkClicked} /></td>;
                                 case LAYOUT_TYPE.sprite:
-                                    return <td key={c}><Sprite layout={{ value: val as string, style: styles[c] }} data={data} /></td>
+                                    return <td key={c} className='grid'><Sprite layout={{ value: val as string, style: styles[c] }} data={data} /></td>
                                 default:
                                     return null;
                             }

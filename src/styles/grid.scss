@@ -1,8 +1,8 @@
-table {
+table.grid {
     border-collapse: collapse;
     border-style: hidden;
 }
 
-td, th {
+td.grid, th.grid {
     border: 1px solid black;
 }

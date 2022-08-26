@@ -6,10 +6,12 @@ import '../styles/images.scss';
 // =============================================================================
 // | Sprite
 // =============================================================================
+export interface ISpriteLayoutProps extends ILayoutProps {
+  value: string
+}
+
 export interface ISpriteProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    value: string,
-  }
+  layout: ISpriteLayoutProps
 }
 
 export const Sprite = (props: ISpriteProps) => {
@@ -28,10 +30,12 @@ export const Sprite = (props: ISpriteProps) => {
 // =============================================================================
 // | Sprite List
 // =============================================================================
+export interface ISpriteListLayoutProps extends ILayoutProps {
+  values: string[]
+}
+
 export interface ISpriteListProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    values: string[],
-  }
+  layout: ISpriteListLayoutProps
 }
 
 export const SpriteList = (props: ISpriteListProps) => {

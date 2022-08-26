@@ -10,11 +10,13 @@ import { AttributeValue } from '../model/Attribute';
 // =============================================================================
 // | Map
 // =============================================================================
+export interface IMapLayoutProps extends ILayoutProps {
+  value: string,
+  poi: AttributeValue[]
+}
+
 export interface IMapProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    value: string,
-    poi: AttributeValue[],
-  }
+  layout: IMapLayoutProps
 }
 
 export const Map = (props: IMapProps) => {

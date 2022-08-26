@@ -1,17 +1,17 @@
 import * as React from 'react';
-import { ILayoutElement, ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
-import { Base, getStyle, getValueOrLiteral } from './base';
-import { Link } from './relation';
-import { String } from './basic';
+import { ILayoutElement, ILayoutProps } from '../model/Layout';
+import { Base, getStyle } from './base';
 import '../styles/layout.scss';
 
 // =============================================================================
 // | Horizontal Region
 // =============================================================================
+export interface IHorizontalLayoutProps extends ILayoutProps {
+  elements: ILayoutProps[]
+}
+
 export interface IHorizontalProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    elements: ILayoutProps[],
-  }
+  layout: IHorizontalLayoutProps
 }
 
 export const Horizontal = (props: IHorizontalProps) => {
@@ -28,10 +28,12 @@ export const Horizontal = (props: IHorizontalProps) => {
 // =============================================================================
 // | Vertical Region
 // =============================================================================
+export interface IVerticalLayoutProps extends ILayoutProps {
+  elements: ILayoutProps[]
+}
+
 export interface IVerticalProps extends ILayoutElement {
-  layout: ILayoutProps & {
-    elements: ILayoutProps[],
-  }
+  layout: IVerticalLayoutProps
 }
 
 export const Vertical = (props: IVerticalProps) => {
