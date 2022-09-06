@@ -1,5 +1,5 @@
 import IEntry, { copyEntry } from "./Entry";
-import { ILayoutProps } from "./Layout";
+import { ILayoutProps, LAYOUT_TYPE } from "./Layout";
 
 /**
  * Represents a collection
@@ -26,8 +26,12 @@ export default interface ICollection {
 export function buildCollection(name: string): ICollection {
     return {
         name: name,
-        layout: {},
-        layoutPreview: {},
+        layout: {
+            type: LAYOUT_TYPE.string
+        },
+        layoutPreview: {
+            type: LAYOUT_TYPE.string
+        },
         data: []
     };
 }

@@ -457,7 +457,17 @@ const LayoutDisplay = (props: ILayoutDisplayProps) => {
     let placeholder = ' or @def or !attribute';
 
     let typeSelect = (
-        <select value={type} onChange={() => { }}>
+        <select value={type} onChange={e => {
+            let update = copyLayoutProps(props);
+            update.type = e.target.value as LAYOUT_TYPE;
+            switch (update.type) {
+                case LAYOUT_TYPE.horizontal:
+                case LAYOUT_TYPE.vertical:
+                    (update as any).elements = [];
+                    break;
+            }
+            updateLayout(update);
+        }}>
             {Object.keys(LAYOUT_TYPE).map(key => <option key={key} value={key}>{key}</option>)}
         </select>
     )
@@ -544,15 +554,14 @@ const LayoutDisplay = (props: ILayoutDisplayProps) => {
                     <input
                         type='text'
                         value={'' + (props as unknown as IRatioLayoutProps).showAsPercent}
-                        placeholder={'show as percent' + placeholder}
+                        placeholder={'show as percent (0 or 1)' + placeholder}
                         onChange={e => {
                             let update = copyLayoutProps(props as unknown as IRatioLayoutProps);
                             update.showAsPercent = e.target.value;
                             updateLayout(update);
                         }} />
                     <span>
-                        {(props as unknown as IRatioLayoutProps).a} : {(props as unknown as IRatioLayoutProps).b}
-                        {(props as unknown as IRatioLayoutProps).showAsPercent ? '(%)' : ''}
+                        {`${(props as unknown as IRatioLayoutProps).a ?? 0} : ${(props as unknown as IRatioLayoutProps).b ?? 0} (${+(props as unknown as IRatioLayoutProps).a / +(props as unknown as IRatioLayoutProps).b}%)`}
                     </span>
                 </React.Fragment>
             );
@@ -646,7 +655,7 @@ const LayoutDisplay = (props: ILayoutDisplayProps) => {
                     <span>
                         {(typeof (props as unknown as ILinkLayoutProps).link === 'string'
                             && (props as unknown as ILinkLayoutProps).link.startsWith('~'))
-                            ? parseLink((props as unknown as ILinkLayoutProps).link)
+                            ? `▶ ${parseLink((props as unknown as ILinkLayoutProps).link)[1]} (${parseLink((props as unknown as ILinkLayoutProps).link)[0]})`
                             : (props as unknown as ILinkLayoutProps).link}
                     </span>
                 </React.Fragment>
@@ -696,6 +705,16 @@ const LayoutDisplay = (props: ILayoutDisplayProps) => {
             return (
                 <React.Fragment>
                     {typeSelect}
+                    <button onClick={() => {
+                        let update = copyLayoutProps(props as unknown as IHorizontalLayoutProps);
+                        update.elements.push({ type: LAYOUT_TYPE.string });
+                        updateLayout(update);
+                    }}>+</button>
+                    <button onClick={() => {
+                        let update = copyLayoutProps(props as unknown as IHorizontalLayoutProps);
+                        update.elements.pop();
+                        updateLayout(update);
+                    }}>-</button>
                     {(props as unknown as IHorizontalLayoutProps).elements.map((element, i) =>
                         <div key={i} style={{ marginLeft: '8px' }}>
                             <LayoutDisplay {...element} updateLayout={updatedElement => {
@@ -711,6 +730,16 @@ const LayoutDisplay = (props: ILayoutDisplayProps) => {
             return (
                 <React.Fragment>
                     {typeSelect}
+                    <button onClick={() => {
+                        let update = copyLayoutProps(props as unknown as IVerticalLayoutProps);
+                        update.elements.push({ type: LAYOUT_TYPE.string });
+                        updateLayout(update);
+                    }}>+</button>
+                    <button onClick={() => {
+                        let update = copyLayoutProps(props as unknown as IVerticalLayoutProps);
+                        update.elements.pop();
+                        updateLayout(update);
+                    }}>-</button>
                     {(props as unknown as IVerticalLayoutProps).elements.map((element, i) =>
                         <div key={i} style={{ marginLeft: '8px' }}>
                             <LayoutDisplay {...element} updateLayout={updatedElement => {
