@@ -1,5 +1,5 @@
 import React from 'react';
-import { ILayoutElement, ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
+import { IDataProps, ILayoutElement, ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
 import { Number, Percent, String } from './basic';
 import { Link } from './relation';
@@ -15,7 +15,9 @@ export interface IGridLayoutProps extends ILayoutProps {
         type: LAYOUT_TYPE,
         header: string,
         style?: React.CSSProperties
-    }[]
+    }[],
+    /** <td/> style */
+    styles?: React.CSSProperties[]
 }
 
 export interface IGridProps extends ILayoutElement {
@@ -28,37 +30,93 @@ export const Grid = (props: IGridProps) => {
     if (!layout.cols) { return null; }
     const rows = getValueOrLiteral(data, layout.rows);
     if (!Array.isArray(rows)) { return null; }
+    const style = getStyle(data, layout.style);
+    const tdStyles = layout.styles?.map(s => getStyle(data, s));
+    console.log(layout.styles, tdStyles);
     const styles = layout.cols.map(col => getStyle(data, col.style));
 
     return (
-        <table className='grid'>
+        <table className='grid' style={style}>
             <thead><tr>{layout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
             <tbody>
-                {rows.map((row, r) =>
-                    <tr key={r}>
+                {rows.map((row, r) => {
+                    let vals = row.toString().split('||');
+                    if (!Array.isArray(vals)) { return null; }
+                    return <tr key={r}>
                         {layout.cols.map((col, c) => {
-                            if (!Array.isArray(row)) { return null; }
-                            let val = row[c];
-                            if (!val) { return null; }
-                            switch (col.type) {
-                                case LAYOUT_TYPE.string:
-                                    return <td key={c} className='grid'><String layout={{ value: val as string, style: styles[c] }} data={data} /></td>;
-                                case LAYOUT_TYPE.number:
-                                    return <td key={c} className='grid'><Number layout={{ value: val as number, style: styles[c] }} data={data} /></td>;
-                                case LAYOUT_TYPE.percent:
-                                    return <td key={c} className='grid'><Percent layout={{ value: val as number, style: styles[c] }} data={data} /></td>
-                                case LAYOUT_TYPE.link:
-                                    return <td key={c} className='grid'><Link layout={{ link: val as string, style: styles[c] }} data={data} onLinkClicked={onLinkClicked} /></td>;
-                                case LAYOUT_TYPE.sprite:
-                                    return <td key={c} className='grid'><Sprite layout={{ value: val as string, style: styles[c] }} data={data} /></td>
-                                default:
-                                    return null;
-                            }
+                            let val = vals[c]?.trim();
+                            if (val === null || val === undefined) { return null; }
+                            return (
+                                <td key={c} className='grid' style={tdStyles && tdStyles[c]}>
+                                    {renderElementByType(col.type, c, val, data, styles[c], onLinkClicked)}
+                                </td>
+                            );
                         }
                         )}
                     </tr>
-                )}
+                })}
             </tbody>
         </table>
     );
+}
+
+// =============================================================================
+// | List
+// =============================================================================
+
+export interface IListLayoutProps extends ILayoutProps {
+    elements: string,
+    elementTypes: LAYOUT_TYPE,
+    vertical?: boolean
+}
+
+export interface IListProps extends ILayoutElement {
+    layout: IListLayoutProps
+}
+
+export const List = (props: IListProps) => {
+    const { layout, data, onLinkClicked } = props;
+
+    const elements = getValueOrLiteral(data, layout.elements);
+    if (!Array.isArray(elements)) { return null; }
+    const style = getStyle(data, layout.style);
+    style.display = 'flex';
+    style.flexDirection = layout.vertical ? 'column' : 'row';
+
+    return (
+        <div style={style}>
+            {elements.map((element, i) => {
+                if (element === null || element === undefined) { return null; }
+                return renderElementByType(layout.elementTypes, i, element as string, data, layout.style, onLinkClicked);
+            })}
+        </div>
+    );
+}
+
+/**
+ * Renders a single element of a Grid or List
+ * 
+ * @param layout The layout type for this element
+ * @param key Unique identifier for this element
+ * @param element The element to render
+ * @param data The package data
+ * @param style The style to apply to this element
+ * @param onLinkClicked The link clicked handler
+ * @returns An element to be rendered in a Grid or List
+ */
+function renderElementByType(layout: LAYOUT_TYPE, key: any, element: string, data: IDataProps, style?: React.CSSProperties, onLinkClicked?: any): JSX.Element | null {
+    switch (layout) {
+        case LAYOUT_TYPE.string:
+            return <String key={key} layout={{ value: element, style: style }} data={data} />;
+        case LAYOUT_TYPE.number:
+            return <Number key={key} layout={{ value: element, style: style }} data={data} />;
+        case LAYOUT_TYPE.percent:
+            return <Percent key={key} layout={{ value: element, style: style }} data={data} />;
+        case LAYOUT_TYPE.link:
+            return <Link key={key} layout={{ link: element, style: style }} data={data} onLinkClicked={onLinkClicked} />;
+        case LAYOUT_TYPE.sprite:
+            return <Sprite key={key} layout={{ value: element, style: style }} data={data} />;
+        default:
+            return null;
+    }
 }

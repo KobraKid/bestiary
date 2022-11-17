@@ -21,9 +21,9 @@ export const String = (props: IStringProps) => {
   let style = getStyle(data, layout.style);
 
   return (
-    <span style={style}>
+    <div style={style}>
       {label ? `${label}: ${value}` : value}
-    </span>
+    </div>
   );
 }
 
@@ -46,9 +46,9 @@ export const Number = (props: INumberProps) => {
   let style = getStyle(data, layout.style);
 
   return (
-    <span style={style}>
+    <div style={style}>
       {label ? `${label}: ${value}` : value}
-    </span>
+    </div>
   );
 }
 
@@ -72,11 +72,11 @@ export const Ratio = (props: IRatioProps) => {
   let style = getStyle(data, layout.style);
 
   return (
-    <span style={style}>
+    <div style={style}>
       {layout.showAsPercent ?
         `${aVal / (aVal + bVal)}% - ${bVal / (aVal + bVal)}`
         : `${aVal} : ${bVal}`}
-    </span>
+    </div>
   );
 }
 
@@ -99,9 +99,9 @@ export const Percent = (props: IPercentProps) => {
   let style = getStyle(data, layout.style);
 
   return (
-    <span style={style}>
+    <div style={style}>
       {label ? `${label}: ${value * 100}%` : `${value * 100}%`}
-    </span>
+    </div>
   );
 }
 
@@ -126,8 +126,8 @@ export const Range = (props: IRangeProps) => {
   let style = getStyle(data, layout.style);
 
   return (
-    <span style={style}>
+    <div style={style}>
       {label ? `${label}: ${min}  - ${max}` : `${min}  - ${max}`}
-    </span>
+    </div>
   );
 }

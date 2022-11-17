@@ -1,7 +1,7 @@
 import React from 'react';
 import { Entry } from '../entry';
 import { ILayoutElement, ILayoutProps } from '../model/Layout';
-import { getValueOrLiteral } from './base';
+import { getStyle, getValueOrLiteral } from './base';
 import ICollection from '../model/Collection';
 import IEntry from '../model/Entry';
 import { AttributeValue } from '../model/Attribute';
@@ -37,11 +37,13 @@ export const Link = (props: ILinkProps) => {
 
   const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
+  const style=getStyle(data, layout.style);
 
   return (
     (linkedCollection && linkedEntry) ?
       <Entry
         data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
+        style={style}
         isPreview
         onLinkClicked={onLinkClicked}
         onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}

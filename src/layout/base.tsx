@@ -5,7 +5,7 @@ import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps, Numbe
 import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';
 import { ILinkProps, Link } from './relation';
 import { Map, IMapProps } from './map';
-import { Grid, IGridProps } from './grid';
+import { Grid, IGridProps, List, IListProps } from './grid';
 import { AttributeValue } from '../model/Attribute';
 
 export const Base = (props: ILayoutElement) => {
@@ -31,13 +31,15 @@ export const Base = (props: ILayoutElement) => {
       return <SpriteList {...(props as ISpriteListProps)} />;
     /* Relations */
     case LAYOUT_TYPE.link:
-      return <Link {...(props as ILinkProps)} />
+      return <Link {...(props as ILinkProps)} />;
     /* Maps */
     case LAYOUT_TYPE.map:
-      return <Map {...(props as IMapProps)} />
+      return <Map {...(props as IMapProps)} />;
     /* Grids */
     case LAYOUT_TYPE.grid:
-      return <Grid {...(props as IGridProps)} />
+      return <Grid {...(props as IGridProps)} />;
+    case LAYOUT_TYPE.list:
+      return <List {...(props as IListProps)} />;
     default:
       return null;
   }

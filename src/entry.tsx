@@ -10,7 +10,8 @@ interface IEntryProps {
     pkg: IPackage,
     collection: ICollection,
     entry: IEntry,
-  }
+  },
+  style?: React.CSSProperties,
   isPreview: boolean,
   onLinkClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
   className?: string,
@@ -18,10 +19,10 @@ interface IEntryProps {
 }
 
 export const Entry = (props: IEntryProps) => {
-  const { data, isPreview, onLinkClicked, className, onClick } = props;
+  const { data, style, isPreview, onLinkClicked, className, onClick } = props;
 
   return (
-    <div className={className} onClick={onClick}>
+    <div className={className} style={style} onClick={onClick}>
       <Base data={data} layout={isPreview ? data.collection.layoutPreview : data.collection.layout} onLinkClicked={onLinkClicked} />
     </div>
   );

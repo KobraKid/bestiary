@@ -110,18 +110,27 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
   );
 }
 
+/**
+ * Props for the collection menu
+ */
 interface ICollectionMenuProps {
   collections: ICollection[],
   onCollectionClicked: (collection: ICollection) => void,
   pkgMenuExpanded: boolean,
 }
 
+/**
+ * The collection menu
+ * @param props The props
+ * @returns A menu
+ */
 export const CollectionMenu = (props: ICollectionMenuProps) => {
   const { collections, onCollectionClicked, pkgMenuExpanded } = props;
 
   return (
     <div className={`collection-menu-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
       {collections.map((collection: ICollection) =>
+        !collection.hidden &&
         <CollectionMenuItem
           key={collection.name}
           name={collection.name}
@@ -131,11 +140,19 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
   );
 }
 
+/**
+ * Props for the collection menu item
+ */
 interface ICollectionMenuItemProps {
   name: string,
   onCollectionClicked: () => void;
 }
 
+/**
+ * A collection for display in the menu
+ * @param props The props
+ * @returns A collection
+ */
 const CollectionMenuItem = (props: ICollectionMenuItemProps) => {
   const { name, onCollectionClicked } = props;
   return (

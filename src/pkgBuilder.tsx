@@ -16,6 +16,7 @@ const PkgBuilder = () => {
     const [name, setName] = useState<string>('<Name>');
     const [icon, setIcon] = useState<string>('<Icon>');
     const [color, setColor] = useState<string>('#000000');
+    const [font, setFont] = useState<string>('sans');
     const [defs, setDefs] = useState<object>({});
     const [defString, setDefString] = useState<string>('');
 
@@ -204,6 +205,7 @@ const PkgBuilder = () => {
                 setName(pkg.metadata.name);
                 setIcon(pkg.metadata.icon);
                 setColor(pkg.metadata.color);
+                setFont(pkg.metadata.font);
                 setDefs(pkg.metadata.defs);
                 setDefString(buildStringFromDefs(pkg.metadata.defs));
                 setModels(pkg.collections.map(collection => parseImportedDataToDataModel(collection.data)));
@@ -214,7 +216,7 @@ const PkgBuilder = () => {
 
     return (
         <div>
-            <PkgDisplay name={name} icon={icon} color={color} defs={defs} collections={collections} />
+            <PkgDisplay name={name} icon={icon} color={color} font={font} defs={defs} collections={collections} />
             <label>
                 Import&nbsp;
                 <input type='file' accept='.json' onChange={e => e.target.files && e.target.files[0] && importPkg(e.target.files[0])} />
@@ -312,13 +314,14 @@ interface IPkgDisplayProps extends Omit<IPackageMetadata, 'path' | 'defs'> {
 }
 
 const PkgDisplay = (props: IPkgDisplayProps) => {
-    const { name, icon, color, defs, collections } = props;
+    const { name, icon, color, font, defs, collections } = props;
 
     const metadata: Omit<IPackageMetadata, 'path'> = useMemo(() => {
         return {
             name: name,
             icon: icon,
             color: color,
+            font: font,
             defs: defs
         }
     }, [name, icon, color, defs]);

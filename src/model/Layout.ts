@@ -22,6 +22,7 @@ export enum LAYOUT_TYPE {
   map = 'map',
   /* grids */
   grid = 'grid',
+  list = 'list',
 }
 
 export interface ILayoutProps {

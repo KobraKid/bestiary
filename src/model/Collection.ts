@@ -10,6 +10,12 @@ export default interface ICollection {
      */
     name: string,
     /**
+     * If this is true, this collection will not appear in the collection menu
+     * 
+     * This can be used to create sub-collections that don't make sense to display as a whole
+     */
+    hidden?: boolean,
+    /**
      * Layout for displaying a single entry in the collection
      */
     layout: ILayoutProps,
@@ -26,6 +32,7 @@ export default interface ICollection {
 export function buildCollection(name: string): ICollection {
     return {
         name: name,
+        hidden: false,
         layout: {
             type: LAYOUT_TYPE.string
         },
@@ -39,6 +46,7 @@ export function buildCollection(name: string): ICollection {
 export function copyCollection(collection: ICollection): ICollection {
     let copiedCollection: ICollection = {
         name: collection.name,
+        hidden: collection.hidden,
         layout: Object.assign({}, collection.layout),
         layoutPreview: Object.assign({}, collection.layoutPreview),
         data: collection.data.map(entry => copyEntry(entry))

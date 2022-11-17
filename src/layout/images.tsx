@@ -16,7 +16,6 @@ export interface ISpriteProps extends ILayoutElement {
 
 export const Sprite = (props: ISpriteProps) => {
   const { layout } = props;
-  // console.log(layout.value);
   let value = getValueOrLiteral(props.data, layout.value);
   if (!value) { return null; }
 

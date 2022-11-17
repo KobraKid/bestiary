@@ -43,6 +43,10 @@ export interface IPackageMetadata {
    */
   color: string,
   /**
+   * Package font
+   */
+  font: string,
+  /**
    * Definitions to be used package-wide
    */
   defs: object,
@@ -54,6 +58,7 @@ export function copyMetadata(metadata: IPackageMetadata): IPackageMetadata {
     path: metadata.path,
     icon: metadata.icon,
     color: metadata.color,
+    font: metadata.font,
     defs: Object.assign({}, metadata.defs)
   };
   return copiedMetadata;
