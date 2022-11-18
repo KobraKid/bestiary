@@ -213,7 +213,7 @@ const Page = (props: IPageProps) => {
 }
 
 function isMapView(collection: ICollection): boolean {
-  return collection.layout.type === LAYOUT_TYPE.map;
+  return collection.layout?.type === LAYOUT_TYPE.map;
 }
 
 ReactDOM.render(<App />, document.getElementById('app'));

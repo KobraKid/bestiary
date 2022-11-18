@@ -96,9 +96,14 @@ function parsePackage(pkgData: string, pkgPath: string = '', fullLoad: boolean =
       if (fullLoad) {
         pkg.collections.forEach(collection => {
           if (collection.source) {
-            const parsedCollection = JSON.parse(readFileSync(path.join(pkgPath, collection.source), { encoding: 'utf-8' }));
-            if (isCollection(parsedCollection)) {
-              Object.assign(collection, parsedCollection);
+            try {
+              const parsedCollection = JSON.parse(readFileSync(path.join(pkgPath, collection.source), { encoding: 'utf-8' }));
+              if (isCollection(parsedCollection)) {
+                Object.assign(collection, parsedCollection);
+              }
+              delete collection.source;
+            } catch (err: any) {
+              console.log(chalk.white.bgRed('❌ Error parsing collection "' + collection.name + '" at <' + collection.source + '>, skipping'));
             }
           }
         });
