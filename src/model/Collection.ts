@@ -10,6 +10,11 @@ export default interface ICollection {
      */
     name: string,
     /**
+     * If a source is provided, this collection's data will be loaded from a sibling JSON file
+     * in the same directory as the package.json file.
+     */
+    source?: string,
+    /**
      * If this is true, this collection will not appear in the collection menu
      * 
      * This can be used to create sub-collections that don't make sense to display as a whole

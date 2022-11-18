@@ -62,14 +62,15 @@ function createBuilderWindow(openDevTools: boolean = false) {
 /**
  * Load a single package
  * @param pkgPath The package's location on the filesystem
+ * @param fullLoad Whether this should be a full package load or just package header load
  * @param showStatus If set to true, logs the status of the package load
  * @returns A Package if one could be loaded from the supplied path
  */
-function loadPackage(pkgPath: string, showStatus: boolean = false): IPackage | null {
+function loadPackage(pkgPath: string, fullLoad: boolean, showStatus: boolean = false): IPackage | null {
   let pkg = null;
   try {
-    const pkgData = readFileSync(pkgPath + '\\package.json', { encoding: 'utf-8' });
-    pkg = parsePackage(pkgData, pkgPath, showStatus);
+    const pkgData = readFileSync(path.join(pkgPath, 'package.json'), { encoding: 'utf-8' });
+    pkg = parsePackage(pkgData, pkgPath, fullLoad, showStatus);
   } catch (err: any) {
     if (showStatus) { console.log(chalk.white.bgRed('❌ Error loading package at "' + pkgPath + '"', err)); }
   }
@@ -80,17 +81,28 @@ function loadPackage(pkgPath: string, showStatus: boolean = false): IPackage | n
  * Load a package from a string
  * @param pkgData The contents of the package.json file
  * @param pkgPath The location of the package.json file
+ * @param fullLoad Whether this should be a full package load or just package header load
  * @param showStatus If set to true, logs the status of the package load
  * @returns A Package if one could be parsed from the supplied data
  */
-function parsePackage(pkgData: string, pkgPath: string = '', showStatus: boolean = false): IPackage | null {
+function parsePackage(pkgData: string, pkgPath: string = '', fullLoad: boolean = false, showStatus: boolean = false): IPackage | null {
   let pkg = null;
   try {
     const parsedData = JSON.parse(pkgData);
-    if (parsedData?.metadata?.name) {
-      if (showStatus) { console.log(chalk.green('✔ Loaded package "' + JSON.parse(pkgData).metadata.name + '"')); }
-      pkg = parsedData;
+    if (isPackage(parsedData)) {
+      pkg = parsedData as IPackage;
+      if (showStatus) { console.log(chalk.green('✔ Loaded package "' + pkg.metadata.name + '"')); }
       pkg.metadata.path = pkgPath;
+      if (fullLoad) {
+        pkg.collections.forEach(collection => {
+          if (collection.source) {
+            const parsedCollection = JSON.parse(readFileSync(path.join(pkgPath, collection.source), { encoding: 'utf-8' }));
+            if (isCollection(parsedCollection)) {
+              Object.assign(collection, parsedCollection);
+            }
+          }
+        });
+      }
     }
     else {
       if (showStatus) { console.log(chalk.white.bgRed('❌ Error parsing package at "' + pkgPath + '"')); }
@@ -99,6 +111,14 @@ function parsePackage(pkgData: string, pkgPath: string = '', showStatus: boolean
     if (showStatus) { console.log(chalk.white.bgRed('❌ Error parsing package at "' + pkgPath + '"', err)); }
   }
   return pkg;
+}
+
+function isPackage(data: any): boolean {
+  return ('metadata' in data) && ('name' in data.metadata) && ('collections' in data);
+}
+
+function isCollection(data: any): boolean {
+  return ('data' in data) && ('layout' in data) && ('layoutPreview' in data);
 }
 
 /**
@@ -114,7 +134,7 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
     const files = await readdir(paths.data, { withFileTypes: true });
     for (const file of files) {
       if (file.isDirectory()) {
-        const pkg = loadPackage(paths.data + '\\' + file.name, true);
+        const pkg = loadPackage(path.join(paths.data, file.name), false, true);
         if (pkg !== null) {
           pkgs.push(pkg.metadata);
         }
@@ -127,7 +147,7 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
   return pkgs;
 });
 
-ipcMain.handle('load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath));
+ipcMain.handle('load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
 
 ipcMain.handle('parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
 
