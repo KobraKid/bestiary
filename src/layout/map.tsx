@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, WheelEvent } from 'react';
 import ScrollContainer from 'react-indiana-drag-scroll';
 import { IDataProps, ILayoutElement, ILayoutProps, ILinkableProps } from '../model/Layout';
-import { getValueOrLiteral } from './base';
+import { getStyle, getValueOrLiteral } from './base';
 import ICollection from '../model/Collection';
 import IEntry from '../model/Entry';
 import '../styles/collection.scss';
@@ -29,6 +29,8 @@ export const Map = (props: IMapProps) => {
   const pointOfInterest = getValueOrLiteral(data, layout.poi) as AttributeValue[];
   const [scale, setScale] = useState<number>(100);
 
+  const style = getStyle(data, layout.style);
+
   useEffect(() => setScale(100), [image]);
 
   const onWheelZoomCallback = useCallback((e: WheelEvent<HTMLImageElement>) => {
@@ -45,17 +47,22 @@ export const Map = (props: IMapProps) => {
   return (
     <div onWheel={onWheelZoomCallback}>
       <ScrollContainer
-        style={{ height: "calc(100vh - 72px)", width: "calc(100vw - 72px)", padding: "4px" }}>
+        style={{ height: "calc(100vh - 64px)", width: "calc(100vw - 64px)" }}>
         <img
           src={window.path.join(data.pkg.metadata.path, "" + image)}
           style={{
             width: `${+(size[0]!) * scale / 100}px`,
             height: `${+(size[1]!) * scale / 100}px`,
+            marginLeft: `max(0px, calc(100% - ${+(size[0]!) * scale / 100}px))`,
+            marginRight: `max(0px, calc(100% - ${+(size[0]!) * scale / 100}px))`,
+            marginTop: `max(0px, calc(calc(100vh - 64px) - ${+(size[1]!) * scale / 100}px))`,
+            marginBottom: `max(0px, calc(calc(100vh - 64px) - ${+(size[1]!) * scale / 100}px))`,
+            ...style
           }} />
         {pointOfInterest && pointOfInterest?.map((point, i) =>
           <PointOfInterest
             key={i}
-            point={point as AttributeValue[]}
+            point={point}
             scale={scale}
             parentWidth={size[0]!}
             parentHeight={size[1]!}
@@ -72,14 +79,16 @@ export const Map = (props: IMapProps) => {
 // =============================================================================
 interface IPointOfInterestProps extends ILinkableProps {
   data: IDataProps,
-  point: AttributeValue[],
+  point: AttributeValue,
   scale: number,
   parentWidth: string,
   parentHeight: string,
 }
 
 export const PointOfInterest = (props: IPointOfInterestProps) => {
-  const { onLinkClicked, data, point, parentHeight } = props;
+  const { onLinkClicked, data, parentWidth, parentHeight } = props;
+
+  const point = props.point.toString().split('||').map(val => val.trim());
 
   const link = (point[0] as string).split('|');
   const location = (point[1] as string).split(',');
@@ -90,15 +99,16 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]);
 
   if (!linkedCollection || !linkedEntry || !onLinkClicked) { return null; }
+  console.log(link, location, size);
 
   // extra div to prevent siblings' heights from stacking
   return (
-    <div style={{ height: "0px" }}>
+    <div style={{ height: "0px", width: "0px" }}>
       <div
         className='mapPOI'
         style={{
           position: "relative",
-          left: `${+(location[0]!) * scale}px`,
+          left: `calc(${location[0]}px * ${scale})`,
           top: `calc(-${parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px)`,
           width: `${+(size[0]!) * scale}px`,
           height: `${+(size[1]!) * scale}px`,

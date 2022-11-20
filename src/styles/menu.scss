@@ -14,6 +14,7 @@ $menu-font-expanded-size: 1.75em;
   align-items: flex-end;
   background-color: rgba(colors.$medium, .5);
   width: 100%;
+  overflow-x: scroll;
   z-index: 100;
 }
 
@@ -21,6 +22,7 @@ $menu-font-expanded-size: 1.75em;
   background-color: colors.$text-dark;
   border: none;
   color: colors.$text-light;
+  flex-shrink: 0;
   padding: 0;
   transition: width .5s ease, height .5s ease;
 

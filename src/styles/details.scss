@@ -4,6 +4,8 @@
 @mixin details {
   position: absolute;
   left: menu.$menu-button-collapsed-size;
+  bottom: 0px;
+  right: 0px;
   display: flex;
   transition: top .5s ease;
   background-color: colors.$dark;
