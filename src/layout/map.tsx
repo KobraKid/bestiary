@@ -53,10 +53,10 @@ export const Map = (props: IMapProps) => {
           style={{
             width: `${+(size[0]!) * scale / 100}px`,
             height: `${+(size[1]!) * scale / 100}px`,
-            marginLeft: `max(0px, calc(100% - ${+(size[0]!) * scale / 100}px))`,
-            marginRight: `max(0px, calc(100% - ${+(size[0]!) * scale / 100}px))`,
-            marginTop: `max(0px, calc(calc(100vh - 64px) - ${+(size[1]!) * scale / 100}px))`,
-            marginBottom: `max(0px, calc(calc(100vh - 64px) - ${+(size[1]!) * scale / 100}px))`,
+            marginLeft: `max(0px, calc(100vw - 64px - ${+(size[0]!) * scale / 100}px))`,
+            marginRight: `max(0px, calc(100vw - 64px - ${+(size[0]!) * scale / 100}px))`,
+            marginTop: `max(0px, calc(100vh - 64px - ${+(size[1]!) * scale / 100}px))`,
+            marginBottom: `max(0px, calc(100vh - 64px - ${+(size[1]!) * scale / 100}px))`,
             ...style
           }} />
         {pointOfInterest && pointOfInterest?.map((point, i) =>
@@ -108,7 +108,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
         className='mapPOI'
         style={{
           position: "relative",
-          left: `calc(${location[0]}px * ${scale})`,
+          left: `calc(max(0px, calc(100vw - 64px - ${parentWidth}px * ${scale})) + ${location[0]}px * ${scale})`,
           top: `calc(-${parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px)`,
           width: `${+(size[0]!) * scale}px`,
           height: `${+(size[1]!) * scale}px`,
