@@ -212,6 +212,12 @@ const Page = (props: IPageProps) => {
   );
 }
 
+/**
+ * Checks if a collection is a Map
+ * 
+ * @param collection The collection to test
+ * @returns Whether the collection's type is `LAYOUT_TYPE.map`
+ */
 function isMapView(collection: ICollection): boolean {
   return collection.layout?.type === LAYOUT_TYPE.map;
 }

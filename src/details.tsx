@@ -6,6 +6,9 @@ import { Entry } from './entry';
 import './styles/details.scss';
 import leftArrow from './assets/icons/left.png';
 
+/**
+ * Props for the Details
+ */
 interface IDetailsProps {
   data: {
     pkg: IPackage,
@@ -17,6 +20,12 @@ interface IDetailsProps {
   onReturnToCollectionClicked: () => void,
 }
 
+/**
+ * Renders the details for a single entry.
+ * 
+ * @param props The props
+ * @returns A detailed entry
+ */
 export const Details = (props: IDetailsProps) => {
   const { data, pkgMenuExpanded, onEntryClicked, onReturnToCollectionClicked } = props;
 

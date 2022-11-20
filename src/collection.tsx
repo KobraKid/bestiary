@@ -19,6 +19,12 @@ interface ICollectionProps {
   onEntryClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
+/**
+ * Renders a collection of entries.
+ * 
+ * @param props The props
+ * @returns A collection
+ */
 export const Collection = (props: ICollectionProps) => {
   const { data, pkgMenuExpanded, onEntryClicked } = props;
 
@@ -79,6 +85,9 @@ export const Collection = (props: ICollectionProps) => {
   );
 }
 
+/**
+ * Props for the Subsection
+ */
 interface ISubSectionProps {
   title: string,
   data: {
@@ -89,6 +98,15 @@ interface ISubSectionProps {
   onEntryClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
 }
 
+/**
+ * Renders a subsection within a collection.
+ * 
+ * A subsection displays a list of entries with a common category, 
+ * displayed in the subsection header.
+ * 
+ * @param props The props
+ * @returns A subsection within a collection
+ */
 export const Subsection = (props: ISubSectionProps) => {
   const { title, data, entries, onEntryClicked } = props;
 

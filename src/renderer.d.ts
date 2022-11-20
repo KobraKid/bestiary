@@ -2,8 +2,10 @@ import IPackage, { IPackageMetadata } from './model/Package';
 
 export interface IElectronAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,
-  loadPackage: (path: string) => Promise<IPackage | null>
-  parsePackage: (data: string) => Promise<IPackage | null>
+  loadPackage: (path: string) => Promise<IPackage | null>,
+  parsePackage: (data: string) => Promise<IPackage | null>,
+  write: (...message: string[]) => Promise<void>,
+  writeError: (...message: string[]) => Promise<void>,
 }
 
 export interface IPathAPI {

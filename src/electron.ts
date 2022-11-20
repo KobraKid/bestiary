@@ -14,6 +14,7 @@ console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ El
 
 /**
  * Creates the main app window
+ * 
  * @param openDevTools If set to true, shows the dev tools menu when launched
  */
 function createWindow(openDevTools: boolean = false) {
@@ -38,6 +39,7 @@ function createWindow(openDevTools: boolean = false) {
 
 /**
  * Creates the Package Builder window
+ * 
  * @param openDevTools If set to true, shows the dev tools menu when launched
  */
 function createBuilderWindow(openDevTools: boolean = false) {
@@ -61,6 +63,7 @@ function createBuilderWindow(openDevTools: boolean = false) {
 
 /**
  * Load a single package
+ * 
  * @param pkgPath The package's location on the filesystem
  * @param fullLoad Whether this should be a full package load or just package header load
  * @param showStatus If set to true, logs the status of the package load
@@ -79,6 +82,7 @@ function loadPackage(pkgPath: string, fullLoad: boolean, showStatus: boolean = f
 
 /**
  * Load a package from a string
+ * 
  * @param pkgData The contents of the package.json file
  * @param pkgPath The location of the package.json file
  * @param fullLoad Whether this should be a full package load or just package header load
@@ -118,10 +122,22 @@ function parsePackage(pkgData: string, pkgPath: string = '', fullLoad: boolean =
   return pkg;
 }
 
+/**
+ * Determines if parsed data is a package
+ * 
+ * @param data The parsed data
+ * @returns True if the data contains the minimum attributes required to be a package
+ */
 function isPackage(data: any): boolean {
   return ('metadata' in data) && ('name' in data.metadata) && ('collections' in data);
 }
 
+/**
+ * Determines if parsed data is a collection
+ * 
+ * @param data The parsed data
+ * @returns True if the data contains the minimum attributes required to be a collection
+ */
 function isCollection(data: any): boolean {
   return ('data' in data) && ('layout' in data) && ('layoutPreview' in data);
 }
@@ -155,6 +171,10 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
 ipcMain.handle('load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
 
 ipcMain.handle('parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
+
+ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(message)));
+
+ipcMain.handle('write-error', (_event: any, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(message)));
 
 /**
  * Create the main window

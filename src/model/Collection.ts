@@ -10,8 +10,8 @@ export default interface ICollection {
      */
     name: string,
     /**
-     * If a source is provided, this collection's data will be loaded from a sibling JSON file
-     * in the same directory as the package.json file.
+     * If a source is provided, this collection's data will be loaded from a separate
+     * JSON file relative to the package.json file.
      */
     source?: string,
     /**

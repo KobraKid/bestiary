@@ -32,7 +32,6 @@ export const Grid = (props: IGridProps) => {
     if (!Array.isArray(rows)) { return null; }
     const style = getStyle(data, layout.style);
     const tdStyles = layout.styles?.map(s => getStyle(data, s));
-    console.log(layout.styles, tdStyles);
     const styles = layout.cols.map(col => getStyle(data, col.style));
 
     return (

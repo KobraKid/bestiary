@@ -28,6 +28,9 @@ export const Map = (props: IMapProps) => {
   const size = (getValueOrLiteral(data, "!size") as string).split(",");
   const pointOfInterest = getValueOrLiteral(data, layout.poi) as AttributeValue[];
   const [scale, setScale] = useState<number>(100);
+  const minScale = 10;
+  const maxScale = 1000;
+  const increment = 10;
 
   const style = getStyle(data, layout.style);
 
@@ -36,11 +39,11 @@ export const Map = (props: IMapProps) => {
   const onWheelZoomCallback = useCallback((e: WheelEvent<HTMLImageElement>) => {
     if (e.deltaY < 0) {
       // Scroll up (zoom in)
-      setScale(scale => (scale < 1000) ? scale + 10 : 1000);
+      setScale(scale => (scale < maxScale) ? scale + increment : maxScale);
     }
     else if (e.deltaY > 0) {
       // Scroll down (zoom out)
-      setScale(scale => (scale > 10) ? scale - 10 : 10);
+      setScale(scale => (scale > minScale) ? scale - increment : minScale);
     }
   }, []);
 
@@ -99,7 +102,6 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]);
 
   if (!linkedCollection || !linkedEntry || !onLinkClicked) { return null; }
-  console.log(link, location, size);
 
   // extra div to prevent siblings' heights from stacking
   return (
@@ -109,7 +111,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
         style={{
           position: "relative",
           left: `calc(max(0px, calc(100vw - 64px - ${parentWidth}px * ${scale})) + ${location[0]}px * ${scale})`,
-          top: `calc(-${parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px)`,
+          top: `calc(-${parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px - max(0px, calc(100vh - 64px - ${parentHeight}px * ${scale})))`,
           width: `${+(size[0]!) * scale}px`,
           height: `${+(size[1]!) * scale}px`,
         }}
