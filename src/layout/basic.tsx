@@ -20,9 +20,11 @@ export const String = (props: IStringProps) => {
   let value = getValueOrLiteral(data, layout.value);
   let style = getStyle(data, layout.style);
 
+  if (value.toString().length < 1) { return null; }
+
   return (
     <div style={style}>
-      {label ? `${label}: ${value}` : value}
+      {label ? `${label} ${value}` : value}
     </div>
   );
 }
@@ -44,10 +46,12 @@ export const Number = (props: INumberProps) => {
   let label = getValueOrLiteral(data, layout.label);
   let value = getValueOrLiteral(data, layout.value);
   let style = getStyle(data, layout.style);
+  
+  if (value.toString().length < 1) { return null; }
 
   return (
     <div style={style}>
-      {label ? `${label}: ${value}` : value}
+      {label ? `${label} ${value}` : value}
     </div>
   );
 }
@@ -100,7 +104,7 @@ export const Percent = (props: IPercentProps) => {
 
   return (
     <div style={style}>
-      {label ? `${label}: ${value * 100}%` : `${value * 100}%`}
+      {label ? `${label} ${value * 100}%` : `${value * 100}%`}
     </div>
   );
 }
@@ -127,7 +131,7 @@ export const Range = (props: IRangeProps) => {
 
   return (
     <div style={style}>
-      {label ? `${label}: ${min}  - ${max}` : `${min}  - ${max}`}
+      {label ? `${label} ${min}  - ${max}` : `${min}  - ${max}`}
     </div>
   );
 }

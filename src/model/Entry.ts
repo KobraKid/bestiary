@@ -9,6 +9,10 @@ export default interface IEntry {
    */
   id: string,
   /**
+   * Entry category
+   */
+  category?: string,
+  /**
    * Entry attributes
    */
   attributes: AttributeData,
@@ -24,6 +28,7 @@ export function buildEntry(id: string): IEntry {
 export function copyEntry(entry: IEntry): IEntry {
   let copiedEntry: IEntry = {
     id: entry.id,
+    category: entry.category,
     attributes: { ...entry.attributes }
   };
   return copiedEntry;

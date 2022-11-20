@@ -13,13 +13,38 @@
 .collection-grid-collapsed {
   @include collection-grid;
   top: menu.$menu-button-collapsed-size;
-  height: calc(100% - menu.$menu-button-collapsed-size);
 }
 
 .collection-grid-expanded {
   @include collection-grid;
   top: menu.$menu-button-expanded-size;
-  height: calc(100% - menu.$menu-button-expanded-size);
+}
+
+.collection-subsection {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  width: 100%;
+
+  &>.collection-subsection-header:first-child {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+
+    &>div {
+      font-size: 20px;
+      text-align: center;
+    }
+
+    &>div:first-child,
+    &>div:last-child {
+      height: 0px;
+      flex-grow: 1;
+      border-top: 1px solid black;
+      margin: 0px 5px;
+    }
+  }
 }
 
 .preview-item {
