@@ -1,0 +1,32 @@
+.map-title {
+    position: absolute;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    font-size: 24px;
+    text-align: center;
+    width: calc(100vw - 64px);
+    transition: background-color 0.5s ease;
+
+    &>div {
+        transition: all 0.5s ease;
+    }
+
+    &:hover {
+        background-color: transparent;
+
+        &>div {
+            color: transparent;
+            visibility: hidden;
+        }
+    }
+}
+
+.map-scroll-container {
+    height: calc(100vh - 64px);
+    width: calc(100vw - 64px);
+}
+
+.poi-container {
+    height: 0px;
+    width: 0px;
+}
