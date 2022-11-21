@@ -50,22 +50,3 @@
 .preview-item {
   padding: 4px;
 }
-
-@keyframes mapPOIFlash {
-  0% {
-    background-color: rgba(0, 0, 0, 0);
-  }
-
-  50% {
-    background-color: rgba(186, 27, 29, 0.67);
-  }
-
-  100% {
-    background-color: rgba(0, 0, 0, 0);
-  }
-}
-
-.mapPOI {
-  animation: mapPOIFlash 2s infinite;
-  cursor: pointer;
-}

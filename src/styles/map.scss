@@ -5,10 +5,10 @@
     font-size: 24px;
     text-align: center;
     width: calc(100vw - 64px);
-    transition: background-color 0.5s ease;
+    transition: background-color 0.15s ease;
 
     &>div {
-        transition: all 0.5s ease;
+        transition: all 0.15s ease;
     }
 
     &:hover {
@@ -29,4 +29,32 @@
 .poi-container {
     height: 0px;
     width: 0px;
+}
+
+@keyframes poiFlash {
+    0% {
+        background-color: rgba(0, 0, 0, 0);
+    }
+
+    50% {
+        background-color: rgba(186, 27, 29, 0.67);
+    }
+
+    100% {
+        background-color: rgba(0, 0, 0, 0);
+    }
+}
+
+.poi {
+    animation: poiFlash 2s infinite;
+    cursor: pointer;
+
+    &>.poi-preview {
+        z-index: 999;
+        visibility: hidden;
+    }
+
+    &:hover>.poi-preview {
+        visibility: visible;
+    }
 }

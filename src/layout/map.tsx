@@ -7,6 +7,7 @@ import IEntry from '../model/Entry';
 import { AttributeValue } from '../model/Attribute';
 import '../styles/collection.scss';
 import '../styles/map.scss';
+import { Link, parseLink } from './relation';
 
 // =============================================================================
 // | Map
@@ -101,7 +102,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
 
   const point = props.point.toString().split('||').map(val => val.trim());
 
-  const link = [(point[0] as string).split('|')[0]?.substring(1), (point[0] as string).split('|')[1]];
+  const link = parseLink(point[0] as string);
   const location = (point[1] as string).split(',');
   const size = (point[2] as string).split(',');
   const scale = props.scale / 100;
@@ -113,20 +114,31 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
     window.electronAPI.writeError(`Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}${!onLinkClicked ? " Missing click handler" : ""}`);
     return null;
   }
+  console.log(linkedCollection);
 
   // extra div to prevent siblings' heights from stacking
   return (
     <div className='poi-container'>
       <div
-        className='mapPOI'
+        className='poi'
         style={{
-          position: "relative",
+          position: 'relative',
           left: `calc(max(0px, calc(100vw - 64px - ${parentWidth}px * ${scale})) + ${location[0]}px * ${scale})`,
           top: `calc(-${parentHeight}px * ${scale} + ${location[1]}px * ${scale} - 4px - max(0px, calc(100vh - 64px - ${parentHeight}px * ${scale})))`,
           width: `${+(size[0]!) * scale}px`,
           height: `${+(size[1]!) * scale}px`,
         }}
-        onClick={() => onLinkClicked(linkedEntry, linkedCollection, null, data.collection)} />
+        onClick={() => onLinkClicked(linkedEntry, linkedCollection, null, data.collection)}>
+        <div
+          className='poi-preview'
+          style={{
+            position: 'relative',
+            top: `${+(size[1]!) * scale}px`,
+            width: 'fit-content'
+          }}>
+          <Link layout={{ link: point[0]!.toString() }} data={data} onLinkClicked={onLinkClicked} />
+        </div>
+      </div>
     </div>
   );
 }

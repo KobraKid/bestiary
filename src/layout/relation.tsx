@@ -10,7 +10,7 @@ import '../styles/collection.scss';
 // =============================================================================
 // | Link
 // =============================================================================
-type Link = [string, string];
+type Link = [collection: string, entry: string];
 
 export interface ILinkLayoutProps extends ILayoutProps {
   link: string
@@ -33,21 +33,28 @@ export const Link = (props: ILinkProps) => {
 
   const linkInfo = parseLink(getValueOrLiteral(data, layout.link));
 
-  if (!Array.isArray(linkInfo) || linkInfo.length < 2 || !onLinkClicked) { return null; }
+  if (!Array.isArray(linkInfo) || linkInfo.length < 2 || !onLinkClicked) {
+    window.electronAPI.writeError(`Could not parse link ${layout.link} ${linkInfo}`);
+    return null;
+  }
 
   const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
-  const style=getStyle(data, layout.style);
+  if (!linkedCollection || !linkedEntry) {
+    window.electronAPI.writeError(`Could not establish link [${linkInfo.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}`)
+    return null;
+  }
+
+  const style = getStyle(data, layout.style);
+  console.log(linkInfo, linkedEntry, linkedCollection, data.entry, data.collection);
 
   return (
-    (linkedCollection && linkedEntry) ?
-      <Entry
-        data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
-        style={style}
-        isPreview
-        onLinkClicked={onLinkClicked}
-        onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
-        className='preview-item' />
-      : null
+    <Entry
+      data={{ pkg: data.pkg, collection: linkedCollection, entry: linkedEntry }}
+      style={style}
+      isPreview
+      onLinkClicked={onLinkClicked}
+      onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}
+      className='preview-item' />
   );
 }

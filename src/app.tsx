@@ -42,6 +42,7 @@ const App = () => {
   const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<IPackage | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<ICollection | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<IEntry | null>(null);
   const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
   const [viewStack, setViewStack] = useState<ViewStackframe[]>([]);
 
@@ -71,7 +72,9 @@ const App = () => {
     setSelectedCollection(null);
 
     if (isMapView(collection)) {
+      setSelectedEntry(null);
       setDisplayMode(DISPLAY_MODE.map);
+      setSelectedEntry(collection.data[0] ?? null);
     } else {
       setDisplayMode(DISPLAY_MODE.collection);
     }
@@ -98,6 +101,8 @@ const App = () => {
           pkgMenuexpanded={pkgMenuExpanded}
           collection={selectedCollection}
           setCollection={setSelectedCollection}
+          entry={selectedEntry}
+          setEntry={setSelectedEntry}
           displayMode={displayMode}
           setDisplayMode={setDisplayMode}
           viewStack={viewStack}
@@ -116,9 +121,11 @@ interface IPageProps {
   pkg: IPackage,
   pkgMenuexpanded: boolean,
   collection: ICollection,
-  setCollection: (collection: ICollection) => void,
+  setCollection: React.Dispatch<React.SetStateAction<ICollection | null>>,
+  entry: IEntry | null,
+  setEntry: React.Dispatch<React.SetStateAction<IEntry | null>>,
   displayMode: DISPLAY_MODE,
-  setDisplayMode: (mode: DISPLAY_MODE) => void,
+  setDisplayMode: React.Dispatch<React.SetStateAction<DISPLAY_MODE | null>>,
   viewStack: ViewStackframe[],
   addViewStackframe: (view: ViewStackframe) => void,
   removeViewStackframe: () => void,
@@ -133,15 +140,14 @@ const Page = (props: IPageProps) => {
   const {
     pkg, pkgMenuexpanded,
     collection, setCollection,
+    entry, setEntry,
     displayMode, setDisplayMode,
     viewStack, addViewStackframe, removeViewStackframe
   } = props;
 
-  const [selectedEntry, setSelectedEntry] = useState<IEntry | null>(null);
-
   useEffect(() => {
     if (displayMode === DISPLAY_MODE.map && collection.data.length > 0) {
-      setSelectedEntry(collection.data[0]!);
+      //setEntry(collection.data[0]!);
     }
   }, [displayMode]);
 
@@ -155,9 +161,9 @@ const Page = (props: IPageProps) => {
       setDisplayMode(DISPLAY_MODE.entry);
     }
 
-    setSelectedEntry(null);
+    setEntry(null);
     setCollection(newCollection);
-    setSelectedEntry(newEntry);
+    setEntry(newEntry);
 
     addViewStackframe(view);
     console.log("→ going from", prevCollection.name, prevEntry?.id ?? "collection", "to", newCollection.name, newEntry.id);
@@ -180,9 +186,9 @@ const Page = (props: IPageProps) => {
       setDisplayMode(DISPLAY_MODE.collection);
     }
 
-    setSelectedEntry(null);
+    setEntry(null);
     setCollection(view.collection);
-    setSelectedEntry(view.entry);
+    setEntry(view.entry);
 
     removeViewStackframe();
   }, []);
@@ -197,14 +203,14 @@ const Page = (props: IPageProps) => {
       </CSSTransition>
       <CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={600} appear unmountOnExit exit={false} classNames='transition-slide-in'>
         <Details
-          data={{ pkg: pkg, collection: collection, entry: selectedEntry }}
+          data={{ pkg: pkg, collection: collection, entry: entry }}
           pkgMenuExpanded={pkgMenuexpanded}
           onEntryClicked={onEntryClickedCallback}
           onReturnToCollectionClicked={() => onReturnClickedCallback(viewStack)} />
       </CSSTransition>
       <CSSTransition in={displayMode === DISPLAY_MODE.map} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>
         <MapView
-          data={{ pkg: pkg, collection: collection, entry: selectedEntry }}
+          data={{ pkg: pkg, collection: collection, entry: entry }}
           pkgMenuExpanded={pkgMenuexpanded}
           onEntryClicked={onEntryClickedCallback} />
       </CSSTransition>

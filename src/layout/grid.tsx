@@ -10,6 +10,7 @@ import '../styles/grid.scss';
 // | Grid
 // =============================================================================
 export interface IGridLayoutProps extends ILayoutProps {
+    label?: string,
     rows: string,
     cols: {
         type: LAYOUT_TYPE,
@@ -30,32 +31,36 @@ export const Grid = (props: IGridProps) => {
     if (!layout.cols) { return null; }
     const rows = getValueOrLiteral(data, layout.rows);
     if (!Array.isArray(rows)) { return null; }
+    const label = getValueOrLiteral(data, layout.label);
     const style = getStyle(data, layout.style);
     const tdStyles = layout.styles?.map(s => getStyle(data, s));
-    const styles = layout.cols.map(col => getStyle(data, col.style));
+    const colStyles = layout.cols.map(col => getStyle(data, col.style));
 
     return (
-        <table className='grid' style={style}>
-            <thead><tr>{layout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
-            <tbody>
-                {rows.map((row, r) => {
-                    let vals = row.toString().split('||');
-                    if (!Array.isArray(vals)) { return null; }
-                    return <tr key={r}>
-                        {layout.cols.map((col, c) => {
-                            let val = vals[c]?.trim();
-                            if (val === null || val === undefined) { return null; }
-                            return (
-                                <td key={c} className='grid' style={tdStyles && tdStyles[c]}>
-                                    {renderElementByType(col.type, c, val, data, styles[c], onLinkClicked)}
-                                </td>
-                            );
-                        }
-                        )}
-                    </tr>
-                })}
-            </tbody>
-        </table>
+        <React.Fragment>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
+            <table className='grid' style={style}>
+                <thead><tr>{layout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
+                <tbody>
+                    {rows.map((row, r) => {
+                        let vals = row.toString().split('||');
+                        if (!Array.isArray(vals)) { return null; }
+                        return <tr key={r}>
+                            {layout.cols.map((col, c) => {
+                                let val = vals[c]?.trim();
+                                if (val === null || val === undefined) { return null; }
+                                return (
+                                    <td key={c} className='grid' style={tdStyles && tdStyles[c]}>
+                                        {renderElementByType(col.type, c, val, data, colStyles[c], onLinkClicked)}
+                                    </td>
+                                );
+                            }
+                            )}
+                        </tr>
+                    })}
+                </tbody>
+            </table>
+        </React.Fragment>
     );
 }
 
@@ -64,8 +69,10 @@ export const Grid = (props: IGridProps) => {
 // =============================================================================
 
 export interface IListLayoutProps extends ILayoutProps {
+    label?: string,
     elements: string,
     elementTypes: LAYOUT_TYPE,
+    elementStyles?: React.CSSProperties[],
     vertical?: boolean
 }
 
@@ -76,19 +83,24 @@ export interface IListProps extends ILayoutElement {
 export const List = (props: IListProps) => {
     const { layout, data, onLinkClicked } = props;
 
+    const label = getValueOrLiteral(data, layout.label);
     const elements = getValueOrLiteral(data, layout.elements);
     if (!Array.isArray(elements)) { return null; }
     const style = getStyle(data, layout.style);
     style.display = 'flex';
     style.flexDirection = layout.vertical ? 'column' : 'row';
+    const elementStyles = layout.elementStyles?.map(s => getStyle(data, s));
 
     return (
-        <div style={style}>
-            {elements.map((element, i) => {
-                if (element === null || element === undefined) { return null; }
-                return renderElementByType(layout.elementTypes, i, element as string, data, layout.style, onLinkClicked);
-            })}
-        </div>
+        <React.Fragment>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
+            <div style={style}>
+                {elements.map((element, i) => {
+                    if (element === null || element === undefined) { return null; }
+                    return renderElementByType(layout.elementTypes, i, element as string, data, elementStyles ? elementStyles[i] : undefined, onLinkClicked);
+                })}
+            </div>
+        </React.Fragment>
     );
 }
 
