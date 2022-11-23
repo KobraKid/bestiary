@@ -19,10 +19,23 @@ export const Sprite = (props: ISpriteProps) => {
   let value = getValueOrLiteral(props.data, layout.value);
   if (!value) { return null; }
 
+  const [image, setImage] = useState<string | null>(null);
+  const path = window.path.join(props.data.pkg.metadata.path, "" + value);
+  window.electronAPI.fileExists(path).then(exists => {
+    if (exists) {
+      setImage(path);
+    }
+    else {
+      window.electronAPI.writeError("❗Could not locate image <" + path + ">");
+    }
+  });
+
   let style = getStyle(props.data, layout.style);
 
   return (
-    <img src={window.path.join(props.data.pkg.metadata.path, "" + value)} style={style} />
+    image ?
+      <img src={path} style={style} />
+      : <div style={style}>{/* Placeholder */}</div>
   );
 }
 

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadPackages: (): Promise<IPackageMetadata[]> => ipcRenderer.invoke('load-pkgs'),
   loadPackage: (dir: string): Promise<IPackage | null> => ipcRenderer.invoke('load-pkg', dir),
   parsePackage: (data: string): Promise<IPackage | null> => ipcRenderer.invoke('parse-pkg', data),
+  fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke('file-exists', path),
   write: (...message: string[]): Promise<void> => ipcRenderer.invoke('write', message),
   writeError: (...message: string[]): Promise<void> => ipcRenderer.invoke('write-error', message)
 });

@@ -4,6 +4,7 @@ export interface IElectronAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,
   loadPackage: (path: string) => Promise<IPackage | null>,
   parsePackage: (data: string) => Promise<IPackage | null>,
+  fileExists: (path: string) => Promise<boolean>,
   write: (...message: string[]) => Promise<void>,
   writeError: (...message: string[]) => Promise<void>,
 }

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import IPackage, { IPackageMetadata } from './model/Package';
@@ -171,6 +171,8 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
 ipcMain.handle('load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
 
 ipcMain.handle('parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
+
+ipcMain.handle('file-exists', (_event: any, filePath: string): boolean => existsSync(filePath));
 
 ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(message)));
 

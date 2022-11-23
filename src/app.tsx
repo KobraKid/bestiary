@@ -1,6 +1,6 @@
 import React, { Fragment, useCallback, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
-import { CSSTransition } from 'react-transition-group';
+// import { CSSTransition } from 'react-transition-group';
 import { CollectionMenu, PackageMenu } from './menu';
 import { Collection } from './collection';
 import { Details } from './details';
@@ -195,25 +195,28 @@ const Page = (props: IPageProps) => {
 
   return (
     <Fragment>
-      <CSSTransition in={displayMode === DISPLAY_MODE.collection} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>
+      {/*<CSSTransition in={displayMode === DISPLAY_MODE.collection} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>*/}
+      {displayMode === DISPLAY_MODE.collection &&
         <Collection
           data={{ pkg: pkg, collection: collection }}
           pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClickedCallback} />
-      </CSSTransition>
-      <CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={600} appear unmountOnExit exit={false} classNames='transition-slide-in'>
+          onEntryClicked={onEntryClickedCallback} />}
+      {/*</CSSTransition>*/}
+      {/*<CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={600} appear unmountOnExit exit={false} classNames='transition-slide-in'>*/}
+      {displayMode === DISPLAY_MODE.entry &&
         <Details
           data={{ pkg: pkg, collection: collection, entry: entry }}
           pkgMenuExpanded={pkgMenuexpanded}
           onEntryClicked={onEntryClickedCallback}
-          onReturnToCollectionClicked={() => onReturnClickedCallback(viewStack)} />
-      </CSSTransition>
-      <CSSTransition in={displayMode === DISPLAY_MODE.map} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>
+          onReturnToCollectionClicked={() => onReturnClickedCallback(viewStack)} />}
+      {/*</CSSTransition>*/}
+      {/*<CSSTransition in={displayMode === DISPLAY_MODE.map} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>*/}
+      {displayMode === DISPLAY_MODE.map &&
         <MapView
           data={{ pkg: pkg, collection: collection, entry: entry }}
           pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClickedCallback} />
-      </CSSTransition>
+          onEntryClicked={onEntryClickedCallback} />}
+      {/*</CSSTransition>*/}
     </Fragment>
   );
 }

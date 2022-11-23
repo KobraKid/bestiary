@@ -4,7 +4,7 @@ import ICollection from './model/Collection';
 import IEntry from './model/Entry';
 import { Entry } from './entry';
 import { IDataProps } from './model/Layout';
-import { CSSTransition, TransitionGroup } from 'react-transition-group';
+// import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './styles/transitions.scss';
 import { getValueOrLiteral } from './layout/base';
 
