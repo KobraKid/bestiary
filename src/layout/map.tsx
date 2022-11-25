@@ -111,7 +111,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]);
 
   if (!linkedCollection || !linkedEntry || !onLinkClicked) {
-    window.electronAPI.writeError(`Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}${!onLinkClicked ? " Missing click handler" : ""}`);
+    window.log.writeError(`Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}${!onLinkClicked ? " Missing click handler" : ""}`);
     return null;
   }
   console.log(linkedCollection);

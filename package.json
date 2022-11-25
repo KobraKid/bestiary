@@ -5,10 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "chcp 65001 && npm run build && concurrently \"npm:electron\" \"npm:watch\" -k -c \"yellow,gray\"",
-    "startBuilder": "chcp 65001 && npm run build && concurrently \"npm:electronBuilder\" \"npm:watch\" -k -c \"yellow,gray\"",
     "build": "webpack --config ./webpack.config.js",
     "electron": "electron ./dist/index.js --dev=1",
-    "electronBuilder": "electron ./dist/index.js --builder=1 --dev=1",
     "watch": "webpack --config ./webpack.config.js --watch",
     "package": "copy package.json dist\\package.json && npx electron-packager ./dist --overwrite",
     "prod": ".\\bestiary-win32-x64\\bestiary.exe"

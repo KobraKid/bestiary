@@ -34,7 +34,7 @@ export const PackageMenu = (props: IPackageMenuProps) => {
   const [packages, setPackages] = useState(new Array<IPackageMetadata>());
 
   const onPkgClickedCallback = useCallback((path: string) => {
-    window.electronAPI.loadPackage(path).then((result: IPackage | null) => {
+    window.pkg.loadPackage(path).then((result: IPackage | null) => {
       if (result) {
         setExpanded(false);
         onPackageClicked(result);
@@ -43,7 +43,7 @@ export const PackageMenu = (props: IPackageMenuProps) => {
   }, []);
 
   useEffect(() => {
-    window.electronAPI.loadPackages().then((result: any) => setPackages(result as IPackageMetadata[]));
+    window.pkg.loadPackages().then((result: any) => setPackages(result as IPackageMetadata[]));
   }, [setPackages]);
 
   return (
@@ -134,7 +134,8 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
         <CollectionMenuItem
           key={collection.name}
           name={collection.name}
-          onCollectionClicked={() => onCollectionClicked(collection)} />
+          onCollectionClicked={() => onCollectionClicked(collection)}
+          onCollectionRightClicked={() => window.menu.showCollectionMenu(collection.name)} />
       )}
     </div>
   );
@@ -146,6 +147,7 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
 interface ICollectionMenuItemProps {
   name: string,
   onCollectionClicked: () => void;
+  onCollectionRightClicked: () => void;
 }
 
 /**
@@ -154,9 +156,9 @@ interface ICollectionMenuItemProps {
  * @returns A collection
  */
 const CollectionMenuItem = (props: ICollectionMenuItemProps) => {
-  const { name, onCollectionClicked } = props;
+  const { name, onCollectionClicked, onCollectionRightClicked } = props;
   return (
-    <button className='collection-menu-button' onClick={onCollectionClicked}>
+    <button className='collection-menu-button' onClick={onCollectionClicked} onContextMenu={onCollectionRightClicked}>
       <p>{name}</p>
     </button>
   );

@@ -34,14 +34,14 @@ export const Link = (props: ILinkProps) => {
   const linkInfo = parseLink(getValueOrLiteral(data, layout.link));
 
   if (!Array.isArray(linkInfo) || linkInfo.length < 2 || !onLinkClicked) {
-    window.electronAPI.writeError(`Could not parse link ${layout.link} ${linkInfo}`);
+    window.log.writeError(`Could not parse link ${layout.link} ${linkInfo}`);
     return null;
   }
 
   const linkedCollection = data.pkg.collections?.find((collection: ICollection) => collection.name === linkInfo[0]);
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
   if (!linkedCollection || !linkedEntry) {
-    window.electronAPI.writeError(`Could not establish link [${linkInfo.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}`)
+    window.log.writeError(`Could not establish link [${linkInfo.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}`)
     return null;
   }
 

@@ -22,8 +22,7 @@ module.exports = [
   {
     mode: 'development',
     entry: {
-      app: './src/app.tsx', 
-      pkgBuilder: './src/pkgBuilder.tsx'
+      app: './src/app.tsx'
     },
     target: 'electron-renderer',
     devtool: 'source-map',
@@ -58,11 +57,6 @@ module.exports = [
         template: './src/index.html',
         filename: 'index.html',
         chunks: ['app']
-      }),
-      new HtmlWebpackPlugin({
-        template: './src/index.html',
-        filename: 'pkgBuilder.html',
-        chunks: ['pkgBuilder']
       })
     ],
     stats: 'errors-only'

@@ -11,6 +11,7 @@ import { LAYOUT_TYPE } from './model/Layout';
 import { MapView } from './mapView';
 import './styles/app.scss';
 import './styles/transitions.scss';
+import { CollectionManager } from './collectionManager';
 
 /**
  * Display mode
@@ -45,6 +46,8 @@ const App = () => {
   const [selectedEntry, setSelectedEntry] = useState<IEntry | null>(null);
   const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
   const [viewStack, setViewStack] = useState<ViewStackframe[]>([]);
+  const [showCollectionManager, setShowCollectionManager] = useState<boolean>(false);
+  const [managedCollection, setManagedCollection] = useState<ICollection | null>(null);
 
   // Open a new package
   const onPkgClickedCallback = useCallback((pkg: IPackage) => {
@@ -82,6 +85,15 @@ const App = () => {
     setSelectedCollection(collection);
   }, [selectedCollection, selectedPkg]);
 
+  // Handle right clicking on a collection
+  useEffect(() => window.menu.manageCollection(collectionName => {
+    const managedCollection = selectedPkg?.collections.find(collection => collection.name === collectionName);
+    if (managedCollection) {
+      setManagedCollection(managedCollection);
+      setShowCollectionManager(true);
+    }
+  }), [selectedPkg]);
+
   return (
     <Fragment>
       <PackageMenu
@@ -110,6 +122,11 @@ const App = () => {
           removeViewStackframe={() => setViewStack(stack => stack.slice(0, -1))} />
         : null
       }
+      <CollectionManager
+        show={showCollectionManager}
+        collection={managedCollection}
+        onAccept={() => setShowCollectionManager(false)}
+        onCancel={() => setShowCollectionManager(false)} />
     </Fragment>
   );
 };

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, IpcMainEvent, Menu } from 'electron';
 import path from 'path';
 import { readFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
@@ -27,38 +27,12 @@ function createWindow(openDevTools: boolean = false) {
     autoHideMenuBar: true,
     // frame: false,
     webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
       preload: path.join(__dirname, 'preload.js')
     }
   });
 
   win.loadFile('index.html');
   if (openDevTools) { win.webContents.openDevTools({ mode: 'detach' }); }
-}
-
-/**
- * Creates the Package Builder window
- * 
- * @param openDevTools If set to true, shows the dev tools menu when launched
- */
-function createBuilderWindow(openDevTools: boolean = false) {
-  console.log(chalk.bold.yellow.bgGrey('Starting package builder'));
-  let win = new BrowserWindow({
-    width: 1920,
-    height: 1280,
-    title: `Package Builder | ${process.env.npm_package_version}`,
-    darkTheme: true,
-    autoHideMenuBar: true,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.join(__dirname, 'preload.js')
-    }
-  });
-
-  win.loadFile('pkgBuilder.html');
-  if (openDevTools) { win.webContents.openDevTools({ mode: 'right' }); }
 }
 
 /**
@@ -145,7 +119,7 @@ function isCollection(data: any): boolean {
 /**
  * Load all packages
  */
-ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
+ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => {
   // Ensure Data directory exists
   await mkdir(paths.data, { recursive: true });
 
@@ -168,9 +142,22 @@ ipcMain.handle('load-pkgs', async (): Promise<IPackageMetadata[]> => {
   return pkgs;
 });
 
-ipcMain.handle('load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
+ipcMain.handle('pkg:load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
 
-ipcMain.handle('parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
+ipcMain.handle('pkg:parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
+
+ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection: string) => {
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Manage collection',
+      click: () => event.sender.send('context-menu:manage-collection', collection)
+    }
+  ]);
+  const sender = BrowserWindow.fromWebContents(event.sender);
+  if (sender) {
+    menu.popup({ window: sender });
+  }
+});
 
 ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(message)));
 
@@ -180,12 +167,6 @@ ipcMain.handle('write-error', (_event: any, ...message: string[]): void => conso
  * Create the main window
  */
 app.whenReady().then(async () => {
-  const launchedBuilder = app.commandLine.getSwitchValue('builder') === '1'
   const openDevTools = app.commandLine.getSwitchValue('dev') === '1';
-
-  if (launchedBuilder) {
-    createBuilderWindow(openDevTools);
-  } else {
-    createWindow(openDevTools);
-  }
+  createWindow(openDevTools);
 });

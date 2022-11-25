@@ -1,0 +1,11 @@
+.manager {
+    position: fixed;
+    z-index: 9999;
+    top: 25%;
+    left: 25%;
+    height: 50vh;
+    width: 50vw;
+    overflow: auto;
+    background-color: darkslategray;
+    border-radius: 16px;
+}
