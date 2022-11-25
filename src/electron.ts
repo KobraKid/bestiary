@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, IpcMainEvent, Menu } from 'electron';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import IPackage, { IPackageMetadata } from './model/Package';
@@ -145,6 +145,8 @@ ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => {
 ipcMain.handle('pkg:load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
 
 ipcMain.handle('pkg:parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
+
+ipcMain.handle('pkg:file-exists', (_event: any, filePath: string): boolean => existsSync(filePath));
 
 ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection: string) => {
   const menu = Menu.buildFromTemplate([

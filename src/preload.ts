@@ -6,7 +6,8 @@ import chalk from 'chalk';
 contextBridge.exposeInMainWorld('pkg', {
   loadPackages: (): Promise<IPackageMetadata[]> => ipcRenderer.invoke('pkg:load-pkgs'),
   loadPackage: (dir: string): Promise<IPackage | null> => ipcRenderer.invoke('pkg:load-pkg', dir),
-  parsePackage: (data: string): Promise<IPackage | null> => ipcRenderer.invoke('pkg:parse-pkg', data)
+  parsePackage: (data: string): Promise<IPackage | null> => ipcRenderer.invoke('pkg:parse-pkg', data),
+  fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke('pkg:file-exists', path)
 });
 
 contextBridge.exposeInMainWorld('menu', {

@@ -3,7 +3,8 @@ import IPackage, { IPackageMetadata } from './model/Package';
 export interface IPkgAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,
   loadPackage: (path: string) => Promise<IPackage | null>,
-  parsePackage: (data: string) => Promise<IPackage | null>
+  parsePackage: (data: string) => Promise<IPackage | null>,
+  fileExists: (path: string) => Promise<boolean>
 }
 
 export interface IMenuAPI {
