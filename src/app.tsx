@@ -124,6 +124,7 @@ const App = () => {
       }
       <CollectionManager
         show={showCollectionManager}
+        pkg={selectedPkg}
         collection={managedCollection}
         onAccept={() => setShowCollectionManager(false)}
         onCancel={() => setShowCollectionManager(false)} />

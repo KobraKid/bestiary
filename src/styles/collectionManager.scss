@@ -1,11 +1,105 @@
-.manager {
+@use '_colors';
+
+.manager-shield {
     position: fixed;
     z-index: 9999;
-    top: 25%;
-    left: 25%;
-    height: 50vh;
+    top: 0px;
+    left: 0px;
+    height: 100vh;
+    width: 100vw;
+    background-color: rgba(0, 0, 0, 0.33);
+}
+
+.manager {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    z-index: 9999;
+    top: calc(10% - 16px);
+    left: calc(25% - 16px);
+    height: 80vh;
     width: 50vw;
-    overflow: auto;
-    background-color: darkslategray;
+    background-color: colors.$dark;
+    border: 2px solid colors.$medium;
     border-radius: 16px;
+    padding: 16px;
+}
+
+.manager-title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.manager-content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-basis: 0px;
+    height: 0px;
+
+    ::-webkit-scrollbar {
+        display: initial;
+    }
+
+    &>div {
+        display: flex;
+        flex-direction: column;
+        font-size: 20px;
+        max-height: 33%;
+
+        &>div {
+            margin-bottom: 2px;
+
+            &>div {
+                display: inline-block;
+            }
+
+            &>button {
+                height: 24px;
+                width: 24px;
+                margin-right: 4px;
+                padding: 0px;
+            }
+
+            &>span {
+                height: 24px;
+            }
+        }
+
+        &>.config-container {
+            flex-basis: 80px;
+        }
+
+        &>.category-container,
+        &>.spoiler-container {
+            flex-grow: 1;
+        }
+
+        &>.config-container,
+        &>.category-container,
+        &>.spoiler-container {
+            border: 1px solid black;
+            font-size: initial;
+            overflow-y: auto;
+
+            &>ul {
+                margin: 8px;
+                min-height: 20px;
+            }
+        }
+    }
+}
+
+.selected-config {
+    color: colors.$text-light;
+    background-color: colors.$light;
+}
+
+.manager-buttons {
+    align-self: end;
+
+    button {
+        padding: 4px 16px;
+    }
 }

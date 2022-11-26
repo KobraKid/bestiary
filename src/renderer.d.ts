@@ -1,3 +1,4 @@
+import { ICollectionConfig } from './model/Config';
 import IPackage, { IPackageMetadata } from './model/Package';
 
 export interface IPkgAPI {
@@ -5,6 +6,11 @@ export interface IPkgAPI {
   loadPackage: (path: string) => Promise<IPackage | null>,
   parsePackage: (data: string) => Promise<IPackage | null>,
   fileExists: (path: string) => Promise<boolean>
+}
+
+export interface IConfigAPI {
+  loadConfig: (pkg: IPackage, collectionName: string) => Promise<ICollectionConfig[] | null>,
+  saveConfig: (pkg: IPackage, collectionName: string, config: ICollectionConfig[]) => Promise<void>
 }
 
 export interface IMenuAPI {
@@ -24,6 +30,7 @@ export interface ILoggingAPI {
 declare global {
   interface Window {
     pkg: IPkgAPI,
+    config: IConfigAPI,
     menu: IMenuAPI,
     path: IPathAPI,
     log: ILoggingAPI

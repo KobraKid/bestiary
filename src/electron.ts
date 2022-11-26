@@ -1,16 +1,17 @@
 import { app, BrowserWindow, ipcMain, IpcMainEvent, Menu } from 'electron';
 import path from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { mkdir, readdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import IPackage, { IPackageMetadata } from './model/Package';
 import chalk from 'chalk';
+import { ICollectionConfig, IPackageConfig } from './model/Config';
 
 /**
  * Setup and logging
  */
 const paths = envPaths('Bestiary', { suffix: '' });
-console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ Electron: ${process.versions.electron}\n📦 Package directory: ${paths.data}\n`));
+console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ Electron: ${process.versions.electron}\n📦 Package directory: ${paths.data}\n⚙ Config directory: ${paths.config}`));
 
 /**
  * Creates the main app window
@@ -117,6 +118,48 @@ function isCollection(data: any): boolean {
 }
 
 /**
+ * Loads the configuration data for a collection from a package's configuration file.
+ * If the package doesn't have a configuration file, one is created.
+ * 
+ * @param pkg The package to load the config file for
+ * @param collection The collection name to load the config for
+ * @returns The configuration data for a collection
+ */
+async function createOrLoadCollectionConfig(pkg: IPackage, collectionName: string): Promise<ICollectionConfig[] | null> {
+  const pkgConfigPath = path.join(paths.config, path.basename(pkg.metadata.path));
+  const pkgConfigFile = path.join(pkgConfigPath, 'config.json');
+
+  try {
+    await mkdir(pkgConfigPath, { recursive: true });
+
+    if (!existsSync(pkgConfigFile)) {
+      console.log(chalk.blue('Creating config file', pkgConfigFile));
+      writeFileSync(pkgConfigFile, '{}');
+    }
+
+    const pkgConfig: IPackageConfig = JSON.parse(readFileSync(pkgConfigFile, { encoding: 'utf-8' }));
+    const collectionConfig: ICollectionConfig[] = pkgConfig[collectionName] || [];
+    return collectionConfig;
+  } catch (err: any) {
+    console.log(chalk.white.bgRed('❌ Error loading package config at "' + pkgConfigFile + '"', err));
+  }
+
+  return null;
+}
+
+function saveCollectionConfig(pkg: IPackage, collectionName: string, config: ICollectionConfig[]): void {
+  const pkgConfigFile = path.join(paths.config, path.basename(pkg.metadata.path), 'config.json');
+
+  try {
+    const pkgConfig: IPackageConfig = JSON.parse(readFileSync(pkgConfigFile, { encoding: 'utf-8' }));
+    pkgConfig[collectionName] = config;
+    writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig));
+  } catch (err: any) {
+    console.log(chalk.white.bgRed('❌ Error saving package config at "' + pkgConfigFile + '"', err));
+  }
+}
+
+/**
  * Load all packages
  */
 ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => {
@@ -148,8 +191,16 @@ ipcMain.handle('pkg:parse-pkg', async (_event: any, pkgData: string): Promise<IP
 
 ipcMain.handle('pkg:file-exists', (_event: any, filePath: string): boolean => existsSync(filePath));
 
+ipcMain.handle('config:load-collection-config', async (_event: any, pkg: IPackage, collection: string) => createOrLoadCollectionConfig(pkg, collection));
+
+ipcMain.handle('config:save-collection-config', async (_event: any, pkg: IPackage, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkg, collection, config));
+
 ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection: string) => {
   const menu = Menu.buildFromTemplate([
+    {
+      label: collection,
+      enabled: false
+    },
     {
       label: 'Manage collection',
       click: () => event.sender.send('context-menu:manage-collection', collection)

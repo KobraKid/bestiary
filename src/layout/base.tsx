@@ -52,14 +52,17 @@ export const Base = (props: ILayoutElement) => {
  * @returns The value of an attribute. If `value` starts with '!', the value will be looked up from the entry's attributes.
  *          Otherwise, the literal value will be returned.
  */
-export function getValueOrLiteral(data: IDataProps, value?: string | AttributeValue | undefined): AttributeValue {
+export function getValueOrLiteral(data: Partial<IDataProps>, value?: string | AttributeValue | undefined): AttributeValue {
   let val: AttributeValue = value ?? '';
 
-  const defs = data.pkg.metadata.defs;
+  const defs = data.pkg?.metadata.defs;
 
   try {
     if (typeof val === 'string' && val?.startsWith('!')) {
-      val = data.entry.attributes[val.substring(1) as keyof typeof data.entry.attributes] ?? '';
+      const targetVal = val.substring(1);
+      if (data.entry && targetVal in data.entry.attributes) {
+        val = data.entry.attributes[targetVal as keyof typeof data.entry.attributes] ?? '';
+      }
     }
   } catch (e: unknown) {
     if (typeof e === 'string') { console.log(e); }
@@ -68,7 +71,10 @@ export function getValueOrLiteral(data: IDataProps, value?: string | AttributeVa
   }
 
   if (typeof val === 'string' && val.startsWith('@')) {
-    val = defs[val.substring(1) as keyof typeof defs];
+    const targetVal = val.substring(1);
+    if (defs && targetVal in defs) {
+      val = defs[targetVal as keyof typeof defs];
+    }
   }
 
   return val;

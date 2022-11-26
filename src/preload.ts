@@ -2,12 +2,18 @@ import { contextBridge, ipcRenderer } from 'electron';
 import path = require('path');
 import IPackage, { IPackageMetadata } from './model/Package';
 import chalk from 'chalk';
+import { ICollectionConfig } from './model/Config';
 
 contextBridge.exposeInMainWorld('pkg', {
   loadPackages: (): Promise<IPackageMetadata[]> => ipcRenderer.invoke('pkg:load-pkgs'),
   loadPackage: (dir: string): Promise<IPackage | null> => ipcRenderer.invoke('pkg:load-pkg', dir),
   parsePackage: (data: string): Promise<IPackage | null> => ipcRenderer.invoke('pkg:parse-pkg', data),
   fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke('pkg:file-exists', path)
+});
+
+contextBridge.exposeInMainWorld('config', {
+  loadConfig: (pkg: IPackage, collectionName: string) => ipcRenderer.invoke('config:load-collection-config', pkg, collectionName),
+  saveConfig: (pkg: IPackage, collectionName: string, config: ICollectionConfig[]) => ipcRenderer.invoke('config:save-collection-config', pkg, collectionName, config)
 });
 
 contextBridge.exposeInMainWorld('menu', {
