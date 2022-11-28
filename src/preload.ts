@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import path = require('path');
 import IPackage, { IPackageMetadata } from './model/Package';
 import chalk from 'chalk';
-import { ICollectionConfig } from './model/Config';
+import { ICollectionConfig, IPackageConfig } from './model/Config';
 
 contextBridge.exposeInMainWorld('pkg', {
   loadPackages: (): Promise<IPackageMetadata[]> => ipcRenderer.invoke('pkg:load-pkgs'),
@@ -12,8 +12,10 @@ contextBridge.exposeInMainWorld('pkg', {
 });
 
 contextBridge.exposeInMainWorld('config', {
+  loadPkgConfig: (pkg: IPackage) => ipcRenderer.invoke('config:load-config', pkg),
+  savePkgConfig: (pkgPath: string, config: IPackageConfig) => ipcRenderer.invoke('config:save-config', pkgPath, config),
   loadConfig: (pkg: IPackage, collectionName: string) => ipcRenderer.invoke('config:load-collection-config', pkg, collectionName),
-  saveConfig: (pkg: IPackage, collectionName: string, config: ICollectionConfig[]) => ipcRenderer.invoke('config:save-collection-config', pkg, collectionName, config)
+  saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => ipcRenderer.invoke('config:save-collection-config', pkgPath, collectionName, config)
 });
 
 contextBridge.exposeInMainWorld('menu', {

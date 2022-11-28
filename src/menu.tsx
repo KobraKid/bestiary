@@ -4,6 +4,7 @@ import ICollection from './model/Collection';
 import './styles/menu.scss';
 import upArrow from './assets/icons/up.png';
 import downArrow from './assets/icons/down.png';
+import leftArrow from './assets/icons/left.png';
 
 /**
  * Props for the package menu
@@ -56,14 +57,9 @@ export const PackageMenu = (props: IPackageMenuProps) => {
           expanded={expanded}
           onPkgClicked={() => onPkgClickedCallback(pkg.path)} />)
       }
-      {expanded ?
-        <div style={{ flexGrow: '1', height: '100%' }}>
-          <img src={upArrow} style={{ float: 'right', padding: 16, width: 32, height: 32 }} onClick={() => setExpanded(false)} />
-        </div> :
-        <div style={{ flexGrow: '1', height: '100%' }}>
-          <img src={downArrow} style={{ float: 'right', padding: 16, width: 32, height: 32 }} onClick={() => setExpanded(true)} />
-        </div>
-      }
+      <div style={{ flexGrow: '1', height: '100%' }}>
+        <img src={expanded ? upArrow : downArrow} style={{ float: 'right', padding: 16, width: 32, height: 32, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)} />
+      </div>
     </div>
   );
 }
@@ -116,6 +112,8 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
 interface ICollectionMenuProps {
   collections: ICollection[],
   onCollectionClicked: (collection: ICollection) => void,
+  isTopLevel: boolean,
+  onBackArrowClicked: () => void,
   pkgMenuExpanded: boolean,
 }
 
@@ -125,10 +123,15 @@ interface ICollectionMenuProps {
  * @returns A menu
  */
 export const CollectionMenu = (props: ICollectionMenuProps) => {
-  const { collections, onCollectionClicked, pkgMenuExpanded } = props;
+  const { collections, onCollectionClicked, isTopLevel, onBackArrowClicked, pkgMenuExpanded } = props;
 
   return (
     <div className={`collection-menu-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
+      {!isTopLevel &&
+        <div className='collection-menu-button'>
+          <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: 'pointer' }} onClick={onBackArrowClicked} />
+        </div>
+      }
       {collections.map((collection: ICollection) =>
         !collection.hidden &&
         <CollectionMenuItem

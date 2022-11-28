@@ -22,6 +22,7 @@
 
 .collection-subsection {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   margin-bottom: 16px;
   width: 100%;
@@ -47,6 +48,41 @@
   }
 }
 
+.collection-tabs {
+  display: flex;
+  flex-direction: column;
+  width: 24px;
+  z-index: 999;
+
+  .collection-tab {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 2px;
+    width: 20px;
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: clip;
+    transition: width .5s ease;
+  }
+
+  &:hover {
+    .collection-tab {
+      width: 100px;
+      overflow: auto;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+
 .preview-item {
-  padding: 4px;
+  cursor: pointer;
+}
+
+.entry-wrapper {
+  display: flex;
+  flex-direction: row;
+  padding: 4px 0px 0px 4px;
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import IPackage from './Package';
 import ICollection from './Collection';
 import IEntry from './Entry';
-import { IStringLayoutProps } from '../layout/basic';
+import { ICollectionConfig } from './Config';
 
 export enum LAYOUT_TYPE {
   /* groupings */
@@ -65,11 +65,18 @@ export interface ILinkableProps {
 }
 
 export interface ILayoutElement extends ILinkableProps {
+  /**
+   * The layout of the entry
+   */
   layout: ILayoutProps,
   /**
    * Data required to parse layout parameters
    */
   data: IDataProps,
+  /**
+   * Collection configuration
+   */
+  config?: ICollectionConfig[]
 }
 
 export function copyLayoutElement(layoutElement: Omit<ILayoutElement, 'data'>): Omit<ILayoutElement, 'data'> {

@@ -1,4 +1,4 @@
-import { ICollectionConfig } from './model/Config';
+import { ICollectionConfig, IPackageConfig } from './model/Config';
 import IPackage, { IPackageMetadata } from './model/Package';
 
 export interface IPkgAPI {
@@ -9,8 +9,10 @@ export interface IPkgAPI {
 }
 
 export interface IConfigAPI {
-  loadConfig: (pkg: IPackage, collectionName: string) => Promise<ICollectionConfig[] | null>,
-  saveConfig: (pkg: IPackage, collectionName: string, config: ICollectionConfig[]) => Promise<void>
+  loadPkgConfig: (pkg: IPackage) => Promise<IPackageConfig>,
+  savePkgConfig: (pkgPath: string, config: IPackageConfig) => Promise<void>,
+  loadConfig: (pkg: IPackage, collectionName: string) => Promise<ICollectionConfig[]>,
+  saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => Promise<void>
 }
 
 export interface IMenuAPI {

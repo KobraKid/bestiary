@@ -3,9 +3,11 @@ export interface IPackageConfig {
 }
 
 export interface ICollectionConfig {
-    id: string,
+    id: number,
     name: string,
     color: string,
+    textColor: string,
     categories: string[],
-    spoilers: string[]
+    spoilers: string[],
+    collectedEntryIds: string[],
 }

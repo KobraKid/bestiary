@@ -46,7 +46,6 @@ export const Link = (props: ILinkProps) => {
   }
 
   const style = getStyle(data, layout.style);
-  console.log(linkInfo, linkedEntry, linkedCollection, data.entry, data.collection);
 
   return (
     <Entry

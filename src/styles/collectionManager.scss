@@ -69,6 +69,10 @@
 
         &>.config-container {
             flex-basis: 80px;
+
+            &>ul>li {
+                padding: 2px 2px 3px 2px;
+            }
         }
 
         &>.category-container,

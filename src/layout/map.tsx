@@ -114,7 +114,6 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
     window.log.writeError(`Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}${!onLinkClicked ? " Missing click handler" : ""}`);
     return null;
   }
-  console.log(linkedCollection);
 
   // extra div to prevent siblings' heights from stacking
   return (

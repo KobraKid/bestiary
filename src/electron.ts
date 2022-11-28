@@ -117,15 +117,7 @@ function isCollection(data: any): boolean {
   return ('data' in data) && ('layout' in data) && ('layoutPreview' in data);
 }
 
-/**
- * Loads the configuration data for a collection from a package's configuration file.
- * If the package doesn't have a configuration file, one is created.
- * 
- * @param pkg The package to load the config file for
- * @param collection The collection name to load the config for
- * @returns The configuration data for a collection
- */
-async function createOrLoadCollectionConfig(pkg: IPackage, collectionName: string): Promise<ICollectionConfig[] | null> {
+async function createOrLoadConfig(pkg: IPackage): Promise<IPackageConfig> {
   const pkgConfigPath = path.join(paths.config, path.basename(pkg.metadata.path));
   const pkgConfigFile = path.join(pkgConfigPath, 'config.json');
 
@@ -138,17 +130,42 @@ async function createOrLoadCollectionConfig(pkg: IPackage, collectionName: strin
     }
 
     const pkgConfig: IPackageConfig = JSON.parse(readFileSync(pkgConfigFile, { encoding: 'utf-8' }));
-    const collectionConfig: ICollectionConfig[] = pkgConfig[collectionName] || [];
-    return collectionConfig;
+    return pkgConfig;
   } catch (err: any) {
     console.log(chalk.white.bgRed('❌ Error loading package config at "' + pkgConfigFile + '"', err));
   }
 
-  return null;
+  return {};
 }
 
-function saveCollectionConfig(pkg: IPackage, collectionName: string, config: ICollectionConfig[]): void {
-  const pkgConfigFile = path.join(paths.config, path.basename(pkg.metadata.path), 'config.json');
+/**
+ * Loads the configuration data for a collection from a package's configuration file.
+ * If the package doesn't have a configuration file, one is created.
+ * 
+ * @param pkg The package to load the config file for
+ * @param collection The collection name to load the config for
+ * @returns The configuration data for a collection
+ */
+async function createOrLoadCollectionConfig(pkg: IPackage, collectionName: string): Promise<ICollectionConfig[]> {
+  const pkgConfig = await createOrLoadConfig(pkg);
+  let collectionConfig: ICollectionConfig[] = [];
+  if (pkgConfig) {
+    collectionConfig = pkgConfig[collectionName] || [];
+  }
+  return collectionConfig;
+}
+
+function saveConfig(pkgPath: string, config: IPackageConfig): void {
+  const pkgConfigFile = path.join(paths.config, path.basename(pkgPath), 'config.json');
+  try {
+    writeFileSync(pkgConfigFile, JSON.stringify(config));
+  } catch (err: any) {
+    console.log(chalk.white.bgRed('❌ Error saving package config at "' + pkgConfigFile + '"', err));
+  }
+}
+
+function saveCollectionConfig(pkgPath: string, collectionName: string, config: ICollectionConfig[]): void {
+  const pkgConfigFile = path.join(paths.config, path.basename(pkgPath), 'config.json');
 
   try {
     const pkgConfig: IPackageConfig = JSON.parse(readFileSync(pkgConfigFile, { encoding: 'utf-8' }));
@@ -191,9 +208,13 @@ ipcMain.handle('pkg:parse-pkg', async (_event: any, pkgData: string): Promise<IP
 
 ipcMain.handle('pkg:file-exists', (_event: any, filePath: string): boolean => existsSync(filePath));
 
+ipcMain.handle('config:load-config', async (_event: any, pkg: IPackage) => createOrLoadConfig(pkg));
+
+ipcMain.handle('config:save-config', async (_event: any, pkgPath: string, config: IPackageConfig) => saveConfig(pkgPath, config));
+
 ipcMain.handle('config:load-collection-config', async (_event: any, pkg: IPackage, collection: string) => createOrLoadCollectionConfig(pkg, collection));
 
-ipcMain.handle('config:save-collection-config', async (_event: any, pkg: IPackage, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkg, collection, config));
+ipcMain.handle('config:save-collection-config', async (_event: any, pkgPath: string, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkgPath, collection, config));
 
 ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection: string) => {
   const menu = Menu.buildFromTemplate([
@@ -212,9 +233,9 @@ ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection
   }
 });
 
-ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(message)));
+ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
 
-ipcMain.handle('write-error', (_event: any, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(message)));
+ipcMain.handle('write-error', (_event: any, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
 
 /**
  * Create the main window

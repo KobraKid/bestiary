@@ -3,7 +3,7 @@
 $menu-button-collapsed-size: 64px;
 $menu-font-collapsed-size: .75em;
 $menu-button-expanded-size: 128px;
-$menu-font-expanded-size: 1.75em;
+$menu-font-expanded-size: 1em;
 
 .package-menu {
   position: fixed;
@@ -115,4 +115,14 @@ $menu-font-expanded-size: 1.75em;
   width: $menu-button-collapsed-size;
   height: $menu-button-collapsed-size;
   font-size: $menu-font-collapsed-size;
+  transition: background-color .5s ease 0.05s, color .5s ease 0.05s;
+
+  &:hover {
+    background-color: colors.$text-light;
+    color: colors.$text-dark;
+  }
+}
+
+.package, .collection-menu-button {
+  cursor: pointer;
 }

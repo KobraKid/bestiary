@@ -4,19 +4,23 @@ import ICollection from './model/Collection';
 import IEntry from './model/Entry';
 import { Entry } from './entry';
 import { IDataProps } from './model/Layout';
-// import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './styles/transitions.scss';
 import { getValueOrLiteral } from './layout/base';
+import { ICollectionConfig } from './model/Config';
 
 /**
  * Props for the Collection
  */
 interface ICollectionProps {
-  data: Omit<IDataProps, "entry">
+  /** The current Package and Collection */
+  data: Omit<IDataProps, "entry">,
+  /** The current collection's collection config */
+  collectionConfig?: ICollectionConfig[] | null,
   /** Whether the package menu is expanded */
   pkgMenuExpanded: boolean,
   /** Callback function for when an entry is clicked */
   onEntryClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
+  onEntryCollected: (entryId: string, collectionConfigId: number) => void
 }
 
 /**
@@ -26,14 +30,9 @@ interface ICollectionProps {
  * @returns A collection
  */
 export const Collection = (props: ICollectionProps) => {
-  const { data, pkgMenuExpanded, onEntryClicked } = props;
+  const { data, collectionConfig, pkgMenuExpanded, onEntryClicked, onEntryCollected } = props;
 
-  const [entries, setEntries] = useState<Array<IEntry>>([]);
   const [subsections, setSubsections] = useState<Array<string>>([]);
-
-  useEffect(() => {
-    setEntries([]);
-  }, [data]);
 
   useEffect(() => {
     setSubsections(() => {
@@ -42,33 +41,7 @@ export const Collection = (props: ICollectionProps) => {
         subsections.add(getValueOrLiteral({ entry, ...data }, entry.category ?? "").toString()));
       return Array.from(subsections);
     });
-  }, [entries, setSubsections]);
-
-  // useEffect(() => {
-  //   const index = entries.length;
-  //   let timer: NodeJS.Timeout;
-  //   if (index < data.collection.data.length) {
-  //     timer = setTimeout(() => setEntries(entries.concat(data.collection.data[index]!)), 50);
-  //   }
-  //   return (() => {
-  //     clearTimeout(timer);
-  //   });
-  // }, [entries]);
-
-  // return (
-  //   <TransitionGroup className={`collection-grid-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
-  //     {entries.map((entry) =>
-  //       <CSSTransition key={data.collection.name + entry.id} in timeout={600} appear unmountOnExit classNames='transition-slide-up'>
-  //         <Entry
-  //           data={{ entry: entry, ...data }}
-  //           isPreview
-  //           className='preview-item'
-  //           onLinkClicked={onEntryClicked}
-  //           onClick={() => onEntryClicked(entry, data.collection, null, data.collection)} />
-  //       </CSSTransition>
-  //     )}
-  //   </TransitionGroup>
-  // );
+  }, []);
 
   return (
     <div className={`collection-grid-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
@@ -77,9 +50,10 @@ export const Collection = (props: ICollectionProps) => {
           key={subsection}
           title={subsection}
           data={data}
-          entries={data.collection.data.filter((entry) =>
-            getValueOrLiteral({ entry, ...data }, entry.category ?? "") === subsection)}
-          onEntryClicked={onEntryClicked} />
+          collectionConfig={collectionConfig?.filter(c => c.categories.length < 1 || c.categories.includes(subsection)) ?? null}
+          entries={data.collection.data.filter((entry) => getValueOrLiteral({ entry, ...data }, entry.category ?? "") === subsection)}
+          onEntryClicked={onEntryClicked}
+          onEntryCollected={onEntryCollected} />
       )}
     </div>
   );
@@ -89,13 +63,17 @@ export const Collection = (props: ICollectionProps) => {
  * Props for the Subsection
  */
 interface ISubSectionProps {
+  /** The subsection's title */
   title: string,
-  data: {
-    pkg: IPackage,
-    collection: ICollection
-  },
+  /** The current Package and Collection */
+  data: Omit<IDataProps, "entry">,
+  /** The current collection's config */
+  collectionConfig: ICollectionConfig[] | null,
+  /** The subsection's entries */
   entries: IEntry[],
+  /** Callback function for when an entry is clicked */
   onEntryClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
+  onEntryCollected: (entryId: string, collectionConfigId: number) => void
 }
 
 /**
@@ -108,7 +86,7 @@ interface ISubSectionProps {
  * @returns A subsection within a collection
  */
 export const Subsection = (props: ISubSectionProps) => {
-  const { title, data, entries, onEntryClicked } = props;
+  const { title, data, collectionConfig, entries, onEntryClicked, onEntryCollected } = props;
 
   return (
     <div className='collection-subsection'>
@@ -123,10 +101,12 @@ export const Subsection = (props: ISubSectionProps) => {
         <Entry
           key={entry.id}
           data={{ entry: entry, ...data }}
+          collectionConfig={collectionConfig}
           isPreview
           className='preview-item'
           onLinkClicked={onEntryClicked}
-          onClick={() => onEntryClicked(entry, data.collection, null, data.collection)} />
+          onClick={() => onEntryClicked(entry, data.collection, null, data.collection)}
+          onCollect={(collectionConfigId) => onEntryCollected(entry.id, collectionConfigId)} />
       )}
     </div>
   );

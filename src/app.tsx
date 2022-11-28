@@ -1,6 +1,5 @@
 import React, { Fragment, useCallback, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
-// import { CSSTransition } from 'react-transition-group';
 import { CollectionMenu, PackageMenu } from './menu';
 import { Collection } from './collection';
 import { Details } from './details';
@@ -12,6 +11,7 @@ import { MapView } from './mapView';
 import './styles/app.scss';
 import './styles/transitions.scss';
 import { CollectionManager } from './collectionManager';
+import { IPackageConfig } from './model/Config';
 
 /**
  * Display mode
@@ -42,6 +42,7 @@ export interface ViewStackframe {
 const App = () => {
   const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<IPackage | null>(null);
+  const [pkgConfig, setPkgConfig] = useState<IPackageConfig | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<ICollection | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<IEntry | null>(null);
   const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
@@ -65,6 +66,7 @@ const App = () => {
 
     setSelectedPkg(pkg);
     setSelectedCollection(collection);
+    window.config.loadPkgConfig(pkg).then(config => setPkgConfig(config));
   }, [selectedPkg]);
 
   // Switch to a different collection
@@ -85,6 +87,74 @@ const App = () => {
     setSelectedCollection(collection);
   }, [selectedCollection, selectedPkg]);
 
+  const onEntryCollectedCallback = useCallback((entryId: string, collection: string, collectionConfigId: number, pkg: IPackage) => {
+    setPkgConfig(pkgConfig => {
+      // Clone current config
+      const newPkgConfig: IPackageConfig = JSON.parse(JSON.stringify(pkgConfig));
+      if (newPkgConfig) {
+        // Get the collection configs for the current collection
+        const collectionConfigs = newPkgConfig[collection];
+        if (collectionConfigs) {
+          // Get the specific config we're changing
+          const configToEdit = collectionConfigs.find(config => config.id === collectionConfigId);
+          if (configToEdit) {
+            // Remove the ID if it already exists, otherwise add it
+            const newEntries = configToEdit.collectedEntryIds.includes(entryId) ?
+              configToEdit.collectedEntryIds.filter(entry => entry !== entryId)
+              : configToEdit.collectedEntryIds.concat(entryId);
+            // Save the change
+            configToEdit.collectedEntryIds = newEntries;
+            window.config.savePkgConfig(pkg.metadata.path, newPkgConfig);
+            return newPkgConfig;
+          }
+        }
+      }
+      return pkgConfig;
+    });
+  }, []);
+
+  // Select a new entry - enter detailed entry view
+  const onEntryClickedCallback = useCallback((newEntry: IEntry, newCollection: ICollection, prevEntry: IEntry | null, prevCollection: ICollection) => {
+    const view = { collection: prevCollection, entry: prevEntry }
+
+    if (newCollection.layout.type === LAYOUT_TYPE.map) {
+      setDisplayMode(DISPLAY_MODE.map);
+    } else {
+      setDisplayMode(DISPLAY_MODE.entry);
+    }
+
+    setSelectedEntry(null);
+    setSelectedCollection(newCollection);
+    setSelectedEntry(newEntry);
+
+    setViewStack(stack => stack.concat(view));
+    window.log.write(`→ going from [${prevCollection.name} ${prevEntry?.id ?? "collection"}] to [${newCollection.name} ${newEntry.id}]`);
+  }, []);
+
+  // Go back one level
+  const onReturnClickedCallback = useCallback((views: ViewStackframe[]) => {
+    window.log.write(`← returning to [${views.length < 1 ? "...nowhere..." : views[views.length - 1]?.collection.name} ${views[views.length - 1]?.entry?.id ?? "collection"}]`);
+    if (views.length < 1) { return; } // nowhere to back out to
+
+    const view = views[views.length - 1]!;
+
+    if (view.entry) {
+      if (isMapView(view.collection)) {
+        setDisplayMode(DISPLAY_MODE.map);
+      } else {
+        setDisplayMode(DISPLAY_MODE.entry);
+      }
+    } else {
+      setDisplayMode(DISPLAY_MODE.collection);
+    }
+
+    setSelectedEntry(null);
+    setSelectedCollection(view.collection);
+    setSelectedEntry(view.entry);
+
+    setViewStack(stack => stack.slice(0, -1));
+  }, []);
+
   // Handle right clicking on a collection
   useEffect(() => window.menu.manageCollection(collectionName => {
     const managedCollection = selectedPkg?.collections.find(collection => collection.name === collectionName);
@@ -100,33 +170,32 @@ const App = () => {
         expanded={pkgMenuExpanded}
         setExpanded={setPkgMenuExpanded}
         onPackageClicked={onPkgClickedCallback} />
-      {selectedPkg ?
+      {selectedPkg &&
         <CollectionMenu
           collections={selectedPkg.collections}
           pkgMenuExpanded={pkgMenuExpanded}
-          onCollectionClicked={onCollectionClickedCallback} />
-        : null
-      }
-      {(selectedPkg && selectedCollection) ?
+          isTopLevel={viewStack.length === 0}
+          onBackArrowClicked={() => onReturnClickedCallback(viewStack)}
+          onCollectionClicked={onCollectionClickedCallback} />}
+      {(selectedPkg && selectedCollection) &&
         <Page
           pkg={selectedPkg}
+          pkgConfig={pkgConfig}
           pkgMenuexpanded={pkgMenuExpanded}
           collection={selectedCollection}
-          setCollection={setSelectedCollection}
           entry={selectedEntry}
-          setEntry={setSelectedEntry}
-          displayMode={displayMode}
-          setDisplayMode={setDisplayMode}
-          viewStack={viewStack}
-          addViewStackframe={(view: ViewStackframe) => setViewStack(stack => stack.concat(view))}
-          removeViewStackframe={() => setViewStack(stack => stack.slice(0, -1))} />
-        : null
-      }
+          onEntryClicked={onEntryClickedCallback}
+          onEntryCollected={(entryId: string, collectionConfigId: number) =>
+            onEntryCollectedCallback(entryId, selectedCollection.name, collectionConfigId, selectedPkg)}
+          displayMode={displayMode} />}
       <CollectionManager
         show={showCollectionManager}
         pkg={selectedPkg}
         collection={managedCollection}
-        onAccept={() => setShowCollectionManager(false)}
+        onAccept={() => {
+          setShowCollectionManager(false);
+          selectedPkg && window.config.loadPkgConfig(selectedPkg).then(config => setPkgConfig(config));
+        }}
         onCancel={() => setShowCollectionManager(false)} />
     </Fragment>
   );
@@ -137,16 +206,13 @@ const App = () => {
  */
 interface IPageProps {
   pkg: IPackage,
+  pkgConfig: IPackageConfig | null,
   pkgMenuexpanded: boolean,
   collection: ICollection,
-  setCollection: React.Dispatch<React.SetStateAction<ICollection | null>>,
   entry: IEntry | null,
-  setEntry: React.Dispatch<React.SetStateAction<IEntry | null>>,
-  displayMode: DISPLAY_MODE,
-  setDisplayMode: React.Dispatch<React.SetStateAction<DISPLAY_MODE | null>>,
-  viewStack: ViewStackframe[],
-  addViewStackframe: (view: ViewStackframe) => void,
-  removeViewStackframe: () => void,
+  onEntryClicked: (newEntry: IEntry, newCollection: ICollection, prevEntry: IEntry | null, prevCollection: ICollection) => void,
+  onEntryCollected: (entryId: string, collectionConfigId: number) => void,
+  displayMode: DISPLAY_MODE
 }
 
 /**
@@ -156,85 +222,31 @@ interface IPageProps {
  */
 const Page = (props: IPageProps) => {
   const {
-    pkg, pkgMenuexpanded,
-    collection, setCollection,
-    entry, setEntry,
-    displayMode, setDisplayMode,
-    viewStack, addViewStackframe, removeViewStackframe
+    pkg, pkgConfig, pkgMenuexpanded,
+    collection,
+    entry, onEntryClicked, onEntryCollected,
+    displayMode
   } = props;
-
-  useEffect(() => {
-    if (displayMode === DISPLAY_MODE.map && collection.data.length > 0) {
-      //setEntry(collection.data[0]!);
-    }
-  }, [displayMode]);
-
-  // Select a new entry - enter detailed entry view
-  const onEntryClickedCallback = useCallback((newEntry: IEntry, newCollection: ICollection, prevEntry: IEntry | null, prevCollection: ICollection) => {
-    const view = { collection: prevCollection, entry: prevEntry }
-
-    if (newCollection.layout.type === LAYOUT_TYPE.map) {
-      setDisplayMode(DISPLAY_MODE.map);
-    } else {
-      setDisplayMode(DISPLAY_MODE.entry);
-    }
-
-    setEntry(null);
-    setCollection(newCollection);
-    setEntry(newEntry);
-
-    addViewStackframe(view);
-    console.log("→ going from", prevCollection.name, prevEntry?.id ?? "collection", "to", newCollection.name, newEntry.id);
-  }, []);
-
-  // Go back one level
-  const onReturnClickedCallback = useCallback((views: ViewStackframe[]) => {
-    console.log("← returning to", views.length < 1 ? "nowhere" : views[views.length - 1]!.collection.name + " " + (views[views.length - 1]!.entry?.id ?? "collection"));
-    if (views.length < 1) { return; } // nowhere to back out to
-
-    const view = views[views.length - 1]!;
-
-    if (view.entry) {
-      if (isMapView(view.collection)) {
-        setDisplayMode(DISPLAY_MODE.map);
-      } else {
-        setDisplayMode(DISPLAY_MODE.entry);
-      }
-    } else {
-      setDisplayMode(DISPLAY_MODE.collection);
-    }
-
-    setEntry(null);
-    setCollection(view.collection);
-    setEntry(view.entry);
-
-    removeViewStackframe();
-  }, []);
 
   return (
     <Fragment>
-      {/*<CSSTransition in={displayMode === DISPLAY_MODE.collection} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>*/}
       {displayMode === DISPLAY_MODE.collection &&
         <Collection
           data={{ pkg: pkg, collection: collection }}
+          collectionConfig={pkgConfig && pkgConfig[collection.name]}
           pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClickedCallback} />}
-      {/*</CSSTransition>*/}
-      {/*<CSSTransition in={displayMode === DISPLAY_MODE.entry} timeout={600} appear unmountOnExit exit={false} classNames='transition-slide-in'>*/}
+          onEntryClicked={onEntryClicked}
+          onEntryCollected={onEntryCollected} />}
       {displayMode === DISPLAY_MODE.entry &&
         <Details
           data={{ pkg: pkg, collection: collection, entry: entry }}
           pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClickedCallback}
-          onReturnToCollectionClicked={() => onReturnClickedCallback(viewStack)} />}
-      {/*</CSSTransition>*/}
-      {/*<CSSTransition in={displayMode === DISPLAY_MODE.map} timeout={300} appear unmountOnExit exit={false} classNames='transition-fade'>*/}
+          onEntryClicked={onEntryClicked} />}
       {displayMode === DISPLAY_MODE.map &&
         <MapView
           data={{ pkg: pkg, collection: collection, entry: entry }}
           pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClickedCallback} />}
-      {/*</CSSTransition>*/}
+          onEntryClicked={onEntryClicked} />}
     </Fragment>
   );
 }

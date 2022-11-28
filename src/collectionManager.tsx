@@ -24,12 +24,15 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
 
     const onAddCollection = useCallback(() => {
         setConfigs(config => {
+            const id = config ? (Math.max(0, ...config.map(c => c.id + 1))) : 0;
             return config ? config.concat([{
-                name: 'New collection ' + (config.length + 1),
-                id: '' + Math.random(),
+                name: 'New collection ' + id,
+                id: id,
                 color: '#000000',
+                textColor: '#FFFFFF',
                 categories: [],
-                spoilers: []
+                spoilers: [],
+                collectedEntryIds: []
             }]) : null;
         });
     }, [setConfigs]);
@@ -40,6 +43,66 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
         setSelecetdConfig(config);
     }, []);
 
+    const onUpdateName = useCallback((currentConfig: ICollectionConfig, newName: string) => {
+        setSelecetdConfig(config => {
+            const update = config ? {
+                name: newName,
+                id: config.id,
+                color: config.color,
+                textColor: config.textColor,
+                categories: config.categories,
+                spoilers: config.spoilers,
+                collectedEntryIds: config.collectedEntryIds
+            } : config;
+
+            setConfigs(configs => {
+                return (configs && update) ? configs?.map(c => c.id === currentConfig.id ? update : c) : configs;
+            });
+
+            return update;
+        });
+    }, []);
+
+    const onUpdateColor = useCallback((currentConfig: ICollectionConfig, newColor: string) => {
+        setSelecetdConfig(config => {
+            const update = config ? {
+                name: config.name,
+                id: config.id,
+                color: newColor,
+                textColor: config.textColor,
+                categories: config.categories,
+                spoilers: config.spoilers,
+                collectedEntryIds: config.collectedEntryIds
+            } : config;
+
+            setConfigs(configs => {
+                return (configs && update) ? configs?.map(c => c.id === currentConfig.id ? update : c) : configs;
+            });
+
+            return update;
+        });
+    }, []);
+
+    const onUpdateBackgroundColor = useCallback((currentConfig: ICollectionConfig, newColor: string) => {
+        setSelecetdConfig(config => {
+            const update = config ? {
+                name: config.name,
+                id: config.id,
+                color: config.color,
+                textColor: newColor,
+                categories: config.categories,
+                spoilers: config.spoilers,
+                collectedEntryIds: config.collectedEntryIds
+            } : config;
+
+            setConfigs(configs => {
+                return (configs && update) ? configs?.map(c => c.id === currentConfig.id ? update : c) : configs;
+            });
+
+            return update;
+        });
+    }, []);
+
     const onUpdateCategory = useCallback((category: string) => {
         setCategories(categories => {
             const newCategories: Toggle[] = categories.map(c => [c[0], c[0] === category ? !c[1] : c[1]]);
@@ -48,9 +111,11 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                     name: config.name,
                     id: config.id,
                     color: config.color,
+                    textColor: config.textColor,
                     categories: newCategories.filter(c => c[1]).map(c => c[0] as string),
-                    spoilers: config.spoilers
-                } : null;
+                    spoilers: config.spoilers,
+                    collectedEntryIds: config.collectedEntryIds
+                } : config;
             });
             return newCategories;
         });
@@ -64,9 +129,11 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                     name: config.name,
                     id: config.id,
                     color: config.color,
+                    textColor: config.textColor,
                     categories: config.categories,
-                    spoilers: newSpoilers.filter(s => s[1]).map(s => s[0] as string)
-                } : null;
+                    spoilers: newSpoilers.filter(s => s[1]).map(s => s[0] as string),
+                    collectedEntryIds: config.collectedEntryIds
+                } : config;
             });
             return newSpoilers;
         })
@@ -76,7 +143,7 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
         setConfigs(configs => {
             const updatedConfigs = configs?.map(c => c.id === currentConfig?.id ? currentConfig : c) ?? null;
             if (pkg && collection && updatedConfigs) {
-                window.config.saveConfig(pkg, collection.name, updatedConfigs);
+                window.config.saveConfig(pkg.metadata.path, collection.name, updatedConfigs);
             }
             return updatedConfigs;
         });
@@ -124,7 +191,9 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                             <ul>
                                 {configs?.map(config =>
                                     <li key={config.id} className={config.id === selectedConfig?.id ? 'selected-config' : ''} onClick={() => onSelectConfig(config, selectedConfig)}>
-                                        {config.name}
+                                        <input value={config.name} onChange={(e) => onUpdateName(config, e.target.value)} />
+                                        <input type='color' value={config.color} onChange={e => onUpdateColor(config, e.target.value)} />
+                                        <input type='color' value={config.textColor} onChange={e => onUpdateBackgroundColor(config, e.target.value)} />
                                     </li>
                                 )}
                             </ul>
@@ -148,7 +217,7 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
 }
 
 interface ICategoryProps {
-    configId: string,
+    configId: number,
     categories: Toggle[],
     onUpdateCategory: (category: string) => void
 }
@@ -158,7 +227,7 @@ const Categories = (props: ICategoryProps) => {
 
     return (
         <div>
-            Apply to categories
+            Only apply to these categories
             <div className='category-container'>
                 <ul>
                     {categories.map(category =>
@@ -174,7 +243,7 @@ const Categories = (props: ICategoryProps) => {
 }
 
 interface ISpoilerProps {
-    configId: string,
+    configId: number,
     spoilers: Toggle[],
     onUpdateSpoiler: (spoiler: string) => void
 }
@@ -184,7 +253,7 @@ const Spoilers = (props: ISpoilerProps) => {
 
     return (
         <div>
-            Mark as spoiler
+            Mark these attributes as spoilers
             <div className='spoiler-container'>
                 <ul>
                     {spoilers.map(spoiler =>
