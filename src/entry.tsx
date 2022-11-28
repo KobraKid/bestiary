@@ -33,8 +33,10 @@ export const Entry = (props: IEntryProps) => {
   const { data, collectionConfig, style, isPreview, onLinkClicked, className, onClick, onCollect } = props;
 
   return (
-    <div className='entry-wrapper'>
-      {(collectionConfig && onCollect) &&
+    <div
+      className={className}
+      style={style}>
+      {(collectionConfig && collectionConfig.length > 0 && onCollect) &&
         <div className='collection-tabs'>
           {collectionConfig.map(config =>
             <div
@@ -50,10 +52,7 @@ export const Entry = (props: IEntryProps) => {
           )}
         </div>
       }
-      <div
-        className={className}
-        style={style}
-        onClick={onClick}>
+      <div onClick={onClick}>
         <Base
           data={data}
           layout={isPreview ? data.collection.layoutPreview : data.collection.layout}

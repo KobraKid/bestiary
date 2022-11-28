@@ -30,18 +30,23 @@ export const Map = (props: IMapProps) => {
   if (!image) { return null; }
 
   const size = (getValueOrLiteral(data, "!size") as string).split(",");
+  if (!Array.isArray(size) || size.length !== 2) { return null; }
+
   const pointOfInterest = getValueOrLiteral(data, layout.poi) as AttributeValue[];
+  const style = getStyle(data, layout.style);
 
   const [scale, setScale] = useState<number>(100);
   const minScale = 10;
   const maxScale = 1000;
   const increment = 10;
-  useEffect(() => setScale(100), [image]);
-
-  const style = getStyle(data, layout.style);
 
   const container = useRef<HTMLElement>(null);
-  useEffect(() => container.current?.scrollTo(0, 0), [image]);
+  useEffect(() => {
+    setScale(100);
+    container.current?.scrollTo(
+      (window.innerWidth - 64 - parseInt('' + size[0])) / 2,
+      (window.innerHeight - 64 - parseInt('' + size[1])) / 2);
+  }, [image]);
 
   const onWheelZoomCallback = useCallback((e: WheelEvent<HTMLImageElement>) => {
     if (e.deltaY < 0) {
@@ -111,7 +116,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
   const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]);
 
   if (!linkedCollection || !linkedEntry || !onLinkClicked) {
-    window.log.writeError(`Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}${!onLinkClicked ? " Missing click handler" : ""}`);
+    window.log.writeError(`❗Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}${!onLinkClicked ? " Missing click handler" : ""}`);
     return null;
   }
 
@@ -127,7 +132,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
           width: `${+(size[0]!) * scale}px`,
           height: `${+(size[1]!) * scale}px`,
         }}
-        onClick={() => onLinkClicked(linkedEntry, linkedCollection, null, data.collection)}>
+        onClick={() => onLinkClicked(linkedEntry, linkedCollection, data.entry, data.collection)}>
         <div
           className='poi-preview'
           style={{

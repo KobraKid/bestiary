@@ -78,11 +78,11 @@
 
 
 .preview-item {
-  cursor: pointer;
-}
-
-.entry-wrapper {
   display: flex;
   flex-direction: row;
   padding: 4px 0px 0px 4px;
+
+  &>div:last-child {
+    cursor: pointer;
+  }
 }

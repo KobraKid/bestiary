@@ -8,10 +8,10 @@ import ICollection from './model/Collection';
 import IEntry from './model/Entry';
 import { LAYOUT_TYPE } from './model/Layout';
 import { MapView } from './mapView';
-import './styles/app.scss';
-import './styles/transitions.scss';
 import { CollectionManager } from './collectionManager';
 import { IPackageConfig } from './model/Config';
+import './styles/app.scss';
+import './styles/transitions.scss';
 
 /**
  * Display mode
@@ -138,14 +138,14 @@ const App = () => {
 
     const view = views[views.length - 1]!;
 
-    if (view.entry) {
-      if (isMapView(view.collection)) {
-        setDisplayMode(DISPLAY_MODE.map);
-      } else {
-        setDisplayMode(DISPLAY_MODE.entry);
-      }
+    if (isMapView(view.collection)) {
+      setDisplayMode(DISPLAY_MODE.map);
     } else {
-      setDisplayMode(DISPLAY_MODE.collection);
+      if (view.entry) {
+        setDisplayMode(DISPLAY_MODE.entry);
+      } else {
+        setDisplayMode(DISPLAY_MODE.collection);
+      }
     }
 
     setSelectedEntry(null);

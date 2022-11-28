@@ -41,7 +41,7 @@ export const Collection = (props: ICollectionProps) => {
         subsections.add(getValueOrLiteral({ entry, ...data }, entry.category ?? "").toString()));
       return Array.from(subsections);
     });
-  }, []);
+  }, [data]);
 
   return (
     <div className={`collection-grid-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>

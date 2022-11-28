@@ -63,17 +63,23 @@ export function getValueOrLiteral(data: Partial<IDataProps>, value?: string | At
       if (data.entry && targetVal in data.entry.attributes) {
         val = data.entry.attributes[targetVal as keyof typeof data.entry.attributes] ?? '';
       }
+      else {
+        return ''; // no link found, ignore
+      }
     }
   } catch (e: unknown) {
     if (typeof e === 'string') { console.log(e); }
     else if (e instanceof Error) { console.log(e.name, e.message, e.stack); }
-    return "" + e;
+    return '' + e;
   }
 
   if (typeof val === 'string' && val.startsWith('@')) {
     const targetVal = val.substring(1);
     if (defs && targetVal in defs) {
       val = defs[targetVal as keyof typeof defs];
+    }
+    else {
+      return '<error: definition ' + val + ' not found>'; // no def found, error
     }
   }
 

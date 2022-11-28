@@ -26,7 +26,7 @@ export const Sprite = (props: ISpriteProps) => {
       setImage(path);
     }
     else {
-      window.log.writeError("❗Could not locate image <" + path + ">");
+      window.log.writeError("❗Could not locate image <" + value + ">");
     }
   });
 
