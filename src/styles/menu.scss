@@ -15,7 +15,7 @@ $menu-font-expanded-size: 1em;
   background-color: rgba(colors.$medium, .5);
   width: 100%;
   overflow-x: scroll;
-  z-index: 100;
+  z-index: 1000;
 }
 
 @mixin menu-button {

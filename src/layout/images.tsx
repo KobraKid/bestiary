@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ILayoutElement, ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
 import '../styles/images.scss';
@@ -16,24 +16,26 @@ export interface ISpriteProps extends ILayoutElement {
 
 export const Sprite = (props: ISpriteProps) => {
   const { layout } = props;
-  let value = getValueOrLiteral(props.data, layout.value);
+  let value = useMemo(() => getValueOrLiteral(props.data, layout.value), []);
   if (!value) { return null; }
 
-  const [image, setImage] = useState<string | null>(null);
-  const path = window.path.join(props.data.pkg.metadata.path, "" + value);
-  window.pkg.fileExists(path).then(exists => {
-    if (exists) {
-      setImage(path);
-    }
-    else {
-      window.log.writeError("❗Could not locate image <" + value + ">");
-    }
-  });
+  const [imageExists, setImageExists] = useState<boolean>(false);
+  let path = useMemo(() => window.path.join(props.data.pkg.metadata.path, value.toString()), []);
+  useEffect(() => {
+    window.pkg.fileExists(path).then(exists => {
+      if (exists) {
+        setImageExists(true);
+      }
+      else {
+        window.log.writeError("❗Could not locate image <" + value + ">");
+      }
+    });
+  }, []);
 
-  let style = getStyle(props.data, layout.style);
+  let style = useMemo(() => getStyle(props.data, layout.style), []);
 
   return (
-    image ?
+    imageExists ?
       <img src={path} style={style} />
       : <div style={style}>{/* Placeholder */}</div>
   );
