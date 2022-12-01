@@ -15,12 +15,12 @@ export interface ISpriteProps extends ILayoutElement {
 }
 
 export const Sprite = (props: ISpriteProps) => {
-  const { layout } = props;
-  let value = useMemo(() => getValueOrLiteral(props.data, layout.value), []);
+  const { layout, data } = props;
+  let value = useMemo(() => getValueOrLiteral(data, layout.value), [data.entry]);
   if (!value) { return null; }
 
   const [imageExists, setImageExists] = useState<boolean>(false);
-  let path = useMemo(() => window.path.join(props.data.pkg.metadata.path, value.toString()), []);
+  let path = useMemo(() => window.path.join(data.pkg.metadata.path, value.toString()), [value]);
   useEffect(() => {
     window.pkg.fileExists(path).then(exists => {
       if (exists) {
@@ -32,7 +32,7 @@ export const Sprite = (props: ISpriteProps) => {
     });
   }, []);
 
-  let style = useMemo(() => getStyle(props.data, layout.style), []);
+  let style = useMemo(() => getStyle(data, layout.style), [layout.style]);
 
   return (
     imageExists ?

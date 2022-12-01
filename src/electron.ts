@@ -15,10 +15,8 @@ console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ El
 
 /**
  * Creates the main app window
- * 
- * @param openDevTools If set to true, shows the dev tools menu when launched
  */
-function createWindow(openDevTools: boolean = false) {
+function createWindow() {
   console.log(chalk.bold.gray.bgYellow('Starting main app'));
   let win = new BrowserWindow({
     width: 1280,
@@ -33,7 +31,10 @@ function createWindow(openDevTools: boolean = false) {
   });
 
   win.loadFile('index.html');
-  if (openDevTools) { win.webContents.openDevTools({ mode: 'detach' }); }
+
+  if (!app.isPackaged) {
+    win.webContents.openDevTools({ mode: 'detach' });
+  }
 }
 
 /**
@@ -241,6 +242,5 @@ ipcMain.handle('write-error', (_event: any, ...message: string[]): void => conso
  * Create the main window
  */
 app.whenReady().then(async () => {
-  const openDevTools = app.commandLine.getSwitchValue('dev') === '1';
-  createWindow(openDevTools);
+  createWindow();
 });

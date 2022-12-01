@@ -112,7 +112,7 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
 interface ICollectionMenuProps {
   collections: ICollection[],
   onCollectionClicked: (collection: ICollection) => void,
-  isTopLevel: boolean,
+  canNavigateBack: boolean,
   onBackArrowClicked: () => void,
   pkgMenuExpanded: boolean,
 }
@@ -123,11 +123,11 @@ interface ICollectionMenuProps {
  * @returns A menu
  */
 export const CollectionMenu = (props: ICollectionMenuProps) => {
-  const { collections, onCollectionClicked, isTopLevel, onBackArrowClicked, pkgMenuExpanded } = props;
+  const { collections, onCollectionClicked, canNavigateBack, onBackArrowClicked, pkgMenuExpanded } = props;
 
   return (
     <div className={`collection-menu-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}>
-      {!isTopLevel &&
+      {canNavigateBack &&
         <div className='collection-menu-button'>
           <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: 'pointer' }} onClick={onBackArrowClicked} />
         </div>
