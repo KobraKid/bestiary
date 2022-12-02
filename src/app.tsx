@@ -1,4 +1,4 @@
-import React, { Fragment, useCallback, useEffect, useState } from 'react';
+import React, { Fragment, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { CollectionMenu, PackageMenu } from './menu';
 import { Collection } from './collection';
@@ -6,7 +6,6 @@ import { Details } from './details';
 import IPackage from './model/Package';
 import ICollection from './model/Collection';
 import IEntry from './model/Entry';
-import { LAYOUT_TYPE } from './model/Layout';
 import { MapView } from './mapView';
 import { CollectionManager } from './collectionManager';
 import { IPackageConfig } from './model/Config';
@@ -95,10 +94,10 @@ const App = () => {
  */
 interface IPageProps {
   pkg: IPackage,
-  pkgConfig?: IPackageConfig | null | undefined,
+  pkgConfig: IPackageConfig,
   pkgMenuexpanded: boolean,
   collection: ICollection,
-  entry?: IEntry | null | undefined,
+  entry: IEntry | null,
   onEntryClicked: (newEntry: IEntry, newCollection: ICollection, prevEntry: IEntry | null, prevCollection: ICollection) => void,
   onEntryCollected: (entryId: string, collectionConfigId: number) => void,
   displayMode: DISPLAY_MODE

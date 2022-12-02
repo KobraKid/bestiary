@@ -6,12 +6,12 @@ import { LAYOUT_TYPE } from './model/Layout';
 import IPackage from './model/Package';
 
 interface BestiaryData {
-    pkg: IPackage | null,
+    pkg: IPackage,
     selectPkg: (pkg: IPackage) => void,
     collection: ICollection,
     selectCollection: (collection: ICollection) => void,
     collectEntry: (entryId: string, collectionConfigId: number) => void,
-    entry?: IEntry | null | undefined,
+    entry: IEntry | null,
     selectEntry: (entry: IEntry, collection?: ICollection) => void,
     pkgConfig: IPackageConfig,
     updatePkgConfig: () => void,
@@ -39,7 +39,7 @@ export interface ViewStackframe {
     /** The view's collection */
     collection: ICollection,
     /** The view's entry */
-    entry?: IEntry | null | undefined
+    entry: IEntry | null
 }
 
 enum ViewStackframeActionType {
@@ -55,9 +55,14 @@ interface IViewStackframeDispatchAction {
 }
 
 export function useBestiaryViewModel(): BestiaryData {
-    const [pkg, setPkg] = useState<IPackage | null>(null);
-    const [collection, setCollection] = useState<ICollection>({ name: "", layout: {}, layoutPreview: {}, data: [] });
-    const [entry, setEntry] = useState<IEntry | null | undefined>(null);
+    const [pkg, setPkg] = useState<IPackage>({
+        metadata: { name: "", path: "", icon: "", color: "", font: "", defs: {} },
+        collections: []
+    });
+    const [collection, setCollection] = useState<ICollection>({
+        name: "", layout: {}, layoutPreview: {}, data: []
+    });
+    const [entry, setEntry] = useState<IEntry | null>(null);
 
     const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
     const [pkgConfig, setPkgConfig] = useState<IPackageConfig>({});
@@ -65,18 +70,23 @@ export function useBestiaryViewModel(): BestiaryData {
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
         switch (action.type) {
             case ViewStackframeActionType.RESET:
+                const resetCollection = action.targetView?.collection ?? { name: "", layout: {}, layoutPreview: {}, data: [] };
+                let resetEntry = null;
                 window.log.write('• navigation reset');
 
-                if (isMapView(action.targetView?.collection)) {
+                if (isMapView(resetCollection) && resetCollection.data.length > 0) {
                     setDisplayMode(DISPLAY_MODE.map);
-                    setEntry(action.targetView?.collection?.data[0] ?? null);
+                    resetEntry = resetCollection.data[0] || null;
                 } else {
                     setDisplayMode(DISPLAY_MODE.collection);
+                    resetEntry = action.targetView?.entry || null;
                 }
 
-                setEntry(action.targetView?.entry);
-                setCollection(action.targetView?.collection ?? { name: "", layout: {}, layoutPreview: {}, data: [] });
-                return action.targetView ? [action.targetView] : [];
+                setEntry(null);
+                setCollection(resetCollection);
+                setEntry(resetEntry);
+
+                return [{ collection: resetCollection, entry: resetEntry }];
 
             case ViewStackframeActionType.NAVIGATE_FORWARDS:
                 window.log.write(`→ going from [${action.currentView?.collection?.name} ${action.currentView?.entry?.id ?? "collection"}]  to  [${action.targetView?.collection?.name} ${action.targetView?.entry?.id}]`);
@@ -92,8 +102,8 @@ export function useBestiaryViewModel(): BestiaryData {
                     setDisplayMode(DISPLAY_MODE.entry);
                 }
                 setEntry(null);
-                setCollection(action.targetView?.collection);
-                setEntry(action.targetView?.entry);
+                setCollection(action.targetView.collection);
+                setEntry(action.targetView.entry);
 
                 return state.concat(action.targetView);
 
@@ -103,19 +113,21 @@ export function useBestiaryViewModel(): BestiaryData {
                 const targetView = state[state.length - 2];
                 window.log.write(`← return to  [${targetView?.collection?.name ?? "...nowhere..."} ${targetView?.entry?.id ?? "collection"}] from [${currentView?.collection?.name} ${currentView?.entry?.id ?? "collection"}]`);
 
-                if (isMapView(targetView?.collection)) {
+                if (!targetView) { return state; }
+
+                if (isMapView(targetView.collection)) {
                     setDisplayMode(DISPLAY_MODE.map);
                 }
                 else {
-                    if (targetView?.entry) {
+                    if (targetView.entry) {
                         setDisplayMode(DISPLAY_MODE.entry);
                     }
                     else {
                         setDisplayMode(DISPLAY_MODE.collection);
                     }
                 }
-                setCollection(targetView?.collection ?? { name: "", layout: {}, layoutPreview: {}, data: [] });
-                setEntry(targetView?.entry);
+                setCollection(targetView.collection);
+                setEntry(targetView.entry);
 
                 return state.slice(0, -1);
 
@@ -131,7 +143,10 @@ export function useBestiaryViewModel(): BestiaryData {
         setPkg(newPkg);
         viewStackDispatch({
             type: ViewStackframeActionType.RESET,
-            targetView: { collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", layout: {}, layoutPreview: {}, data: [] } }
+            targetView: {
+                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", layout: {}, layoutPreview: {}, data: [] },
+                entry: null
+            }
         });
 
         window.config.loadPkgConfig(newPkg).then(setPkgConfig);
@@ -139,15 +154,15 @@ export function useBestiaryViewModel(): BestiaryData {
 
     const selectCollection = useCallback((newCollection: ICollection) => {
         if (newCollection.name === collection?.name) { return; }
-        viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { collection: newCollection } });
+        viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { collection: newCollection, entry: null } });
     }, []);
 
-    const selectEntry = useCallback((newEntry: IEntry, newCollection: ICollection | null | undefined) => {
-        if (newEntry.id === entry?.id) { return; }
+    const selectEntry = useCallback((currentEntry: IEntry | null, newEntry: IEntry, newCollection: ICollection | null | undefined) => {
+        if (newEntry.id === currentEntry?.id) { return; }
         viewStackDispatch({
             type: ViewStackframeActionType.NAVIGATE_FORWARDS,
             targetView: { collection: newCollection || collection, entry: newEntry },
-            currentView: { collection: collection, entry: entry }
+            currentView: { collection: collection, entry: currentEntry }
         });
     }, []);
 
@@ -191,7 +206,7 @@ export function useBestiaryViewModel(): BestiaryData {
         collection,
         selectCollection,
         entry,
-        selectEntry,
+        selectEntry: (newEntry: IEntry, newCollection: ICollection | null | undefined) => selectEntry(entry, newEntry, newCollection),
         collectEntry: (entryId: string, collectionConfigId: number) => collectEntry(entryId, collectionConfigId, pkg, collection, pkgConfig),
         pkgConfig,
         updatePkgConfig,
