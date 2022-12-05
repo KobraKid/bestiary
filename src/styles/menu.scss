@@ -24,7 +24,7 @@ $menu-font-expanded-size: 1em;
   color: colors.$text-light;
   flex-shrink: 0;
   padding: 0;
-  transition: width .5s ease, height .5s ease;
+  transition: width .5s ease, height .5s ease, flex-basis .5s ease;
 
   .package {
     width: 100%;
@@ -76,14 +76,14 @@ $menu-font-expanded-size: 1em;
 
 .package-menu-button-collapsed {
   @include menu-button;
-  width: $menu-button-collapsed-size;
+  flex-basis: $menu-button-collapsed-size;
   height: $menu-button-collapsed-size;
   font-size: $menu-font-collapsed-size;
 }
 
 .package-menu-button-expanded {
   @include menu-button;
-  width: $menu-button-expanded-size;
+  flex-basis: $menu-button-expanded-size;
   height: $menu-button-expanded-size;
   font-size: $menu-font-expanded-size;
 }

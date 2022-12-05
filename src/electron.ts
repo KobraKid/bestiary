@@ -10,21 +10,26 @@ import { ICollectionConfig, IPackageConfig } from './model/Config';
 /**
  * Setup and logging
  */
+const isDev = !app.isPackaged;
 const paths = envPaths('Bestiary', { suffix: '' });
-console.log(chalk.blue(`🐬 Bestiary ${process.env.npm_package_version}\n⚡ Electron: ${process.versions.electron}\n📦 Package directory: ${paths.data}\n⚙ Config directory: ${paths.config}`));
+console.log(chalk.blue(`
+${isDev ? '🐬 ' : ''}Bestiary ${process.env.npm_package_version}
+${isDev ? '⚡ ' : ''}Electron: ${process.versions.electron}
+${isDev ? '📦 ' : ''}Package directory: ${paths.data}
+${isDev ? '⚙ ' : ''}Config directory: ${paths.config}
+`));
 
 /**
  * Creates the main app window
  */
 function createWindow() {
-  console.log(chalk.bold.gray.bgYellow('Starting main app'));
   let win = new BrowserWindow({
     width: 1280,
     height: 720,
-    title: `Bestiary | ${process.env.npm_package_version}`,
+    title: isDev ? `Bestiary | ${process.env.npm_package_version}` : 'Bestiary',
     darkTheme: true,
     autoHideMenuBar: true,
-    // frame: false,
+    // frame: isDev,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -32,7 +37,7 @@ function createWindow() {
 
   win.loadFile('index.html');
 
-  if (!app.isPackaged) {
+  if (isDev) {
     win.webContents.openDevTools({ mode: 'detach' });
   }
 }

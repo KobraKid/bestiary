@@ -8,7 +8,7 @@
     "build": "webpack --config ./webpack.config.js",
     "electron": "electron ./dist/index.js",
     "watch": "webpack --config ./webpack.config.js --watch",
-    "package": "copy package.json dist\\package.json && npx electron-packager ./dist --overwrite",
+    "package": "npm run build && copy package.json dist\\package.json && npx electron-packager ./dist Bestiary --overwrite",
     "prod": ".\\bestiary-win32-x64\\bestiary.exe"
   },
   "keywords": [],
