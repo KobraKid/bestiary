@@ -12,6 +12,7 @@ import { IPackageConfig } from './model/Config';
 import { DISPLAY_MODE, useBestiaryViewModel } from './BestiaryViewModel';
 import './styles/app.scss';
 import './styles/transitions.scss';
+import CollectionContext from './context';
 
 /**
  * Represents a view frame for backwards navigation
@@ -50,7 +51,7 @@ const App = () => {
   }), [pkg]);
 
   return (
-    <Fragment>
+    <CollectionContext.Provider value={collection}>
       <PackageMenu
         expanded={pkgMenuExpanded}
         setExpanded={setPkgMenuExpanded}
@@ -85,7 +86,7 @@ const App = () => {
             onCancel={() => setShowCollectionManager(false)} />
         </Fragment>
       }
-    </Fragment>
+    </CollectionContext.Provider>
   );
 };
 
