@@ -1,45 +1,50 @@
-import * as React from 'react';
-import { IDataProps, ILayoutElement, LAYOUT_TYPE } from '../model/Layout';
-import { Horizontal, IHorizontalProps, Vertical, IVerticalProps } from './groupings';
-import { String, IStringProps, Ratio, IRatioProps, Percent, IPercentProps, Number, INumberProps } from './basic';
-import { Sprite, ISpriteProps, SpriteList, ISpriteListProps } from './images';
-import { ILinkProps, Link } from './relation';
-import { Map, IMapProps } from './map';
-import { Grid, IGridProps, List, IListProps } from './grid';
+import React, { useContext } from 'react';
+import { LAYOUT_TYPE } from '../model/Layout';
+import { Horizontal, Vertical } from './groupings';
+import { String, Ratio, Percent, Number } from './basic';
+import { Sprite, SpriteList } from './images';
+import { Link } from './relation';
+import { Map } from './map';
+import { Grid, List } from './grid';
 import { AttributeValue } from '../model/Attribute';
+import IEntry from '../model/Entry';
+import IPackage from '../model/Package';
+import { EntryContext } from '../context';
 
-export const Base = (props: ILayoutElement) => {
-  switch (props.layout.type) {
+export const Base = () => {
+  const { layout } = useContext(EntryContext);
+
+  switch (layout.type) {
     /* Groupings */
     case LAYOUT_TYPE.horizontal:
-      return <Horizontal {...(props as IHorizontalProps)} />;
+      return <Horizontal />;
     case LAYOUT_TYPE.vertical:
-      return <Vertical {...(props as IVerticalProps)} />;
+      return <Vertical />;
     /* Basic */
     case LAYOUT_TYPE.string:
-      return <String {...(props as IStringProps)} />;
+      return <String />;
     case LAYOUT_TYPE.number:
-      return <Number {...(props as INumberProps)} />;
+      return <Number />;
     case LAYOUT_TYPE.ratio:
-      return <Ratio {...(props as IRatioProps)} />;
+      return <Ratio />;
     case LAYOUT_TYPE.percent:
-      return <Percent {...(props as IPercentProps)} />;
+      return <Percent />;
     /* Images */
     case LAYOUT_TYPE.sprite:
-      return <Sprite {...(props as ISpriteProps)} />;
+      return <Sprite />;
     case LAYOUT_TYPE.spritelist:
-      return <SpriteList {...(props as ISpriteListProps)} />;
+      return <SpriteList />;
     /* Relations */
     case LAYOUT_TYPE.link:
-      return <Link {...(props as ILinkProps)} />;
+      return <Link />;
     /* Maps */
     case LAYOUT_TYPE.map:
-      return <Map {...(props as IMapProps)} />;
+      return <Map />;
     /* Grids */
     case LAYOUT_TYPE.grid:
-      return <Grid {...(props as IGridProps)} />;
+      return <Grid />;
     case LAYOUT_TYPE.list:
-      return <List {...(props as IListProps)} />;
+      return <List />;
     default:
       return null;
   }
@@ -52,16 +57,14 @@ export const Base = (props: ILayoutElement) => {
  * @returns The value of an attribute. If `value` starts with '!', the value will be looked up from the entry's attributes.
  *          Otherwise, the literal value will be returned.
  */
-export function getValueOrLiteral(data: Partial<IDataProps>, value?: string | AttributeValue | undefined): AttributeValue {
+export function getValueOrLiteral(entry: IEntry, pkg: IPackage, value?: string | AttributeValue | undefined): AttributeValue {
   let val: AttributeValue = value ?? '';
-
-  const defs = data.pkg?.metadata.defs;
 
   try {
     if (typeof val === 'string' && val?.startsWith('!')) {
       const targetVal = val.substring(1);
-      if (data.entry && targetVal in data.entry.attributes) {
-        val = data.entry.attributes[targetVal as keyof typeof data.entry.attributes] ?? '';
+      if (targetVal in entry.attributes) {
+        val = entry.attributes[targetVal as keyof typeof entry.attributes] ?? '';
       }
       else {
         return ''; // no link found, ignore
@@ -75,8 +78,8 @@ export function getValueOrLiteral(data: Partial<IDataProps>, value?: string | At
 
   if (typeof val === 'string' && val.startsWith('@')) {
     const targetVal = val.substring(1);
-    if (defs && targetVal in defs) {
-      val = defs[targetVal as keyof typeof defs];
+    if (targetVal in pkg.metadata.defs) {
+      val = pkg.metadata.defs[targetVal as keyof typeof pkg.metadata.defs];
     }
     else {
       return '<error: definition ' + val + ' not found>'; // no def found, error
@@ -86,12 +89,12 @@ export function getValueOrLiteral(data: Partial<IDataProps>, value?: string | At
   return val;
 }
 
-export function getStyle(data: IDataProps, style: React.CSSProperties | undefined): React.CSSProperties {
+export function getStyle(entry: IEntry, pkg: IPackage, style: React.CSSProperties | undefined): React.CSSProperties {
   const translatedStyle: React.CSSProperties = {};
   for (const props in style) {
     const value = style[props as keyof React.CSSProperties];
     // @ts-expect-error: Expression produces a union type that is too complex to represent
-    translatedStyle[props as keyof React.CSSProperties] = getValueOrLiteral<string | number | (string & {}) | (number & {}) | undefined>(data, value);
+    translatedStyle[props as keyof React.CSSProperties] = getValueOrLiteral<string | number | (string & {}) | (number & {}) | undefined>(entry, pkg, value);
   }
   return translatedStyle;
 }

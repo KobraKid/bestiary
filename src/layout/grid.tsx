@@ -1,9 +1,11 @@
-import React from 'react';
-import { IDataProps, ILayoutElement, ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
-import { getStyle, getValueOrLiteral } from './base';
-import { Number, Percent, String } from './basic';
-import { Link } from './relation';
-import { Sprite } from './images';
+import React, { useContext, useMemo } from 'react';
+import { ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
+import { Base, getStyle, getValueOrLiteral } from './base';
+import { INumberLayoutProps, IPercentLayoutProps, IStringLayoutProps } from './basic';
+import { ILinkLayoutProps } from './relation';
+import { ISpriteLayoutProps } from './images';
+import { EntryContext, PackageContext } from '../context';
+import IEntry from '../model/Entry';
 import '../styles/grid.scss';
 
 // =============================================================================
@@ -21,42 +23,43 @@ export interface IGridLayoutProps extends ILayoutProps {
     styles?: React.CSSProperties[]
 }
 
-export interface IGridProps extends ILayoutElement {
-    layout: IGridLayoutProps
-}
+export const Grid = () => {
+    const { pkg } = useContext(PackageContext);
+    const { entry, layout } = useContext(EntryContext);
+    const gridLayout = layout as IGridLayoutProps
 
-export const Grid = (props: IGridProps) => {
-    const { layout, data, onLinkClicked } = props;
-
-    if (!layout.cols) { return null; }
-    const rows = getValueOrLiteral(data, layout.rows);
+    if (!gridLayout.cols) { return null; }
+    const rows = getValueOrLiteral(entry, pkg, gridLayout.rows);
     if (!Array.isArray(rows)) { return null; }
-    const label = getValueOrLiteral(data, layout.label);
-    const style = getStyle(data, layout.style);
-    const tdStyles = layout.styles?.map(s => getStyle(data, s));
-    const colStyles = layout.cols.map(col => getStyle(data, col.style));
+
+    const label = getValueOrLiteral(entry, pkg, gridLayout.label);
+    const style = getStyle(entry, pkg, layout.style);
+    const tdStyles = useMemo(() => gridLayout.styles?.map(s => getStyle(entry, pkg, s)), []);
+    const colStyles = useMemo(() => gridLayout.cols.map(col => getStyle(entry, pkg, col.style)), []);
 
     return (
         <React.Fragment>
             <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
             <table className='grid' style={style}>
-                <thead><tr>{layout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
+                <thead><tr>{gridLayout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
                 <tbody>
                     {rows.map((row, r) => {
-                        let vals = row.toString().split('||');
-                        if (!Array.isArray(vals)) { return null; }
-                        return <tr key={r}>
-                            {layout.cols.map((col, c) => {
-                                let val = vals[c]?.trim();
-                                if (val === null || val === undefined) { return null; }
-                                return (
-                                    <td key={c} className='grid' style={tdStyles && tdStyles[c]}>
-                                        {renderElementByType(col.type, c, val, data, colStyles[c], onLinkClicked)}
-                                    </td>
-                                );
-                            }
-                            )}
-                        </tr>
+                        const rowData = row.toString().split('||');
+                        if (!Array.isArray(rowData)) { return null; }
+                        return (
+                            <tr key={r}>
+                                {gridLayout.cols.map((col, c) => {
+                                    const data = rowData[c]?.trim();
+                                    if (data === null || data === undefined) { return null; }
+                                    return (
+                                        <td key={c} className='grid' style={tdStyles && tdStyles[c]}>
+                                            {renderElementByType(entry, col.type, data, colStyles[c])}
+                                        </td>
+                                    );
+                                }
+                                )}
+                            </tr>
+                        )
                     })}
                 </tbody>
             </table>
@@ -76,20 +79,18 @@ export interface IListLayoutProps extends ILayoutProps {
     vertical?: boolean
 }
 
-export interface IListProps extends ILayoutElement {
-    layout: IListLayoutProps
-}
+export const List = () => {
+    const { pkg } = useContext(PackageContext);
+    const { entry, layout } = useContext(EntryContext);
+    const listLayout = layout as IListLayoutProps;
 
-export const List = (props: IListProps) => {
-    const { layout, data, onLinkClicked } = props;
-
-    const label = getValueOrLiteral(data, layout.label);
-    const elements = getValueOrLiteral(data, layout.elements);
+    const label = getValueOrLiteral(entry, pkg, listLayout.label);
+    const elements = getValueOrLiteral(entry, pkg, listLayout.elements);
     if (!Array.isArray(elements)) { return null; }
-    const style = getStyle(data, layout.style);
+    const style = getStyle(entry, pkg, listLayout.style);
     style.display = 'flex';
-    style.flexDirection = layout.vertical ? 'column' : 'row';
-    const elementStyles = layout.elementStyles?.map(s => getStyle(data, s));
+    style.flexDirection = listLayout.vertical ? 'column' : 'row';
+    const elementStyles = listLayout.elementStyles?.map(s => getStyle(entry, pkg, s));
 
     return (
         <React.Fragment>
@@ -97,7 +98,11 @@ export const List = (props: IListProps) => {
             <div style={style}>
                 {elements.map((element, i) => {
                     if (element === null || element === undefined) { return null; }
-                    return renderElementByType(layout.elementTypes, i, element as string, data, elementStyles ? elementStyles[i] : undefined, onLinkClicked);
+                    return (
+                        <React.Fragment key={i}>
+                            {renderElementByType(entry, listLayout.elementTypes, element as string, elementStyles ? elementStyles[i] : undefined)}
+                        </React.Fragment>
+                    );
                 })}
             </div>
         </React.Fragment>
@@ -106,27 +111,42 @@ export const List = (props: IListProps) => {
 
 /**
  * Renders a single element of a Grid or List
- * 
- * @param layout The layout type for this element
- * @param key Unique identifier for this element
- * @param element The element to render
- * @param data The package data
+ *
+ * @param layoutType The layout type for this element
+ * @param data The data to render
  * @param style The style to apply to this element
- * @param onLinkClicked The link clicked handler
  * @returns An element to be rendered in a Grid or List
  */
-function renderElementByType(layout: LAYOUT_TYPE, key: any, element: string, data: IDataProps, style?: React.CSSProperties, onLinkClicked?: any): JSX.Element | null {
-    switch (layout) {
+function renderElementByType(entry: IEntry, layoutType: LAYOUT_TYPE, data: string, style?: React.CSSProperties): JSX.Element | null {
+    const baseLayout: ILayoutProps = {
+        type: layoutType,
+        style: style
+    };
+
+    switch (layoutType) {
         case LAYOUT_TYPE.string:
-            return <String key={key} layout={{ value: element, style: style }} data={data} />;
         case LAYOUT_TYPE.number:
-            return <Number key={key} layout={{ value: element, style: style }} data={data} />;
         case LAYOUT_TYPE.percent:
-            return <Percent key={key} layout={{ value: element, style: style }} data={data} />;
-        case LAYOUT_TYPE.link:
-            return <Link key={key} layout={{ link: element, style: style }} data={data} onLinkClicked={onLinkClicked} />;
         case LAYOUT_TYPE.sprite:
-            return <Sprite key={key} layout={{ value: element, style: style }} data={data} />;
+            const valueLayout: IStringLayoutProps | INumberLayoutProps | IPercentLayoutProps | ISpriteLayoutProps = {
+                ...baseLayout,
+                value: data
+            }
+            return (
+                <EntryContext.Provider value={{ entry, layout: valueLayout }}>
+                    <Base />
+                </EntryContext.Provider>
+            );
+        case LAYOUT_TYPE.link:
+            const linkLayout: ILinkLayoutProps = {
+                ...baseLayout,
+                link: data
+            }
+            return (
+                <EntryContext.Provider value={{ entry, layout: linkLayout }}>
+                    <Base />
+                </EntryContext.Provider>
+            );
         default:
             return null;
     }

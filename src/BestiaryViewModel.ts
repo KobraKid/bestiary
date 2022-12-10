@@ -206,7 +206,7 @@ export function useBestiaryViewModel(): BestiaryData {
         collection,
         selectCollection,
         entry,
-        selectEntry: (newEntry: IEntry, newCollection: ICollection | null | undefined) => selectEntry(entry, newEntry, newCollection),
+        selectEntry: (newEntry: IEntry, newCollection?: ICollection) => selectEntry(entry, newEntry, newCollection),
         collectEntry: (entryId: string, collectionConfigId: number) => collectEntry(entryId, collectionConfigId, pkg, collection, pkgConfig),
         pkgConfig,
         updatePkgConfig,

@@ -1,22 +1,15 @@
-import React from 'react';
-import IPackage from './model/Package';
-import ICollection from './model/Collection';
+import React, { useContext } from 'react';
 import IEntry from './model/Entry';
 import { Entry } from './entry';
+import { CollectionContext, EntryContext } from './context';
 
 /**
  * Props for the Map
  */
 interface IMapViewProps {
-    data: {
-        pkg: IPackage,
-        collection: ICollection,
-        entry: IEntry | null,
-    }
+    entry: IEntry | null,
     /** Whether the package menu is expanded */
-    pkgMenuExpanded: boolean,
-    /** Callback function for when an entry is clicked */
-    onEntryClicked: (newEntry: IEntry, newCollection: ICollection, selectedEntry: IEntry | null, selectedCollection: ICollection) => void,
+    pkgMenuExpanded: boolean
 }
 
 /**
@@ -30,15 +23,14 @@ interface IMapViewProps {
  * @returns A map view
  */
 export const MapView = (props: IMapViewProps) => {
-    const { data, pkgMenuExpanded, onEntryClicked } = props;
+    const { collection } = useContext(CollectionContext);
+    const { entry, pkgMenuExpanded } = props;
 
-    if (!data.entry) { return null; }
+    if (!entry) { return null; }
 
     return (
-        <Entry
-            data={{ ...data, entry: data.entry }}
-            className={`details-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`}
-            isPreview={false}
-            onLinkClicked={onEntryClicked} />
+        <EntryContext.Provider value={{ entry, layout: collection.layout }}>
+            <Entry className={`details-${pkgMenuExpanded ? 'expanded' : 'collapsed'}`} />
+        </EntryContext.Provider>
     );
 }

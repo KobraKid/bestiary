@@ -1,22 +1,23 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { CollectionContext, PackageContext } from "./context";
 import { getValueOrLiteral } from "./layout/base";
 import ICollection from "./model/Collection";
 import { ICollectionConfig } from "./model/Config";
-import IPackage from "./model/Package";
 import './styles/collectionManager.scss';
 
 type Toggle = [key: string, toggled: boolean]
 
 export interface ICollectionManagerProps {
-    pkg: IPackage | null,
-    collection: ICollection | null,
     show: boolean,
     onAccept: () => void,
     onCancel: () => void
 }
 
 export const CollectionManager = (props: ICollectionManagerProps) => {
-    const { pkg, collection, show, onAccept, onCancel } = props;
+    const { pkg } = useContext(PackageContext);
+    const { collection } = useContext(CollectionContext);
+    const { show, onAccept, onCancel } = props;
+
     const [configs, setConfigs] = useState<ICollectionConfig[] | null>(null);
     const [selectedConfig, setSelecetdConfig] = useState<ICollectionConfig | null>(null);
     const [categories, setCategories] = useState<Toggle[]>([]);
@@ -160,7 +161,7 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
             const categorySet = new Set<string>(['']);
             const attributeSet = new Set<string>();
             collection.data.forEach(entry => {
-                (entry.category && entry.category.length > 0) && categorySet.add(getValueOrLiteral({ pkg: pkg }, entry.category).toString());
+                (entry.category && entry.category.length > 0) && categorySet.add(getValueOrLiteral(entry, pkg, entry.category).toString());
                 Object.keys(entry.attributes).forEach(key => attributeSet.add(key))
             });
             setCategories(Array.from(categorySet).map(cat => [cat, true]));

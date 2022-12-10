@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { Fragment, useContext, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { CollectionMenu, PackageMenu } from './menu';
 import { Collection } from './collection';
@@ -10,9 +10,9 @@ import { MapView } from './mapView';
 import { CollectionManager } from './collectionManager';
 import { IPackageConfig } from './model/Config';
 import { DISPLAY_MODE, useBestiaryViewModel } from './BestiaryViewModel';
+import { CollectionContext, PackageContext } from './context';
 import './styles/app.scss';
 import './styles/transitions.scss';
-import CollectionContext from './context';
 
 /**
  * Represents a view frame for backwards navigation
@@ -51,42 +51,40 @@ const App = () => {
   }), [pkg]);
 
   return (
-    <CollectionContext.Provider value={collection}>
-      <PackageMenu
-        expanded={pkgMenuExpanded}
-        setExpanded={setPkgMenuExpanded}
-        onPackageClicked={selectPkg} />
-      {pkg &&
-        <Fragment>
-          <CollectionMenu
-            collections={pkg.collections}
-            pkgMenuExpanded={pkgMenuExpanded}
-            canNavigateBack={canNavigateBack}
-            onBackArrowClicked={navigateBack}
-            onCollectionClicked={selectCollection} />
-          {collection &&
-            <Page
-              pkg={pkg}
-              pkgConfig={pkgConfig}
-              pkgMenuexpanded={pkgMenuExpanded}
-              collection={collection}
-              entry={entry}
-              onEntryClicked={selectEntry}
-              onEntryCollected={collectEntry}
-              displayMode={displayMode} />
-          }
-          <CollectionManager
-            show={showCollectionManager}
-            pkg={pkg}
-            collection={managedCollection}
-            onAccept={() => {
-              setShowCollectionManager(false);
-              updatePkgConfig();
-            }}
-            onCancel={() => setShowCollectionManager(false)} />
-        </Fragment>
-      }
-    </CollectionContext.Provider>
+    <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
+      <CollectionContext.Provider value={{ collection }}>
+        <PackageMenu
+          expanded={pkgMenuExpanded}
+          setExpanded={setPkgMenuExpanded}
+          onPackageClicked={selectPkg} />
+        {pkg &&
+          <Fragment>
+            <CollectionMenu
+              collections={pkg.collections}
+              pkgMenuExpanded={pkgMenuExpanded}
+              canNavigateBack={canNavigateBack}
+              onBackArrowClicked={navigateBack}
+              onCollectionClicked={selectCollection} />
+            {collection &&
+              <Page
+                pkgConfig={pkgConfig}
+                pkgMenuexpanded={pkgMenuExpanded}
+                collection={collection}
+                entry={entry}
+                onEntryCollected={collectEntry}
+                displayMode={displayMode} />
+            }
+            <CollectionManager
+              show={showCollectionManager}
+              onAccept={() => {
+                setShowCollectionManager(false);
+                updatePkgConfig();
+              }}
+              onCancel={() => setShowCollectionManager(false)} />
+          </Fragment>
+        }
+      </CollectionContext.Provider>
+    </PackageContext.Provider>
   );
 };
 
@@ -94,12 +92,10 @@ const App = () => {
  * Props for the Page
  */
 interface IPageProps {
-  pkg: IPackage,
   pkgConfig: IPackageConfig,
   pkgMenuexpanded: boolean,
   collection: ICollection,
   entry: IEntry | null,
-  onEntryClicked: (newEntry: IEntry, newCollection: ICollection, prevEntry: IEntry | null, prevCollection: ICollection) => void,
   onEntryCollected: (entryId: string, collectionConfigId: number) => void,
   displayMode: DISPLAY_MODE
 }
@@ -110,10 +106,10 @@ interface IPageProps {
  * @returns The page
  */
 const Page = (props: IPageProps) => {
+  const { collection } = useContext(CollectionContext);
   const {
-    pkg, pkgConfig, pkgMenuexpanded,
-    collection,
-    entry, onEntryClicked, onEntryCollected,
+    pkgConfig, pkgMenuexpanded,
+    entry, onEntryCollected,
     displayMode
   } = props;
 
@@ -121,21 +117,17 @@ const Page = (props: IPageProps) => {
     <Fragment>
       {displayMode === DISPLAY_MODE.collection &&
         <Collection
-          data={{ pkg: pkg, collection: collection }}
           collectionConfig={pkgConfig && pkgConfig[collection.name]}
           pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClicked}
           onEntryCollected={onEntryCollected} />}
       {displayMode === DISPLAY_MODE.entry &&
         <Details
-          data={{ pkg: pkg, collection: collection, entry: entry || null }}
-          pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClicked} />}
+          entry={entry}
+          pkgMenuExpanded={pkgMenuexpanded} />}
       {displayMode === DISPLAY_MODE.map &&
         <MapView
-          data={{ pkg: pkg, collection: collection, entry: entry || null }}
-          pkgMenuExpanded={pkgMenuexpanded}
-          onEntryClicked={onEntryClicked} />}
+          entry={entry}
+          pkgMenuExpanded={pkgMenuexpanded} />}
     </Fragment>
   );
 }

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { EntryContext, PackageContext } from '../context';
 import { ILayoutElement, ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
 
@@ -10,15 +11,13 @@ export interface IStringLayoutProps extends ILayoutProps {
   value: string,
 }
 
-export interface IStringProps extends ILayoutElement {
-  layout: IStringLayoutProps
-}
+export const String = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const String = (props: IStringProps) => {
-  const { layout, data } = props;
-  let label = getValueOrLiteral(data, layout.label);
-  let value = getValueOrLiteral(data, layout.value);
-  let style = getStyle(data, layout.style);
+  let label = getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).label);
+  let value = getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).value);
+  let style = getStyle(entry, pkg, layout.style);
 
   if (value.toString().length < 1) { return null; }
 
@@ -37,16 +36,14 @@ export interface INumberLayoutProps extends ILayoutProps {
   value: string | number
 }
 
-export interface INumberProps extends ILayoutElement {
-  layout: INumberLayoutProps
-}
+export const Number = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const Number = (props: INumberProps) => {
-  const { layout, data } = props;
-  let label = getValueOrLiteral(data, layout.label);
-  let value = getValueOrLiteral(data, layout.value);
-  let style = getStyle(data, layout.style);
-  
+  let label = getValueOrLiteral(entry, pkg, (layout as INumberLayoutProps).label);
+  let value = getValueOrLiteral(entry, pkg, (layout as INumberLayoutProps).value);
+  let style = getStyle(entry, pkg, layout.style);
+
   if (value.toString().length < 1) { return null; }
 
   return (
@@ -65,19 +62,17 @@ export interface IRatioLayoutProps extends ILayoutProps {
   showAsPercent?: string | boolean
 }
 
-export interface IRatioProps extends ILayoutElement {
-  layout: IRatioLayoutProps
-}
+export const Ratio = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const Ratio = (props: IRatioProps) => {
-  const { layout, data } = props;
-  let aVal = +getValueOrLiteral(data, layout.a);
-  let bVal = +getValueOrLiteral(data, layout.b);
-  let style = getStyle(data, layout.style);
+  let aVal = +getValueOrLiteral(entry, pkg, (layout as IRatioLayoutProps).a);
+  let bVal = +getValueOrLiteral(entry, pkg, (layout as IRatioLayoutProps).b);
+  let style = getStyle(entry, pkg, layout.style);
 
   return (
     <div style={style}>
-      {layout.showAsPercent ?
+      {(layout as IRatioLayoutProps).showAsPercent ?
         `${aVal / (aVal + bVal)}% - ${bVal / (aVal + bVal)}`
         : `${aVal} : ${bVal}`}
     </div>
@@ -92,15 +87,13 @@ export interface IPercentLayoutProps extends ILayoutProps {
   value: string | number
 }
 
-export interface IPercentProps extends ILayoutElement {
-  layout: IPercentLayoutProps
-}
+export const Percent = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const Percent = (props: IPercentProps) => {
-  const { layout, data } = props;
-  let label = getValueOrLiteral(data, layout.label);
-  let value = +getValueOrLiteral(data, layout.value);
-  let style = getStyle(data, layout.style);
+  let label = getValueOrLiteral(entry, pkg, (layout as IPercentLayoutProps).label);
+  let value = +getValueOrLiteral(entry, pkg, (layout as IPercentLayoutProps).value);
+  let style = getStyle(entry, pkg, layout.style);
 
   return (
     <div style={style}>
@@ -118,16 +111,14 @@ export interface IRangeLayoutProps extends ILayoutProps {
   max: string | number
 }
 
-export interface IRangeProps extends ILayoutElement {
-  layout: IRangeLayoutProps
-}
+export const Range = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const Range = (props: IRangeProps) => {
-  const { layout, data } = props;
-  let label = getValueOrLiteral(data, layout.label);
-  let min = +getValueOrLiteral(data, layout.min);
-  let max = +getValueOrLiteral(data, layout.max);
-  let style = getStyle(data, layout.style);
+  let label = getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).label);
+  let min = +getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).min);
+  let max = +getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).max);
+  let style = getStyle(entry, pkg, layout.style);
 
   return (
     <div style={style}>

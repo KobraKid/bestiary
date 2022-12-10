@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ILayoutElement, ILayoutProps } from '../model/Layout';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
+import { EntryContext, PackageContext } from '../context';
 import '../styles/images.scss';
 
 // =============================================================================
@@ -10,17 +11,15 @@ export interface ISpriteLayoutProps extends ILayoutProps {
   value: string
 }
 
-export interface ISpriteProps extends ILayoutElement {
-  layout: ISpriteLayoutProps
-}
+export const Sprite = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const Sprite = (props: ISpriteProps) => {
-  const { layout, data } = props;
-  let value = useMemo(() => getValueOrLiteral(data, layout.value), [data.entry]);
+  let value = useMemo(() => getValueOrLiteral(entry, pkg, (layout as ISpriteLayoutProps).value), [entry]);
   if (!value) { return null; }
 
   const [imageExists, setImageExists] = useState<boolean>(false);
-  let path = useMemo(() => window.path.join(data.pkg.metadata.path, value.toString()), [value]);
+  let path = useMemo(() => window.path.join(pkg.metadata.path, value.toString()), [value]);
   useEffect(() => {
     window.pkg.fileExists(path).then(exists => {
       if (exists) {
@@ -32,7 +31,7 @@ export const Sprite = (props: ISpriteProps) => {
     });
   }, []);
 
-  let style = useMemo(() => getStyle(data, layout.style), [layout.style]);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
   return (
     imageExists ?
@@ -48,23 +47,16 @@ export interface ISpriteListLayoutProps extends ILayoutProps {
   values: string[]
 }
 
-export interface ISpriteListProps extends ILayoutElement {
-  layout: ISpriteListLayoutProps
-}
+export const SpriteList = () => {
+  const { pkg } = useContext(PackageContext);
+  const { entry, layout } = useContext(EntryContext);
 
-export const SpriteList = (props: ISpriteListProps) => {
-  const { layout } = props;
   let values: string[] = [];
-  layout.values.forEach(image => values.push(
-    window.path.join(
-      props.data.pkg.metadata.path,
-      "" + getValueOrLiteral(props.data, image)
-    )
-  ));
+  (layout as ISpriteListLayoutProps).values.forEach(image => values.push(window.path.join(pkg.metadata.path, "" + getValueOrLiteral(entry, pkg, image))));
 
   const [currentImage, setCurrentImage] = useState<number>(0);
 
-  let style = getStyle(props.data, layout.style);
+  let style = getStyle(entry, pkg, layout.style);
 
   const onNextClicked = useCallback(() => {
     setCurrentImage(i => i < values.length - 1 ? i + 1 : 0);

@@ -16,6 +16,10 @@ $menu-font-expanded-size: 1em;
   width: 100%;
   overflow-x: scroll;
   z-index: 1000;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @mixin menu-button {
@@ -123,6 +127,7 @@ $menu-font-expanded-size: 1em;
   }
 }
 
-.package, .collection-menu-button {
+.package,
+.collection-menu-button {
   cursor: pointer;
 }
