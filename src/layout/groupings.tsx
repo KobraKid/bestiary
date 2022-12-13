@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { ILayoutElement, ILayoutProps } from '../model/Layout';
+import React, { useContext, useMemo } from 'react';
+import { ILayoutProps } from '../model/Layout';
 import { Base, getStyle } from './base';
 import '../styles/layout.scss';
 import { EntryContext, PackageContext } from '../context';
@@ -14,7 +14,7 @@ export interface IHorizontalLayoutProps extends ILayoutProps {
 export const Horizontal = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
-  let style = getStyle(entry, pkg, layout.style);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [entry]);
 
   return (
     <div className='horizontal' style={style}>
@@ -36,7 +36,7 @@ export interface IVerticalLayoutProps extends ILayoutProps {
 export const Vertical = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
-  let style = getStyle(entry, pkg, layout.style);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [entry]);
 
   return (
     <div className='vertical' style={style}>

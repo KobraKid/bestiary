@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { EntryContext, PackageContext } from '../context';
 import { ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
@@ -15,12 +15,12 @@ export const String = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
-  let label = getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).label);
-  let value = getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).value);
-  let style = getStyle(entry, pkg, layout.style);
+  let label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).label), [entry]);
+  let value = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).value), [entry]);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
   if (value.toString().length < 1) { return null; }
-
+  
   return (
     <div style={style}>
       {label ? `${label} ${value}` : value}
@@ -40,9 +40,9 @@ export const Number = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
-  let label = getValueOrLiteral(entry, pkg, (layout as INumberLayoutProps).label);
-  let value = getValueOrLiteral(entry, pkg, (layout as INumberLayoutProps).value);
-  let style = getStyle(entry, pkg, layout.style);
+  let label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as INumberLayoutProps).label), [entry]);
+  let value = useMemo(() => getValueOrLiteral(entry, pkg, (layout as INumberLayoutProps).value), [entry]);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
   if (value.toString().length < 1) { return null; }
 
@@ -66,9 +66,9 @@ export const Ratio = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
-  let aVal = +getValueOrLiteral(entry, pkg, (layout as IRatioLayoutProps).a);
-  let bVal = +getValueOrLiteral(entry, pkg, (layout as IRatioLayoutProps).b);
-  let style = getStyle(entry, pkg, layout.style);
+  let aVal = useMemo(() => +getValueOrLiteral(entry, pkg, (layout as IRatioLayoutProps).a), [entry]);
+  let bVal = useMemo(() => +getValueOrLiteral(entry, pkg, (layout as IRatioLayoutProps).b), [entry]);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
   return (
     <div style={style}>
@@ -91,9 +91,9 @@ export const Percent = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
-  let label = getValueOrLiteral(entry, pkg, (layout as IPercentLayoutProps).label);
-  let value = +getValueOrLiteral(entry, pkg, (layout as IPercentLayoutProps).value);
-  let style = getStyle(entry, pkg, layout.style);
+  let label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IPercentLayoutProps).label), [entry]);
+  let value = useMemo(() => +getValueOrLiteral(entry, pkg, (layout as IPercentLayoutProps).value), [entry]);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
   return (
     <div style={style}>
@@ -115,10 +115,10 @@ export const Range = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
-  let label = getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).label);
-  let min = +getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).min);
-  let max = +getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).max);
-  let style = getStyle(entry, pkg, layout.style);
+  let label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).label), [entry]);
+  let min = useMemo(() => +getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).min), [entry]);
+  let max = useMemo(() => +getValueOrLiteral(entry, pkg, (layout as IRangeLayoutProps).max), [entry]);
+  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
   return (
     <div style={style}>

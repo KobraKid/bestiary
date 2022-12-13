@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useRef, useState, WheelEvent } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState, WheelEvent } from 'react';
 import ScrollContainer from 'react-indiana-drag-scroll';
 import { ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
@@ -24,15 +24,15 @@ export const Map = () => {
   const { entry, layout } = useContext(EntryContext);
   const mapLayout = layout as IMapLayoutProps;
 
-  const name = getValueOrLiteral(entry, pkg, mapLayout.name);
-  const image = getValueOrLiteral(entry, pkg, mapLayout.value);
+  const name = useMemo(() => getValueOrLiteral(entry, pkg, mapLayout.name), [entry]);
+  const image = useMemo(() => getValueOrLiteral(entry, pkg, mapLayout.value), [entry]);
   if (!image) { return null; }
 
-  const size = (getValueOrLiteral(entry, pkg, "!size") as string).split(",");
+  const size = useMemo(() => (getValueOrLiteral(entry, pkg, "!size") as string).split(","), [entry]);
   if (!Array.isArray(size) || size.length !== 2) { return null; }
 
-  const pointOfInterest = getValueOrLiteral(entry, pkg, mapLayout.poi) as AttributeValue[];
-  const style = getStyle(entry, pkg, layout.style);
+  const pointOfInterest = useMemo(() => getValueOrLiteral(entry, pkg, mapLayout.poi) as AttributeValue[], [entry]);
+  const style = useMemo(() => getStyle(entry, pkg, mapLayout.style), [mapLayout.style]);
 
   const [scale, setScale] = useState<number>(100);
   const minScale = 10;
@@ -103,15 +103,15 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
 
   const { parentWidth, parentHeight } = props;
 
-  const point = props.point.toString().split('||').map(val => val.trim());
+  const point = useMemo(() => props.point.toString().split('||').map(val => val.trim()), [props.point]);
 
-  const link = parseLink(point[0] as string);
-  const location = (point[1] as string).split(',');
-  const size = (point[2] as string).split(',');
+  const link = useMemo(() => parseLink(point[0] as string), [point]);
+  const location = useMemo(() => (point[1] as string).split(','), [point]);
+  const size = useMemo(() => (point[2] as string).split(','), [point]);
   const scale = props.scale / 100;
 
-  const linkedCollection = pkg.collections.find((collection: ICollection) => collection.name === link[0]);
-  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]);
+  const linkedCollection = useMemo(() => pkg.collections.find((collection: ICollection) => collection.name === link[0]), [pkg, link]);
+  const linkedEntry = useMemo(() => linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]), [linkedCollection]);
 
   if (!linkedCollection || !linkedEntry) {
     window.log.writeError(`❗Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}`);

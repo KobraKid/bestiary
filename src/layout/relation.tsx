@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Entry } from '../entry';
 import { ILayoutProps } from '../model/Layout';
 import { getValueOrLiteral } from './base';
@@ -29,15 +29,15 @@ export const Link = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
-  const linkInfo = parseLink(getValueOrLiteral(entry, pkg, (layout as ILinkLayoutProps).link));
+  const linkInfo = useMemo(() => parseLink(getValueOrLiteral(entry, pkg, (layout as ILinkLayoutProps).link)), [entry]);
 
   if (!Array.isArray(linkInfo) || linkInfo.length < 2) {
     window.log.writeError(`Could not parse link ${(layout as ILinkLayoutProps).link} ${linkInfo}`);
     return null;
   }
 
-  const linkedCollection = pkg.collections.find((collection: ICollection) => collection.name === linkInfo[0]);
-  const linkedEntry = linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]);
+  const linkedCollection = useMemo(() => pkg.collections.find((collection: ICollection) => collection.name === linkInfo[0]), [pkg, linkInfo]);
+  const linkedEntry = useMemo(() => linkedCollection?.data?.find((entry: IEntry) => entry.id === linkInfo[1]), [linkedCollection]);
   if (!linkedCollection || !linkedEntry) {
     window.log.writeError(`Could not establish link [${linkInfo.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}`)
     return null;

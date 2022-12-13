@@ -45,7 +45,7 @@ export const PackageMenu = (props: IPackageMenuProps) => {
 
   useEffect(() => {
     window.pkg.loadPackages().then((result: any) => setPackages(result as IPackageMetadata[]));
-  }, [setPackages]);
+  }, []);
 
   return (
     <div className='package-menu'>
@@ -160,6 +160,7 @@ interface ICollectionMenuItemProps {
  */
 const CollectionMenuItem = (props: ICollectionMenuItemProps) => {
   const { name, onCollectionClicked, onCollectionRightClicked } = props;
+  
   return (
     <button className='collection-menu-button' onClick={onCollectionClicked} onContextMenu={onCollectionRightClicked}>
       <p>{name}</p>

@@ -30,9 +30,9 @@ export const Formula = () => {
     const { pkg } = useContext(PackageContext);
     const { entry, layout } = useContext(EntryContext);
 
-    const label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IFormulaLayoutProps).label), []);
-    const expression = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IFormulaLayoutProps).expression), []);
-    const vars = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IFormulaLayoutProps).vars), []);
+    const label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IFormulaLayoutProps).label), [entry]);
+    const expression = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IFormulaLayoutProps).expression), [entry]);
+    const vars = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IFormulaLayoutProps).vars), [entry]);
     const [varDefinitions, setVarDefinitions] = useState<IVarDefinitions>(() => {
         const __scope = {};
         const __vars = {};

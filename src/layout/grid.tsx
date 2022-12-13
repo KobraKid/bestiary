@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import { ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
 import { Base, getStyle, getValueOrLiteral } from './base';
 import { INumberLayoutProps, IPercentLayoutProps, IStringLayoutProps } from './basic';
@@ -29,13 +29,13 @@ export const Grid = () => {
     const gridLayout = layout as IGridLayoutProps
 
     if (!gridLayout.cols) { return null; }
-    const rows = getValueOrLiteral(entry, pkg, gridLayout.rows);
+    const rows = useMemo(() => getValueOrLiteral(entry, pkg, gridLayout.rows), [entry]);
     if (!Array.isArray(rows)) { return null; }
 
-    const label = getValueOrLiteral(entry, pkg, gridLayout.label);
-    const style = getStyle(entry, pkg, layout.style);
-    const tdStyles = useMemo(() => gridLayout.styles?.map(s => getStyle(entry, pkg, s)), []);
-    const colStyles = useMemo(() => gridLayout.cols.map(col => getStyle(entry, pkg, col.style)), []);
+    const label = useMemo(() => getValueOrLiteral(entry, pkg, gridLayout.label), [entry]);
+    const style = useMemo(() => getStyle(entry, pkg, gridLayout.style), [gridLayout.style]);
+    const tdStyles = useMemo(() => gridLayout.styles?.map(s => getStyle(entry, pkg, s)), [gridLayout.styles]);
+    const colStyles = useMemo(() => gridLayout.cols.map(col => getStyle(entry, pkg, col.style)), [gridLayout.cols]);
 
     return (
         <>
@@ -84,13 +84,16 @@ export const List = () => {
     const { entry, layout } = useContext(EntryContext);
     const listLayout = layout as IListLayoutProps;
 
-    const label = getValueOrLiteral(entry, pkg, listLayout.label);
-    const elements = getValueOrLiteral(entry, pkg, listLayout.elements);
+    const label = useMemo(() => getValueOrLiteral(entry, pkg, listLayout.label), [entry]);
+    const elements = useMemo(() => getValueOrLiteral(entry, pkg, listLayout.elements), [entry]);
     if (!Array.isArray(elements)) { return null; }
-    const style = getStyle(entry, pkg, listLayout.style);
-    style.display = 'flex';
-    style.flexDirection = listLayout.vertical ? 'column' : 'row';
-    const elementStyles = listLayout.elementStyles?.map(s => getStyle(entry, pkg, s));
+    const style = useMemo(() => {
+        const style = getStyle(entry, pkg, listLayout.style);
+        style.display = 'flex';
+        style.flexDirection = listLayout.vertical ? 'column' : 'row';
+        return style;
+    }, [listLayout.style]);
+    const elementStyles = useMemo(() => listLayout.elementStyles?.map(s => getStyle(entry, pkg, s)), [listLayout.elementStyles]);
 
     return (
         <>

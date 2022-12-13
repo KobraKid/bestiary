@@ -1,5 +1,4 @@
 import React, { Fragment, useContext } from 'react';
-import { IDataProps } from './model/Layout';
 import { Base } from './layout/base';
 import { ICollectionConfig } from './model/Config';
 import { CollectionContext, EntryContext, PackageContext } from './context';
@@ -26,7 +25,7 @@ interface IEntryProps {
 export const Entry = (props: IEntryProps) => {
   const { selectEntry } = useContext(PackageContext);
   const { collection } = useContext(CollectionContext);
-  const { entry, layout } = useContext(EntryContext);
+  const { entry } = useContext(EntryContext);
 
   const { collectionConfig, className, onCollect } = props;
 

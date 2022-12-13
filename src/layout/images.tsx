@@ -19,7 +19,12 @@ export const Sprite = () => {
   if (!value) { return null; }
 
   const [imageExists, setImageExists] = useState<boolean>(false);
-  let path = useMemo(() => window.path.join(pkg.metadata.path, value.toString()), [value]);
+
+  let path = useMemo(() => {
+    setImageExists(false);
+    return window.path.join(pkg.metadata.path, value.toString());
+  }, [value]);
+
   useEffect(() => {
     window.pkg.fileExists(path).then(exists => {
       if (exists) {
@@ -29,7 +34,7 @@ export const Sprite = () => {
         window.log.writeError("❗Could not locate image <" + value + ">");
       }
     });
-  }, []);
+  }, [path]);
 
   let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
 
