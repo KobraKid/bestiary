@@ -5,7 +5,7 @@ import { AttributeData } from "./Attribute";
  */
 export default interface IEntry {
   /**
-   * Entry name
+   * Entry ID
    */
   id: string,
   /**

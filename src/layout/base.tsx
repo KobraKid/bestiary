@@ -10,6 +10,7 @@ import { AttributeValue } from '../model/Attribute';
 import IEntry from '../model/Entry';
 import IPackage from '../model/Package';
 import { EntryContext } from '../context';
+import { Formula } from './formula';
 
 export const Base = () => {
   const { layout } = useContext(EntryContext);
@@ -45,6 +46,9 @@ export const Base = () => {
       return <Grid />;
     case LAYOUT_TYPE.list:
       return <List />;
+    /* Formula */
+    case LAYOUT_TYPE.formula:
+      return <Formula />
     default:
       return null;
   }

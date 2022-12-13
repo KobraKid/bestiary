@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld('menu', {
     ipcRenderer.removeAllListeners('context-menu:manage-collection');
     ipcRenderer.on('context-menu:manage-collection', (_event: any, collection: string) => collectionManager(collection));
   }
-})
+});
 
 contextBridge.exposeInMainWorld('path', {
   join: (...paths: string[]): string => {
@@ -41,4 +41,8 @@ contextBridge.exposeInMainWorld('path', {
 contextBridge.exposeInMainWorld('log', {
   write: (...message: string[]): Promise<void> => ipcRenderer.invoke('write', message),
   writeError: (...message: string[]): Promise<void> => ipcRenderer.invoke('write-error', message)
-})
+});
+
+contextBridge.exposeInMainWorld('formula', {
+  eval: (expression: string, scope?: object) => ipcRenderer.invoke('eval-formula', expression, scope)
+});

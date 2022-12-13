@@ -29,12 +29,17 @@ export interface ILoggingAPI {
   writeError: (...message: string[]) => Promise<void>,
 }
 
+export interface IFormulaAPI {
+  eval: (expression: string, scope?: object) => Promise<any>
+}
+
 declare global {
   interface Window {
     pkg: IPkgAPI,
     config: IConfigAPI,
     menu: IMenuAPI,
     path: IPathAPI,
-    log: ILoggingAPI
+    log: ILoggingAPI,
+    formula: IFormulaAPI
   }
 }

@@ -23,6 +23,8 @@ export enum LAYOUT_TYPE {
   /* grids */
   grid = 'grid',
   list = 'list',
+  /* formula */
+  formula = 'formula'
 }
 
 export interface ILayoutProps {

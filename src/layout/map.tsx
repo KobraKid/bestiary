@@ -59,7 +59,7 @@ export const Map = () => {
   }, []);
 
   return (
-    <React.Fragment>
+    <>
       <div className='map-title'><div>{name}</div></div>
       <div onWheel={onWheelZoomCallback}>
         <ScrollContainer className='map-scroll-container' innerRef={container}>
@@ -84,7 +84,7 @@ export const Map = () => {
           }
         </ScrollContainer>
       </div>
-    </React.Fragment>
+    </>
   );
 }
 

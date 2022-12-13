@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { EntryContext, PackageContext } from '../context';
-import { ILayoutElement, ILayoutProps } from '../model/Layout';
+import { ILayoutProps } from '../model/Layout';
 import { getStyle, getValueOrLiteral } from './base';
 
 // =============================================================================

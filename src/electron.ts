@@ -5,6 +5,7 @@ import { mkdir, readdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import IPackage, { IPackageMetadata } from './model/Package';
 import chalk from 'chalk';
+import Formula from 'fparser';
 import { ICollectionConfig, IPackageConfig } from './model/Config';
 
 /**
@@ -242,6 +243,10 @@ ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection
 ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
 
 ipcMain.handle('write-error', (_event: any, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
+
+ipcMain.handle('eval-formula', (_event: any, expression: string, scope?: object): any => {
+  return new Formula(expression).evaluate(scope || {});
+});
 
 /**
  * Create the main window

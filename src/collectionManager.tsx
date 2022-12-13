@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { CollectionContext, PackageContext } from "./context";
 import { getValueOrLiteral } from "./layout/base";
-import ICollection from "./model/Collection";
 import { ICollectionConfig } from "./model/Config";
 import './styles/collectionManager.scss';
 
@@ -201,10 +200,10 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                         </div>
                     </div>
                     {selectedConfig &&
-                        <React.Fragment>
+                        <>
                             <Categories configId={selectedConfig.id} categories={categories} onUpdateCategory={onUpdateCategory} />
                             <Spoilers configId={selectedConfig.id} spoilers={spoilers} onUpdateSpoiler={onUpdateSpoilers} />
-                        </React.Fragment>
+                        </>
                     }
                 </div>
                 <div className='manager-buttons'>

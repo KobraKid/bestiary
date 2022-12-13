@@ -38,7 +38,7 @@ export const Grid = () => {
     const colStyles = useMemo(() => gridLayout.cols.map(col => getStyle(entry, pkg, col.style)), []);
 
     return (
-        <React.Fragment>
+        <>
             <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
             <table className='grid' style={style}>
                 <thead><tr>{gridLayout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
@@ -63,7 +63,7 @@ export const Grid = () => {
                     })}
                 </tbody>
             </table>
-        </React.Fragment>
+        </>
     );
 }
 
@@ -93,7 +93,7 @@ export const List = () => {
     const elementStyles = listLayout.elementStyles?.map(s => getStyle(entry, pkg, s));
 
     return (
-        <React.Fragment>
+        <>
             <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
             <div style={style}>
                 {elements.map((element, i) => {
@@ -105,7 +105,7 @@ export const List = () => {
                     );
                 })}
             </div>
-        </React.Fragment>
+        </>
     );
 }
 
