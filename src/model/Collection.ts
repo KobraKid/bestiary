@@ -29,6 +29,10 @@ export default interface ICollection {
      */
     layoutPreview: ILayoutProps,
     /**
+     * Layout for displaying an entry in a link
+     */
+    layoutLink: ILayoutProps,
+    /**
      * Collection's entries
      */
     data: IEntry[],
@@ -44,6 +48,9 @@ export function buildCollection(name: string): ICollection {
         layoutPreview: {
             type: LAYOUT_TYPE.string
         },
+        layoutLink: {
+            type: LAYOUT_TYPE.string
+        },
         data: []
     };
 }
@@ -54,6 +61,7 @@ export function copyCollection(collection: ICollection): ICollection {
         hidden: collection.hidden,
         layout: Object.assign({}, collection.layout),
         layoutPreview: Object.assign({}, collection.layoutPreview),
+        layoutLink: Object.assign({}, collection.layoutLink),
         data: collection.data.map(entry => copyEntry(entry))
     };
     return copiedCollection;

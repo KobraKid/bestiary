@@ -13,6 +13,7 @@ import '../styles/grid.scss';
 // =============================================================================
 export interface IGridLayoutProps extends ILayoutProps {
     label?: string,
+    border?: boolean,
     rows: string,
     cols: {
         type: LAYOUT_TYPE,
@@ -33,15 +34,16 @@ export const Grid = () => {
     if (!Array.isArray(rows)) { return null; }
 
     const label = useMemo(() => getValueOrLiteral(entry, pkg, gridLayout.label), [entry]);
+    const gridClass = useMemo(() => 'grid' + (getValueOrLiteral(entry, pkg, gridLayout.border) ? '-border' : ''), [entry]);
     const style = useMemo(() => getStyle(entry, pkg, gridLayout.style), [gridLayout.style]);
     const tdStyles = useMemo(() => gridLayout.styles?.map(s => getStyle(entry, pkg, s)), [gridLayout.styles]);
     const colStyles = useMemo(() => gridLayout.cols.map(col => getStyle(entry, pkg, col.style)), [gridLayout.cols]);
 
     return (
-        <>
-            <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
-            <table className='grid' style={style}>
-                <thead><tr>{gridLayout.cols.map((col, c) => <th key={c} className='grid'>{col.header}</th>)}</tr></thead>
+        <div style={style}>
+            {label && <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>}
+            <table className={gridClass}>
+                <thead><tr>{gridLayout.cols.map((col, c) => <th key={c} className={gridClass}>{col.header}</th>)}</tr></thead>
                 <tbody>
                     {rows.map((row, r) => {
                         const rowData = row.toString().split('||');
@@ -52,7 +54,7 @@ export const Grid = () => {
                                     const data = rowData[c]?.trim();
                                     if (data === null || data === undefined) { return null; }
                                     return (
-                                        <td key={c} className='grid' style={tdStyles && tdStyles[c]}>
+                                        <td key={c} className={gridClass} style={tdStyles && tdStyles[c]}>
                                             {renderElementByType(entry, col.type, data, colStyles[c])}
                                         </td>
                                     );
@@ -63,7 +65,7 @@ export const Grid = () => {
                     })}
                 </tbody>
             </table>
-        </>
+        </div>
     );
 }
 

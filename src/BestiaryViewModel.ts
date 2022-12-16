@@ -60,7 +60,7 @@ export function useBestiaryViewModel(): BestiaryData {
         collections: []
     });
     const [collection, setCollection] = useState<ICollection>({
-        name: "", layout: {}, layoutPreview: {}, data: []
+        name: "", layout: {}, layoutPreview: {}, layoutLink: {}, data: []
     });
     const [entry, setEntry] = useState<IEntry | null>(null);
 
@@ -70,8 +70,8 @@ export function useBestiaryViewModel(): BestiaryData {
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
         switch (action.type) {
             case ViewStackframeActionType.RESET:
-                const resetCollection = action.targetView?.collection ?? { name: "", layout: {}, layoutPreview: {}, data: [] };
-                let resetEntry = null;
+                const resetCollection: ICollection = action.targetView?.collection ?? { name: "", layout: {}, layoutPreview: {}, layoutLink: {}, data: [] };
+                let resetEntry: IEntry | null = null;
                 window.log.write('• navigation reset');
 
                 if (isMapView(resetCollection) && resetCollection.data.length > 0) {
@@ -144,7 +144,7 @@ export function useBestiaryViewModel(): BestiaryData {
         viewStackDispatch({
             type: ViewStackframeActionType.RESET,
             targetView: {
-                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", layout: {}, layoutPreview: {}, data: [] },
+                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", layout: {}, layoutPreview: {}, layoutLink: {}, data: [] },
                 entry: null
             }
         });

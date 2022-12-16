@@ -35,6 +35,7 @@ export const CollectionContext = createContext<ICollectionContext>({
         name: "",
         layout: {},
         layoutPreview: {},
+        layoutLink: {},
         data: []
     }
 });

@@ -1,7 +1,6 @@
 import React, { useContext, useMemo } from 'react';
-import { Entry } from '../entry';
 import { ILayoutProps } from '../model/Layout';
-import { getValueOrLiteral } from './base';
+import { Base, getValueOrLiteral } from './base';
 import ICollection from '../model/Collection';
 import IEntry from '../model/Entry';
 import { AttributeValue } from '../model/Attribute';
@@ -26,7 +25,7 @@ export function parseLink(link: AttributeValue): Link {
 }
 
 export const Link = () => {
-  const { pkg } = useContext(PackageContext);
+  const { pkg, selectEntry } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
 
   const linkInfo = useMemo(() => parseLink(getValueOrLiteral(entry, pkg, (layout as ILinkLayoutProps).link)), [entry]);
@@ -45,8 +44,10 @@ export const Link = () => {
 
   return (
     <CollectionContext.Provider value={{ collection: linkedCollection }}>
-      <EntryContext.Provider value={{ entry: linkedEntry, layout: linkedCollection.layoutPreview }}>
-        <Entry className='preview-item' />
+      <EntryContext.Provider value={{ entry: linkedEntry, layout: linkedCollection.layoutLink ?? linkedCollection.layoutPreview }}>
+        <div className='linkItem' onClick={() => selectEntry(linkedEntry, linkedCollection)}>
+          <Base />
+        </div>
       </EntryContext.Provider>
     </CollectionContext.Provider >
   );

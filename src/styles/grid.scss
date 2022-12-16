@@ -1,8 +1,14 @@
-table.grid {
+table.grid-border {
     border-collapse: collapse;
     border-style: hidden;
 }
 
-td.grid, th.grid {
+td.grid-border, th.grid-border {
     border: 1px solid black;
+}
+
+table.grid, td.grid, th.grid {
+    border: none;
+    padding: 0px;
+    margin: 0px;
 }
