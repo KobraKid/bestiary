@@ -21,3 +21,7 @@ A collection can be pretty much anything plural in a game, such as monsters, ite
 Entries represent individual items within a collectible group.
 
 An entry contains all of the attributes particular to itself, as well as relevant links to other entries.
+
+### Attributions
+
+Logo created with [LogoMakr](https://LogoMakr.com/app)
