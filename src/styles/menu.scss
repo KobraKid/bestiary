@@ -13,6 +13,7 @@ $menu-font-expanded-size: 1em;
   flex-direction: row;
   align-items: flex-end;
   background-color: rgba(colors.$medium, .5);
+  border-bottom: 2px solid colors.$medium;
   width: 100%;
   overflow-x: scroll;
   z-index: 1000;
@@ -67,8 +68,10 @@ $menu-font-expanded-size: 1em;
       transition: border-radius .5s ease;
 
       .package-name {
+        color: colors.$text-dark;
+        background-color: colors.$text-light;
         opacity: 1;
-        transition: opacity .5s ease .3s, background-color .5s ease;
+        transition: opacity .5s ease .3s, color .5s ease, background-color .5s ease;
       }
     }
 
