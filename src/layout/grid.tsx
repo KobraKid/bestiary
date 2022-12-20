@@ -45,16 +45,16 @@ export const Grid = () => {
             <table className={gridClass}>
                 <thead><tr>{gridLayout.cols.map((col, c) => <th key={c} className={gridClass}>{col.header}</th>)}</tr></thead>
                 <tbody>
-                    {rows.map(row => {
+                    {rows.map((row, r) => {
                         const rowData = row.toString().split('||');
                         if (!Array.isArray(rowData)) { return null; }
                         return (
-                            <tr key={rowData.toString()}>
+                            <tr key={rowData.toString() + r}>
                                 {gridLayout.cols.map((col, c) => {
                                     const data = rowData[c]?.trim();
                                     if (data === null || data === undefined) { return null; }
                                     return (
-                                        <td key={col.type + data} className={gridClass} style={tdStyles && tdStyles[c]}>
+                                        <td key={col.type + data + c} className={gridClass} style={tdStyles && tdStyles[c]}>
                                             {renderElementByType(entry, col.type, data, colStyles[c])}
                                         </td>
                                     );
@@ -104,7 +104,7 @@ export const List = () => {
                 {elements.map((element, i) => {
                     if (element === null || element === undefined) { return null; }
                     return (
-                        <React.Fragment key={element.toString()}>
+                        <React.Fragment key={element.toString() + i}>
                             {renderElementByType(entry, listLayout.elementTypes, element as string, elementStyles ? elementStyles[i] : undefined)}
                         </React.Fragment>
                     );
