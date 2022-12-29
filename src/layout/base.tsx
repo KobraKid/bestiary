@@ -3,7 +3,7 @@ import { LAYOUT_TYPE } from '../model/Layout';
 import { Horizontal, Vertical } from './groupings';
 import { String, Ratio, Percent, Number } from './basic';
 import { Sprite, SpriteList } from './images';
-import { Link } from './relation';
+import { Link } from './link';
 import { Map } from './map';
 import { Grid, List } from './grid';
 import { AttributeValue } from '../model/Attribute';

@@ -13,7 +13,8 @@ import '../styles/collection.scss';
 type Link = [collection: string, entry: string];
 
 export interface ILinkLayoutProps extends ILayoutProps {
-  link: string
+  link: string,
+  useLinkLayout?: boolean
 }
 
 export function parseLink(link: AttributeValue): Link {
@@ -44,7 +45,10 @@ export const Link = () => {
 
   return (
     <CollectionContext.Provider value={{ collection: linkedCollection }}>
-      <EntryContext.Provider value={{ entry: linkedEntry, layout: linkedCollection.layoutLink ?? linkedCollection.layoutPreview }}>
+      <EntryContext.Provider value={{
+        entry: linkedEntry,
+        layout: ((layout as ILinkLayoutProps).useLinkLayout && linkedCollection.layoutLink) || linkedCollection.layoutPreview
+      }}>
         <div className='linkItem' onClick={() => selectEntry(linkedEntry, linkedCollection)}>
           <Base />
         </div>

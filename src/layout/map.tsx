@@ -5,7 +5,7 @@ import { getStyle, getValueOrLiteral } from './base';
 import ICollection from '../model/Collection';
 import IEntry from '../model/Entry';
 import { AttributeValue } from '../model/Attribute';
-import { Link, parseLink } from './relation';
+import { Link, parseLink } from './link';
 import { EntryContext, PackageContext } from '../context';
 import '../styles/collection.scss';
 import '../styles/map.scss';

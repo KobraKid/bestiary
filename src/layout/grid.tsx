@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo } from 'react';
 import { ILayoutProps, LAYOUT_TYPE } from '../model/Layout';
 import { Base, getStyle, getValueOrLiteral } from './base';
 import { INumberLayoutProps, IPercentLayoutProps, IStringLayoutProps } from './basic';
-import { ILinkLayoutProps } from './relation';
+import { ILinkLayoutProps } from './link';
 import { ISpriteLayoutProps } from './images';
 import { EntryContext, PackageContext } from '../context';
 import IEntry from '../model/Entry';
@@ -18,10 +18,12 @@ export interface IGridLayoutProps extends ILayoutProps {
     cols: {
         type: LAYOUT_TYPE,
         header: string,
+        useLinkLayout?: boolean,
         style?: React.CSSProperties
     }[],
     /** <td/> style */
-    styles?: React.CSSProperties[]
+    styles?: React.CSSProperties[],
+    hideEmpty: boolean
 }
 
 export const Grid = () => {
@@ -31,13 +33,13 @@ export const Grid = () => {
 
     if (!gridLayout.cols) { return null; }
     const rows = useMemo(() => getValueOrLiteral(entry, pkg, gridLayout.rows), [entry]);
-    if (!Array.isArray(rows)) { return null; }
-
     const label = useMemo(() => getValueOrLiteral(entry, pkg, gridLayout.label), [entry]);
     const gridClass = useMemo(() => 'grid' + (getValueOrLiteral(entry, pkg, gridLayout.border) ? '-border' : ''), [entry]);
     const style = useMemo(() => getStyle(entry, pkg, gridLayout.style), [gridLayout.style]);
     const tdStyles = useMemo(() => gridLayout.styles?.map(s => getStyle(entry, pkg, s)), [gridLayout.styles]);
     const colStyles = useMemo(() => gridLayout.cols.map(col => getStyle(entry, pkg, col.style)), [gridLayout.cols]);
+
+    if (!Array.isArray(rows) || (gridLayout.hideEmpty && rows.length === 0)) { return null; }
 
     return (
         <div style={style}>
@@ -55,7 +57,7 @@ export const Grid = () => {
                                     if (data === null || data === undefined) { return null; }
                                     return (
                                         <td key={col.type + data + c} className={gridClass} style={tdStyles && tdStyles[c]}>
-                                            {renderElementByType(entry, col.type, data, colStyles[c])}
+                                            {renderElementByType(entry, col.type, data, col.useLinkLayout, colStyles[c])}
                                         </td>
                                     );
                                 }
@@ -78,7 +80,9 @@ export interface IListLayoutProps extends ILayoutProps {
     elements: string,
     elementTypes: LAYOUT_TYPE,
     elementStyles?: React.CSSProperties[],
-    vertical?: boolean
+    vertical?: boolean,
+    hideEmpty?: boolean,
+    useLinkLayout?: boolean
 }
 
 export const List = () => {
@@ -88,7 +92,6 @@ export const List = () => {
 
     const label = useMemo(() => getValueOrLiteral(entry, pkg, listLayout.label), [entry]);
     const elements = useMemo(() => getValueOrLiteral(entry, pkg, listLayout.elements), [entry]);
-    if (!Array.isArray(elements)) { return null; }
     const style = useMemo(() => {
         const style = getStyle(entry, pkg, listLayout.style);
         style.display = 'flex';
@@ -97,15 +100,18 @@ export const List = () => {
     }, [listLayout.style]);
     const elementStyles = useMemo(() => listLayout.elementStyles?.map(s => getStyle(entry, pkg, s)), [listLayout.elementStyles]);
 
+    if (!Array.isArray(elements) || (listLayout.hideEmpty && elements.length === 0)) { return null; }
+
     return (
         <>
-            <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>
+            {!listLayout.vertical && <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>}
             <div style={style}>
+                {listLayout.vertical && <span style={{ fontSize: '20px', fontWeight: 'bold', textAlign: 'center' }}>{label}</span>}
                 {elements.map((element, i) => {
                     if (element === null || element === undefined) { return null; }
                     return (
                         <React.Fragment key={element.toString() + i}>
-                            {renderElementByType(entry, listLayout.elementTypes, element as string, elementStyles ? elementStyles[i] : undefined)}
+                            {renderElementByType(entry, listLayout.elementTypes, element as string, listLayout.useLinkLayout, elementStyles ? elementStyles[i] : undefined)}
                         </React.Fragment>
                     );
                 })}
@@ -122,7 +128,7 @@ export const List = () => {
  * @param style The style to apply to this element
  * @returns An element to be rendered in a Grid or List
  */
-function renderElementByType(entry: IEntry, layoutType: LAYOUT_TYPE, data: string, style?: React.CSSProperties): JSX.Element | null {
+function renderElementByType(entry: IEntry, layoutType: LAYOUT_TYPE, data: string, useLinkLayout?: boolean, style?: React.CSSProperties): JSX.Element | null {
     const baseLayout: ILayoutProps = {
         type: layoutType,
         style: style
@@ -145,7 +151,8 @@ function renderElementByType(entry: IEntry, layoutType: LAYOUT_TYPE, data: strin
         case LAYOUT_TYPE.link:
             const linkLayout: ILinkLayoutProps = {
                 ...baseLayout,
-                link: data
+                link: data,
+                useLinkLayout: useLinkLayout
             }
             return (
                 <EntryContext.Provider value={{ entry, layout: linkLayout }}>
