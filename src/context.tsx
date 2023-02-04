@@ -2,6 +2,7 @@ import { createContext } from "react";
 import IPackage from "./model/Package";
 import ICollection from "./model/Collection";
 import IEntry from "./model/Entry";
+import { ICollectionConfig, IPackageConfig } from "./model/Config";
 import { ILayoutProps } from "./model/Layout";
 
 interface IPackageContext {
@@ -51,4 +52,20 @@ export const EntryContext = createContext<IEntryContext>({
         attributes: {}
     },
     layout: {}
+});
+
+interface IPackageConfigContext {
+    pkgConfig: IPackageConfig
+}
+
+export const PackageConfigContext = createContext<IPackageConfigContext>({
+    pkgConfig: {}
+});
+
+interface ICollectionConfigContext {
+    collectionConfig: ICollectionConfig[]
+}
+
+export const CollectionConfigContext = createContext<ICollectionConfigContext>({
+    collectionConfig: []
 });

@@ -1,17 +1,15 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import IEntry from './model/Entry';
 import { Entry } from './entry';
 import { getValueOrLiteral } from './layout/base';
 import { ICollectionConfig } from './model/Config';
-import { CollectionContext, EntryContext, PackageContext } from './context';
+import { CollectionConfigContext, CollectionContext, EntryContext, PackageConfigContext, PackageContext } from './context';
 import './styles/transitions.scss';
 
 /**
  * Props for the Collection
  */
 interface ICollectionProps {
-  /** The current collection's collection config */
-  collectionConfig?: ICollectionConfig[] | null,
   /** Whether the package menu is expanded */
   pkgMenuExpanded: boolean,
   /** Callback function for when an entry is collected */
@@ -26,8 +24,11 @@ interface ICollectionProps {
  */
 export const Collection = (props: ICollectionProps) => {
   const { pkg } = useContext(PackageContext);
+  const { pkgConfig } = useContext(PackageConfigContext);
   const { collection } = useContext(CollectionContext);
-  const { collectionConfig, pkgMenuExpanded, onEntryCollected } = props;
+  const { pkgMenuExpanded, onEntryCollected } = props;
+
+  const collectionConfig = useMemo(() => pkgConfig[collection.name] ?? [], [pkgConfig, collection.name]);
 
   const [subsections, setSubsections] = useState<Array<string>>([]);
 
@@ -46,7 +47,7 @@ export const Collection = (props: ICollectionProps) => {
         <Subsection
           key={subsection}
           title={subsection}
-          collectionConfig={collectionConfig?.filter(c => c.categories.length < 1 || c.categories.includes(subsection)) ?? null}
+          collectionConfig={collectionConfig?.filter(c => c.categories.length < 1 || c.categories.includes(subsection)) ?? []}
           entries={collection.data.filter((entry) => getValueOrLiteral(entry, pkg, entry.category ?? "") === subsection)}
           onEntryCollected={onEntryCollected} />
       )}
@@ -61,7 +62,7 @@ interface ISubSectionProps {
   /** The subsection's title */
   title: string,
   /** The current collection's config */
-  collectionConfig: ICollectionConfig[] | null,
+  collectionConfig: ICollectionConfig[],
   /** The subsection's entries */
   entries: IEntry[],
   /** Callback function for when an entry is collected */
@@ -92,12 +93,14 @@ export const Subsection = (props: ISubSectionProps) => {
         </div>
       }
       {entries.map((entry) =>
-        <EntryContext.Provider key={entry.id} value={{ entry, layout: collection.layoutPreview }}>
-          <Entry
-            collectionConfig={collectionConfig}
-            className='preview-item'
-            onCollect={(collectionConfigId) => onEntryCollected(entry.id, collectionConfigId)} />
-        </EntryContext.Provider>
+        <CollectionConfigContext.Provider key={entry.id} value={{ collectionConfig }}>
+          <EntryContext.Provider value={{ entry, layout: collection.layoutPreview }}>
+            <Entry
+              collectionConfig={collectionConfig}
+              className='preview-item'
+              onCollect={(collectionConfigId) => onEntryCollected(entry.id, collectionConfigId)} />
+          </EntryContext.Provider>
+        </CollectionConfigContext.Provider>
       )}
     </div>
   );

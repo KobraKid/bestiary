@@ -110,8 +110,8 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
   const size = useMemo(() => (point[2] as string).split(','), [point]);
   const scale = props.scale / 100;
 
-  const linkedCollection = useMemo(() => pkg.collections.find((collection: ICollection) => collection.name === link[0]), [pkg, link]);
-  const linkedEntry = useMemo(() => linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]), [linkedCollection]);
+  const linkedCollection = useMemo(() => pkg.collections.find((collection: ICollection) => collection.name === link[0]), [pkg, link[0]]);
+  const linkedEntry = useMemo(() => linkedCollection?.data?.find((entry: IEntry) => entry.id === link[1]), [linkedCollection, link[1]]);
 
   if (!linkedCollection || !linkedEntry) {
     window.log.writeError(`❗Could not establish POI link [${link.toString()}]:${!linkedCollection ? " Missing collection" : ""}${!linkedEntry ? " Missing entry" : ""}`);
@@ -138,7 +138,7 @@ export const PointOfInterest = (props: IPointOfInterestProps) => {
             top: `${+(size[1]!) * scale}px`,
             width: 'fit-content'
           }}>
-          <Link />
+          <Link link={`~${linkedCollection.name}|${linkedEntry.id}`} />
         </div>
       </div>
     </div>

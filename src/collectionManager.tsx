@@ -131,7 +131,7 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                     color: config.color,
                     textColor: config.textColor,
                     categories: config.categories,
-                    spoilers: newSpoilers.filter(s => s[1]).map(s => s[0] as string),
+                    spoilers: newSpoilers.filter(s => s[1]).map(s => "!" + s[0]),
                     collectedEntryIds: config.collectedEntryIds
                 } : config;
             });
@@ -173,7 +173,7 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
             return categories.map(c => [c[0], selectedConfig?.categories.find(selectedCategory => c[0] === selectedCategory) !== undefined ?? false]);
         });
         setSpoilers(spoilers => {
-            return spoilers.map(s => [s[0], selectedConfig?.spoilers.find(selectedSpoiler => s[0] === selectedSpoiler) !== undefined ?? false]);
+            return spoilers.map(s => [s[0], selectedConfig?.spoilers.find(selectedSpoiler => ("!" + s[0]) === selectedSpoiler) !== undefined ?? false]);
         });
     }, [selectedConfig]);
 

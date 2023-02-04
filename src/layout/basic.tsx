@@ -1,7 +1,7 @@
 import React, { useContext, useMemo } from 'react';
-import { EntryContext, PackageContext } from '../context';
+import { CollectionConfigContext, EntryContext, PackageContext } from '../context';
 import { ILayoutProps } from '../model/Layout';
-import { getStyle, getValueOrLiteral } from './base';
+import { getShouldHide, getStyle, getValueOrLiteral } from './base';
 
 // =============================================================================
 // | String
@@ -14,16 +14,19 @@ export interface IStringLayoutProps extends ILayoutProps {
 export const String = () => {
   const { pkg } = useContext(PackageContext);
   const { entry, layout } = useContext(EntryContext);
+  const { collectionConfig } = useContext(CollectionConfigContext);
 
-  let label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).label), [entry]);
-  let value = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).value), [entry]);
-  let style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
+  const label = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).label) as string, [entry]);
+  const value = useMemo(() => getValueOrLiteral(entry, pkg, (layout as IStringLayoutProps).value) as string, [entry]);
+  const style = useMemo(() => getStyle(entry, pkg, layout.style), [layout.style]);
+
+  const shouldHide = useMemo(() => getShouldHide(collectionConfig, entry, (layout as IStringLayoutProps).value), [entry, collectionConfig]);
 
   if (value.toString().length < 1) { return null; }
-  
+
   return (
     <div style={style}>
-      {label ? `${label} ${value}` : value}
+      {label ? `${label} ${shouldHide ? value.replace(/./g, "?") : value}` : (shouldHide ? value.replace(/./g, "?") : value)}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import IEntry from '../model/Entry';
 import IPackage from '../model/Package';
 import { EntryContext } from '../context';
 import { Formula } from './formula';
+import { ICollectionConfig } from '../model/Config';
 
 export const Base = () => {
   const { layout } = useContext(EntryContext);
@@ -56,7 +57,8 @@ export const Base = () => {
 
 /**
  * Retrieve the value of an attribute or a literal value for display in a layout component.
- * @param data The list of attributes available for the current entry
+ * @param entry The current entry.
+ * @param pkg The current package.
  * @param value The attribute to search for.
  * @returns The value of an attribute. If `value` starts with '!', the value will be looked up from the entry's attributes.
  *          Otherwise, the literal value will be returned.
@@ -93,6 +95,13 @@ export function getValueOrLiteral(entry: IEntry, pkg: IPackage, value?: string |
   return val;
 }
 
+/**
+ * Retrieve the style for a layout component.
+ * @param entry The current entry.
+ * @param pkg The current package.
+ * @param style The style attributes parsed from the package.
+ * @returns A CSS object that can be applied to an HTML element.
+ */
 export function getStyle(entry: IEntry, pkg: IPackage, style: React.CSSProperties | undefined): React.CSSProperties {
   const translatedStyle: React.CSSProperties = {};
   for (const props in style) {
@@ -101,4 +110,18 @@ export function getStyle(entry: IEntry, pkg: IPackage, style: React.CSSPropertie
     translatedStyle[props as keyof React.CSSProperties] = getValueOrLiteral<string | number | (string & {}) | (number & {}) | undefined>(entry, pkg, value);
   }
   return translatedStyle;
+}
+
+/**
+ * Determine whether the element's attirbute is marked as a spoiler.
+ * @param collectionConfig The current collection config.
+ * @param entry The current entry.
+ * @param attribute The entry's attribute.
+ * @returns Whether the current attribute is marked as a spoiler and should be hidden.
+ */
+export function getShouldHide(collectionConfig: ICollectionConfig[], entry: IEntry, attribute: string | AttributeValue): boolean {
+  return (
+    collectionConfig.filter(config => config.spoilers.includes(attribute.toString())).length > 0
+    && collectionConfig.filter(config => config.collectedEntryIds.includes(entry.id)).length === 0
+  );
 }
