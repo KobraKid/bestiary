@@ -42,7 +42,7 @@ const App = () => {
   useEffect(() => window.menu.manageCollection(collectionName => {
     setShowCollectionManager(!!pkg?.collections.find(collection => collection.name === collectionName));
   }), [pkg]);
-
+  
   return (
     <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
       <PackageConfigContext.Provider value={{ pkgConfig }}>

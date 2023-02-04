@@ -29,7 +29,7 @@ export const enum DISPLAY_MODE {
     /** Detailed entry */
     entry,
     /** Map view */
-    map,
+    map
 }
 
 /**
@@ -166,12 +166,7 @@ export function useBestiaryViewModel(): BestiaryData {
         });
     }, []);
 
-    const updatePkgConfig = useCallback(() => {
-        console.log(pkg?.metadata.name);
-        if (pkg) {
-            window.config.loadPkgConfig(pkg).then(setPkgConfig);
-        }
-    }, []);
+    const updatePkgConfig = useCallback((pkg: IPackage) => window.config.loadPkgConfig(pkg).then(setPkgConfig), []);
 
     const collectEntry = useCallback((entryId: string, collectionConfigId: number, currentPkg: IPackage | null, currentCollection: ICollection, currentConfig: IPackageConfig) => {
         // Clone current config
@@ -196,9 +191,7 @@ export function useBestiaryViewModel(): BestiaryData {
         }
     }, []);
 
-    const navigateBack = useCallback(() => {
-        viewStackDispatch({ type: ViewStackframeActionType.NAVIGATE_BACKWARDS });
-    }, []);
+    const navigateBack = useCallback(() => viewStackDispatch({ type: ViewStackframeActionType.NAVIGATE_BACKWARDS }), []);
 
     return {
         pkg,
@@ -209,7 +202,7 @@ export function useBestiaryViewModel(): BestiaryData {
         selectEntry: (newEntry: IEntry, newCollection?: ICollection) => selectEntry(entry, newEntry, newCollection),
         collectEntry: (entryId: string, collectionConfigId: number) => collectEntry(entryId, collectionConfigId, pkg, collection, pkgConfig),
         pkgConfig,
-        updatePkgConfig,
+        updatePkgConfig: () => updatePkgConfig(pkg),
         displayMode,
         canNavigateBack: (views.length > 1),
         navigateBack

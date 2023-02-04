@@ -32,7 +32,8 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                 textColor: '#FFFFFF',
                 categories: [],
                 spoilers: [],
-                collectedEntryIds: []
+                collectedEntryIds: [],
+                hideWhenCollected: false
             }]) : null;
         });
     }, [setConfigs]);
@@ -52,7 +53,8 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                 textColor: config.textColor,
                 categories: config.categories,
                 spoilers: config.spoilers,
-                collectedEntryIds: config.collectedEntryIds
+                collectedEntryIds: config.collectedEntryIds,
+                hideWhenCollected: config.hideWhenCollected
             } : config;
 
             setConfigs(configs => {
@@ -72,7 +74,8 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                 textColor: config.textColor,
                 categories: config.categories,
                 spoilers: config.spoilers,
-                collectedEntryIds: config.collectedEntryIds
+                collectedEntryIds: config.collectedEntryIds,
+                hideWhenCollected: config.hideWhenCollected
             } : config;
 
             setConfigs(configs => {
@@ -92,7 +95,8 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                 textColor: newColor,
                 categories: config.categories,
                 spoilers: config.spoilers,
-                collectedEntryIds: config.collectedEntryIds
+                collectedEntryIds: config.collectedEntryIds,
+                hideWhenCollected: config.hideWhenCollected
             } : config;
 
             setConfigs(configs => {
@@ -114,7 +118,8 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                     textColor: config.textColor,
                     categories: newCategories.filter(c => c[1]).map(c => c[0] as string),
                     spoilers: config.spoilers,
-                    collectedEntryIds: config.collectedEntryIds
+                    collectedEntryIds: config.collectedEntryIds,
+                    hideWhenCollected: config.hideWhenCollected
                 } : config;
             });
             return newCategories;
@@ -132,11 +137,33 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                     textColor: config.textColor,
                     categories: config.categories,
                     spoilers: newSpoilers.filter(s => s[1]).map(s => "!" + s[0]),
-                    collectedEntryIds: config.collectedEntryIds
+                    collectedEntryIds: config.collectedEntryIds,
+                    hideWhenCollected: config.hideWhenCollected
                 } : config;
             });
             return newSpoilers;
         })
+    }, []);
+
+    const onUpdateHideWhenCollected = useCallback((currentConfig: ICollectionConfig, hide: boolean) => {
+        setSelecetdConfig(config => {
+            const update = config ? {
+                name: config.name,
+                id: config.id,
+                color: config.color,
+                textColor: config.textColor,
+                categories: config.categories,
+                spoilers: config.spoilers,
+                collectedEntryIds: config.collectedEntryIds,
+                hideWhenCollected: hide
+            } : config;
+
+            setConfigs(configs => {
+                return (configs && update) ? configs?.map(c => c.id === currentConfig.id ? update : c) : configs;
+            });
+
+            return update;
+        });
     }, []);
 
     const onSaveConfig = useCallback((currentConfig: ICollectionConfig | null) => {
@@ -194,6 +221,8 @@ export const CollectionManager = (props: ICollectionManagerProps) => {
                                         <input value={config.name} onChange={(e) => onUpdateName(config, e.target.value)} />
                                         <input type='color' value={config.color} onChange={e => onUpdateColor(config, e.target.value)} />
                                         <input type='color' value={config.textColor} onChange={e => onUpdateBackgroundColor(config, e.target.value)} />
+                                        <input type='checkbox' checked={config.hideWhenCollected} onChange={e => onUpdateHideWhenCollected(config, e.target.checked)} />
+                                        <span>Hide collected</span>
                                     </li>
                                 )}
                             </ul>

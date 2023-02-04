@@ -48,7 +48,7 @@ export const Collection = (props: ICollectionProps) => {
           key={subsection}
           title={subsection}
           collectionConfig={collectionConfig?.filter(c => c.categories.length < 1 || c.categories.includes(subsection)) ?? []}
-          entries={collection.data.filter((entry) => getValueOrLiteral(entry, pkg, entry.category ?? "") === subsection)}
+          entries={collection.data.filter(entry => getValueOrLiteral(entry, pkg, entry.category ?? "") === subsection)}
           onEntryCollected={onEntryCollected} />
       )}
     </div>
@@ -83,6 +83,15 @@ export const Subsection = (props: ISubSectionProps) => {
 
   const { collection } = useContext(CollectionContext);
 
+  const filteredEntries = useMemo(() => {
+    return entries.filter(entry =>
+      collectionConfig
+        .filter(config => config.hideWhenCollected)
+        .filter(config => config.collectedEntryIds.includes(entry.id))
+        .length === 0
+    );
+  }, [entries, collectionConfig]);
+
   return (
     <div className='collection-subsection'>
       {title.length > 0 &&
@@ -92,7 +101,7 @@ export const Subsection = (props: ISubSectionProps) => {
           <div />
         </div>
       }
-      {entries.map((entry) =>
+      {filteredEntries.map((entry) =>
         <CollectionConfigContext.Provider key={entry.id} value={{ collectionConfig }}>
           <EntryContext.Provider value={{ entry, layout: collection.layoutPreview }}>
             <Entry

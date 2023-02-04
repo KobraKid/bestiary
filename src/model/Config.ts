@@ -10,4 +10,5 @@ export interface ICollectionConfig {
     categories: string[],
     spoilers: string[],
     collectedEntryIds: string[],
+    hideWhenCollected: boolean
 }
