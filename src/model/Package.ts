@@ -1,25 +1,10 @@
-import ICollection, { copyCollection } from './Collection';
+import { ICollectionMetadata } from "./Collection";
 
-/**
- * Represents a package
- */
-export default interface IPackage {
-  /**
-   * Package metadata
-   */
-  metadata: IPackageMetadata,
-  /**
-   * Package's list of collections
-   */
-  collections: ICollection[],
-}
-
-export function copyPackage(pkg: IPackage): IPackage {
-  let copiedPkg: IPackage = {
-    metadata: copyMetadata(pkg.metadata),
-    collections: pkg.collections.map(collection => copyCollection(collection))
-  };
-  return copiedPkg;
+export enum ISO639Code {
+  Chinese = 'zh',
+  English = 'en',
+  Japanese = 'ja',
+  Korean = 'ko',
 }
 
 /**
@@ -30,6 +15,10 @@ export interface IPackageMetadata {
    * Package name
    */
   name: string,
+  /** 
+   * Package namespace
+   */
+  ns: string,
   /**
    * Package location
    */
@@ -39,27 +28,24 @@ export interface IPackageMetadata {
    */
   icon: string,
   /**
-   * Package background color
+   * List of collections contained in this package
    */
-  color: string,
+  collections: ICollectionMetadata[],
   /**
-   * Package font
+   * List of supported languages, as ISO 639-1 codes
    */
-  font: string,
-  /**
-   * Definitions to be used package-wide
-   */
-  defs: object,
+  langs: ISO639Code[]
 }
 
-export function copyMetadata(metadata: IPackageMetadata): IPackageMetadata {
-  let copiedMetadata: IPackageMetadata = {
-    name: metadata.name,
-    path: metadata.path,
-    icon: metadata.icon,
-    color: metadata.color,
-    font: metadata.font,
-    defs: Object.assign({}, metadata.defs)
-  };
-  return copiedMetadata;
+export function getLangDisplayName(lang: ISO639Code) {
+  switch (lang) {
+    case ISO639Code.Chinese:
+      return "Chinese";
+    case ISO639Code.English:
+      return "English";
+    case ISO639Code.Japanese:
+      return "Japanese";
+    case ISO639Code.Korean:
+      return "Korean";
+  }
 }

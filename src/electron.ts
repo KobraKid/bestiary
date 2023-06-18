@@ -1,12 +1,15 @@
 import { app, BrowserWindow, ipcMain, IpcMainEvent, Menu } from 'electron';
 import path from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { mkdir, readdir } from 'fs/promises';
+import { mkdir } from 'fs/promises';
 import envPaths from 'env-paths';
-import IPackage, { IPackageMetadata } from './model/Package';
+import { IPackageMetadata, ISO639Code } from './model/Package';
 import chalk from 'chalk';
 import Formula from 'fparser';
 import { ICollectionConfig, IPackageConfig } from './model/Config';
+import { disconnect, getCollection, getEntry, getPackageList, setup as setupDB } from './database';
+import IEntry from './model/Entry';
+import { ICollectionMetadata } from './model/Collection';
 
 /**
  * Setup and logging
@@ -27,7 +30,7 @@ function createWindow() {
   let win = new BrowserWindow({
     width: 1280,
     height: 720,
-    title: isDev ? `Bestiary | ${process.env.npm_package_version}` : 'Bestiary',
+    title: isDev ? `Bestiary | DEVELOPMENT | ${process.env.npm_package_version}` : 'Bestiary',
     darkTheme: true,
     autoHideMenuBar: true,
     // frame: isDev,
@@ -43,88 +46,7 @@ function createWindow() {
   }
 }
 
-/**
- * Load a single package
- * 
- * @param pkgPath The package's location on the filesystem
- * @param fullLoad Whether this should be a full package load or just package header load
- * @param showStatus If set to true, logs the status of the package load
- * @returns A Package if one could be loaded from the supplied path
- */
-function loadPackage(pkgPath: string, fullLoad: boolean, showStatus: boolean = false): IPackage | null {
-  let pkg = null;
-  try {
-    const pkgData = readFileSync(path.join(pkgPath, 'package.json'), { encoding: 'utf-8' });
-    pkg = parsePackage(pkgData, pkgPath, fullLoad, showStatus);
-  } catch (err: any) {
-    if (showStatus) { console.log(chalk.white.bgRed('❌ Error loading package at "' + pkgPath + '"', err)); }
-  }
-  return pkg;
-}
-
-/**
- * Load a package from a string
- * 
- * @param pkgData The contents of the package.json file
- * @param pkgPath The location of the package.json file
- * @param fullLoad Whether this should be a full package load or just package header load
- * @param showStatus If set to true, logs the status of the package load
- * @returns A Package if one could be parsed from the supplied data
- */
-function parsePackage(pkgData: string, pkgPath: string = '', fullLoad: boolean = false, showStatus: boolean = false): IPackage | null {
-  let pkg = null;
-  try {
-    const parsedData = JSON.parse(pkgData);
-    if (isPackage(parsedData)) {
-      pkg = parsedData as IPackage;
-      if (showStatus) { console.log(chalk.green('✔ Loaded package "' + pkg.metadata.name + '"')); }
-      pkg.metadata.path = pkgPath;
-      if (fullLoad) {
-        pkg.collections.forEach(collection => {
-          if (collection.source) {
-            try {
-              const parsedCollection = JSON.parse(readFileSync(path.join(pkgPath, collection.source), { encoding: 'utf-8' }));
-              if (isCollection(parsedCollection)) {
-                Object.assign(collection, parsedCollection);
-              }
-              delete collection.source;
-            } catch (err: any) {
-              console.log(chalk.white.bgRed('❌ Error parsing collection "' + collection.name + '" at <' + collection.source + '>, skipping'));
-            }
-          }
-        });
-      }
-    }
-    else {
-      if (showStatus) { console.log(chalk.white.bgRed('❌ Error parsing package at "' + pkgPath + '"')); }
-    }
-  } catch (err: any) {
-    if (showStatus) { console.log(chalk.white.bgRed('❌ Error parsing package at "' + pkgPath + '"', err)); }
-  }
-  return pkg;
-}
-
-/**
- * Determines if parsed data is a package
- * 
- * @param data The parsed data
- * @returns True if the data contains the minimum attributes required to be a package
- */
-function isPackage(data: any): boolean {
-  return ('metadata' in data) && ('name' in data.metadata) && ('collections' in data);
-}
-
-/**
- * Determines if parsed data is a collection
- * 
- * @param data The parsed data
- * @returns True if the data contains the minimum attributes required to be a collection
- */
-function isCollection(data: any): boolean {
-  return ('data' in data) && ('layout' in data) && ('layoutPreview' in data);
-}
-
-async function createOrLoadConfig(pkg: IPackage): Promise<IPackageConfig> {
+async function createOrLoadConfig(pkg: any): Promise<IPackageConfig> {
   const pkgConfigPath = path.join(paths.config, path.basename(pkg.metadata.path));
   const pkgConfigFile = path.join(pkgConfigPath, 'config.json');
 
@@ -153,7 +75,7 @@ async function createOrLoadConfig(pkg: IPackage): Promise<IPackageConfig> {
  * @param collection The collection name to load the config for
  * @returns The configuration data for a collection
  */
-async function createOrLoadCollectionConfig(pkg: IPackage, collectionName: string): Promise<ICollectionConfig[]> {
+async function createOrLoadCollectionConfig(pkg: any, collectionName: string): Promise<ICollectionConfig[]> {
   const pkgConfig = await createOrLoadConfig(pkg);
   let collectionConfig: ICollectionConfig[] = [];
   if (pkgConfig) {
@@ -186,40 +108,19 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
 /**
  * Load all packages
  */
-ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => {
-  // Ensure Data directory exists
-  await mkdir(paths.data, { recursive: true });
+ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => getPackageList());
 
-  // Get all packages in Data directory
-  const pkgs: IPackageMetadata[] = [];
-  try {
-    const files = await readdir(paths.data, { withFileTypes: true });
-    for (const file of files) {
-      if (file.isDirectory()) {
-        const pkg = loadPackage(path.join(paths.data, file.name), false, true);
-        if (pkg !== null) {
-          pkgs.push(pkg.metadata);
-        }
-      }
-    }
-  } catch (err: any) {
-    console.log(chalk.white.bgRed(err));
-  }
+ipcMain.handle('pkg:load-collection', async (_event: any, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
 
-  return pkgs;
-});
-
-ipcMain.handle('pkg:load-pkg', async (_event: any, pkgPath: string): Promise<IPackage | null> => loadPackage(pkgPath, true));
-
-ipcMain.handle('pkg:parse-pkg', async (_event: any, pkgData: string): Promise<IPackage | null> => parsePackage(pkgData));
+ipcMain.handle('pkg:load-entry', async (_event: any, pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> => getEntry(pkg, collection, entry, lang))
 
 ipcMain.handle('pkg:file-exists', (_event: any, filePath: string): boolean => existsSync(filePath));
 
-ipcMain.handle('config:load-config', async (_event: any, pkg: IPackage) => createOrLoadConfig(pkg));
+ipcMain.handle('config:load-config', async (_event: any, pkg: any) => createOrLoadConfig(pkg));
 
 ipcMain.handle('config:save-config', async (_event: any, pkgPath: string, config: IPackageConfig) => saveConfig(pkgPath, config));
 
-ipcMain.handle('config:load-collection-config', async (_event: any, pkg: IPackage, collection: string) => createOrLoadCollectionConfig(pkg, collection));
+ipcMain.handle('config:load-collection-config', async (_event: any, pkg: any, collection: string) => createOrLoadCollectionConfig(pkg, collection));
 
 ipcMain.handle('config:save-collection-config', async (_event: any, pkgPath: string, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkgPath, collection, config));
 
@@ -252,5 +153,16 @@ ipcMain.handle('eval-formula', (_event: any, expression: string, scope?: object)
  * Create the main window
  */
 app.whenReady().then(async () => {
+  await setupDB();
   createWindow();
+});
+
+/**
+ * Teardown when exiting
+ */
+app.on('window-all-closed', async () => {
+  if (process.platform !== 'darwin') {
+    await disconnect();
+    app.quit();
+  }
 });

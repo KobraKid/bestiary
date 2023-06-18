@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import IPackage, { IPackageMetadata } from './model/Package';
-import ICollection from './model/Collection';
+import { IPackageMetadata } from './model/Package';
+import { ICollectionMetadata } from './model/Collection';
 import './styles/menu.scss';
 import upArrow from './assets/icons/up.png';
 import downArrow from './assets/icons/down.png';
@@ -21,7 +21,7 @@ interface IPackageMenuProps {
   /**
    * The callback handler for when a package is clicked
    */
-  onPackageClicked: (pkg: IPackage) => void,
+  onPackageClicked: (pkg: IPackageMetadata) => void,
 }
 
 /**
@@ -34,17 +34,14 @@ export const PackageMenu = (props: IPackageMenuProps) => {
 
   const [packages, setPackages] = useState(new Array<IPackageMetadata>());
 
-  const onPkgClickedCallback = useCallback((path: string) => {
-    window.pkg.loadPackage(path).then((result: IPackage | null) => {
-      if (result) {
-        setExpanded(false);
-        onPackageClicked(result);
-      }
-    });
+  const onPkgClickedCallback = useCallback((pkg: IPackageMetadata) => {
+    setExpanded(false);
+    console.log(pkg);
+    onPackageClicked(pkg);
   }, []);
 
   useEffect(() => {
-    window.pkg.loadPackages().then((result: any) => setPackages(result as IPackageMetadata[]));
+    window.pkg.loadPackages().then((result: IPackageMetadata[]) => setPackages(result));
   }, []);
 
   return (
@@ -55,7 +52,7 @@ export const PackageMenu = (props: IPackageMenuProps) => {
           name={pkg.name}
           icon={pkg.path + '\\' + pkg.icon}
           expanded={expanded}
-          onPkgClicked={() => onPkgClickedCallback(pkg.path)} />)
+          onPkgClicked={() => onPkgClickedCallback(pkg)} />)
       }
       <div style={{ flexGrow: '1', height: '100%' }}>
         <img src={expanded ? upArrow : downArrow} style={{ float: 'right', padding: 16, width: 32, height: 32, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)} />
@@ -110,8 +107,8 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
  * Props for the collection menu
  */
 interface ICollectionMenuProps {
-  collections: ICollection[],
-  onCollectionClicked: (collection: ICollection) => void,
+  collections: ICollectionMetadata[],
+  onCollectionClicked: (collection: ICollectionMetadata) => void,
   canNavigateBack: boolean,
   onBackArrowClicked: () => void,
   pkgMenuExpanded: boolean,
@@ -132,13 +129,12 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
           <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: 'pointer' }} onClick={onBackArrowClicked} />
         </div>
       }
-      {collections.map((collection: ICollection) =>
-        !collection.hidden &&
+      {collections.map((collection: ICollectionMetadata) =>
         <CollectionMenuItem
-          key={collection.name}
+          key={collection.id}
           name={collection.name}
           onCollectionClicked={() => onCollectionClicked(collection)}
-          onCollectionRightClicked={() => window.menu.showCollectionMenu(collection.name)} />
+          onCollectionRightClicked={() => window.menu.showCollectionMenu(collection.id)} />
       )}
     </div>
   );
@@ -160,7 +156,7 @@ interface ICollectionMenuItemProps {
  */
 const CollectionMenuItem = (props: ICollectionMenuItemProps) => {
   const { name, onCollectionClicked, onCollectionRightClicked } = props;
-  
+
   return (
     <button className='collection-menu-button' onClick={onCollectionClicked} onContextMenu={onCollectionRightClicked}>
       <p>{name}</p>

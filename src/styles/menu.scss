@@ -6,7 +6,6 @@ $menu-button-expanded-size: 128px;
 $menu-font-expanded-size: 1em;
 
 .package-menu {
-  position: fixed;
   top: 0;
   left: 0;
   display: flex;
@@ -96,10 +95,8 @@ $menu-font-expanded-size: 1em;
 }
 
 @mixin collection-menu {
-  position: fixed;
   display: flex;
   flex-direction: column;
-  background-color: rgba(colors.$medium, .5);
   width: $menu-button-collapsed-size;
   transition: top .5s ease;
 }
