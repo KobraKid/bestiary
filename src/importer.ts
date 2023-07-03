@@ -4,7 +4,7 @@ import chalk from "chalk";
 import fs, { mkdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import * as cheerio from 'cheerio';
-import { EntryModel, ResourceModel } from "./database";
+import { EntryModel, PkgModel, ResourceModel } from "./database";
 
 export function onImportClicked(_menuItem: MenuItem, _browserWindow: BrowserWindow, _event: KeyboardEvent): void {
     let win = new BrowserWindow({
@@ -23,7 +23,7 @@ export function onImportClicked(_menuItem: MenuItem, _browserWindow: BrowserWind
 
     win.loadFile('importer.html');
 
-    win.webContents.openDevTools({ mode: 'detach' });
+    // win.webContents.openDevTools({ mode: 'detach' });
 }
 
 enum BuiltInImporters {
@@ -63,73 +63,81 @@ async function import_dqtact(): Promise<void> {
     ]
     const baseURL = 'https://dqtjp.kusoge.xyz';
 
+    await PkgModel.findOneAndUpdate({ ns: BuiltInImporters.dqtact }, {
+        name: "Dragon Quest Tact",
+        ns: BuiltInImporters.dqtact,
+        icon: "icon.webp",
+        collections: [{ name: "Units", id: "units" }],
+        langs: ["en", "ja", "ko", "zh_TW"]
+    }, { upsert: true, new: true });
+
     // first drop all resources
-    // await ResourceModel.collection.deleteMany({ 'packageId': BuiltInImporters.dqtact });
+    await ResourceModel.collection.deleteMany({ packageId: BuiltInImporters.dqtact });
 
-    // for (let collection of dqtactJson) {
-    //     let suffix = '';
+    for (let collection of dqtactJson) {
+        let suffix = '';
 
-    //     switch (collection.listMethod) {
-    //         case "GET":
-    //             suffix = '/0';
-    //         case "POST":
-    //             const response = await fetch(`${baseURL}/${collection.listKey}/q${suffix}`, { method: collection.listMethod, headers: { 'Content-Type': 'appliaction/json' } });
-    //             const jsonResponse = await response.json();
+        switch (collection.listMethod) {
+            case "GET":
+                suffix = '/0';
+            case "POST":
+                const response = await fetch(`${baseURL}/${collection.listKey}/q${suffix}`, { method: collection.listMethod, headers: { 'Content-Type': 'appliaction/json' } });
+                const jsonResponse = await response.json();
 
-    //             // set the collection for each entry
-    //             (jsonResponse as any[]).forEach(element => {
-    //                 element.packageId = BuiltInImporters.dqtact;
-    //                 element.collectionId = collection.listKey;
+                // set the collection for each entry
+                (jsonResponse as any[]).forEach(element => {
+                    element.packageId = BuiltInImporters.dqtact;
+                    element.collectionId = collection.listKey;
 
-    //                 // Do any transformations
-    //                 if (element.eleRes) {
-    //                     element.eleRes.ele1Icon = __import_dqtact_res_icon(element.eleRes.ele1);
-    //                     element.eleRes.ele2Icon = __import_dqtact_res_icon(element.eleRes.ele2);
-    //                     element.eleRes.ele3Icon = __import_dqtact_res_icon(element.eleRes.ele3);
-    //                     element.eleRes.ele4Icon = __import_dqtact_res_icon(element.eleRes.ele4);
-    //                     element.eleRes.ele5Icon = __import_dqtact_res_icon(element.eleRes.ele5);
-    //                     element.eleRes.ele6Icon = __import_dqtact_res_icon(element.eleRes.ele6);
-    //                     element.eleRes.ele7Icon = __import_dqtact_res_icon(element.eleRes.ele7);
-    //                 }
-    //                 if (element.ailres) {
-    //                     element.ailres.ail1Icon = __import_dqtact_res_icon(element.ailres.ail1);
-    //                     element.ailres.ail2Icon = __import_dqtact_res_icon(element.ailres.ail2);
-    //                     element.ailres.ail3Icon = __import_dqtact_res_icon(element.ailres.ail3);
-    //                     element.ailres.ail4Icon = __import_dqtact_res_icon(element.ailres.ail4);
-    //                     element.ailres.ail5Icon = __import_dqtact_res_icon(element.ailres.ail5);
-    //                     element.ailres.ail6Icon = __import_dqtact_res_icon(element.ailres.ail6);
-    //                     element.ailres.ail7Icon = __import_dqtact_res_icon(element.ailres.ail7);
-    //                     element.ailres.ail8Icon = __import_dqtact_res_icon(element.ailres.ail8);
-    //                     element.ailres.ail9Icon = __import_dqtact_res_icon(element.ailres.ail9);
-    //                     element.ailres.ail10Icon = __import_dqtact_res_icon(element.ailres.ail10);
-    //                     element.ailres.ail11Icon = __import_dqtact_res_icon(element.ailres.ail11);
-    //                     element.ailres.ail12Icon = __import_dqtact_res_icon(element.ailres.ail12);
-    //                     element.ailres.ail13Icon = __import_dqtact_res_icon(element.ailres.ail13);
-    //                 }
+                    // Do any transformations
+                    if (element.eleRes) {
+                        element.eleRes.ele1Icon = __import_dqtact_res_icon(element.eleRes.ele1);
+                        element.eleRes.ele2Icon = __import_dqtact_res_icon(element.eleRes.ele2);
+                        element.eleRes.ele3Icon = __import_dqtact_res_icon(element.eleRes.ele3);
+                        element.eleRes.ele4Icon = __import_dqtact_res_icon(element.eleRes.ele4);
+                        element.eleRes.ele5Icon = __import_dqtact_res_icon(element.eleRes.ele5);
+                        element.eleRes.ele6Icon = __import_dqtact_res_icon(element.eleRes.ele6);
+                        element.eleRes.ele7Icon = __import_dqtact_res_icon(element.eleRes.ele7);
+                    }
+                    if (element.ailres) {
+                        element.ailres.ail1Icon = __import_dqtact_res_icon(element.ailres.ail1);
+                        element.ailres.ail2Icon = __import_dqtact_res_icon(element.ailres.ail2);
+                        element.ailres.ail3Icon = __import_dqtact_res_icon(element.ailres.ail3);
+                        element.ailres.ail4Icon = __import_dqtact_res_icon(element.ailres.ail4);
+                        element.ailres.ail5Icon = __import_dqtact_res_icon(element.ailres.ail5);
+                        element.ailres.ail6Icon = __import_dqtact_res_icon(element.ailres.ail6);
+                        element.ailres.ail7Icon = __import_dqtact_res_icon(element.ailres.ail7);
+                        element.ailres.ail8Icon = __import_dqtact_res_icon(element.ailres.ail8);
+                        element.ailres.ail9Icon = __import_dqtact_res_icon(element.ailres.ail9);
+                        element.ailres.ail10Icon = __import_dqtact_res_icon(element.ailres.ail10);
+                        element.ailres.ail11Icon = __import_dqtact_res_icon(element.ailres.ail11);
+                        element.ailres.ail12Icon = __import_dqtact_res_icon(element.ailres.ail12);
+                        element.ailres.ail13Icon = __import_dqtact_res_icon(element.ailres.ail13);
+                    }
 
-    //                 // Kick off image downloads
-    //                 __import_dqtact_save_image(element.icon, baseURL, collection.listKey);
-    //                 __import_dqtact_save_image(element.family?.icon, baseURL, collection.listKey);
-    //                 __import_dqtact_save_image(element.role?.icon, baseURL, collection.listKey);
-    //                 __import_dqtact_save_image(element.element?.icon, baseURL, collection.listKey);
-    //                 __import_dqtact_save_image(element.rarity?.icon, baseURL, collection.listKey);
-    //                 __import_dqtact_save_image(element.rarity?.frame, baseURL, collection.listKey);
-    //                 __import_dqtact_save_image(element.rarity?.background, baseURL, collection.listKey);
-    //             });
+                    // Kick off image downloads
+                    __import_dqtact_save_image(element.icon, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.family?.icon, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.role?.icon, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.element?.icon, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.rarity?.icon, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.rarity?.frame, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.rarity?.background, baseURL, collection.listKey);
+                });
 
-    //             // delete the old entries and add the new ones
-    //             await EntryModel.collection.deleteMany({ 'packageId': BuiltInImporters.dqtact, 'collectionId': collection.listKey });
-    //             await EntryModel.collection.insertMany(jsonResponse);
+                // delete the old entries and add the new ones
+                await EntryModel.collection.deleteMany({ packageId: BuiltInImporters.dqtact, collectionId: collection.listKey });
+                await EntryModel.collection.insertMany(jsonResponse);
 
-    //             // import the names and descriptions for the collection
-    //             __import_dqtact_js(collection.nameKey, collection.listKey);
-    //             __import_dqtact_js(collection.descKey, collection.listKey);
-    //             break;
-    //         case "JS":
-    //             __import_dqtact_js(collection.listKey, collection.listKey);
-    //             break;
-    //     }
-    // }
+                // import the names and descriptions for the collection
+                __import_dqtact_js(collection.nameKey, collection.listKey);
+                __import_dqtact_js(collection.descKey, collection.listKey);
+                break;
+            case "JS":
+                __import_dqtact_js(collection.listKey, collection.listKey);
+                break;
+        }
+    }
 
     // second pass to link documents
     for (let collection of dqtactJson) {
@@ -217,28 +225,32 @@ async function import_dqtact(): Promise<void> {
 function __import_dqtact_js(key: string | undefined, _collection: string): void {
     if (!key) { return; }
 
-    fetch(`https://dqtjp.kusoge.xyz/json/${key}.js`).then(response => {
-        response.text().then(textResponse => {
-            let combinedLangs: any = {};
-            for (const lang of DQTactLangs) {
-                const match = textResponse.match(new RegExp(`var ${key}_${lang} = (\{(?:.|\n)*?\});`));
-                if (match && match.length > 0) {
-                    const json = JSON.parse(match[1]!);
-                    Object.keys(json).forEach(resource => {
-                        if (!combinedLangs[resource]) {
-                            combinedLangs[resource] = {
-                                resId: resource,
-                                packageId: BuiltInImporters.dqtact,
-                                values: { ko: "", en: "", ja: "", zh_TW: "" }
-                            };
-                        }
-                        combinedLangs[resource].values[lang] = json[resource];
-                    });
+    try {
+        fetch(`https://dqtjp.kusoge.xyz/json/${key}.js`).then(response => {
+            response.text().then(textResponse => {
+                let combinedLangs: any = {};
+                for (const lang of DQTactLangs) {
+                    const match = textResponse.match(new RegExp(`var ${key}_${lang} = (\{(?:.|\n)*?\});`));
+                    if (match && match.length > 0) {
+                        const json = JSON.parse(match[1]!);
+                        Object.keys(json).forEach(resource => {
+                            if (!combinedLangs[resource]) {
+                                combinedLangs[resource] = {
+                                    resId: resource,
+                                    packageId: BuiltInImporters.dqtact,
+                                    values: { ko: "", en: "", ja: "", zh_TW: "" }
+                                };
+                            }
+                            combinedLangs[resource].values[lang] = json[resource];
+                        });
+                    }
                 }
-            }
-            ResourceModel.collection.insertMany(Object.values(combinedLangs));
+                ResourceModel.collection.insertMany(Object.values(combinedLangs));
+            });
         });
-    });
+    } catch (err: any) {
+        console.log("[" + key + "]:", err);
+    }
 }
 
 function __import_dqtact_res_icon(res: number): string {

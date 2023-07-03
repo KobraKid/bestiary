@@ -26,7 +26,7 @@ const PkgSchema = new Schema<IPackageMetadata>({
     ns: { type: String, required: true },
     path: { type: String, required: false },
     icon: { type: String, required: true },
-    collections: { type: [String], required: true },
+    collections: { type: [Object], required: true },
     langs: { type: [String], required: true }
 }, { collection: 'packages' });
 
@@ -74,7 +74,7 @@ export async function getCollection(pkg: IPackageMetadata, collection: ICollecti
     const entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.id}_preview.html`), { encoding: 'utf-8' });
     const entryAry: IEntry[] = [];
 
-    const layoutStyle = await readFile(path.join(paths.data, pkg.ns, 'style', `${collection.id}_preview.css`), { encoding: 'utf-8' });
+    const layoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.id}_preview.scss`)).css;
 
     for (const entry of entries) {
         const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg.ns, collection.id, entry, lang);
@@ -87,8 +87,6 @@ export async function getCollection(pkg: IPackageMetadata, collection: ICollecti
 export async function getEntry(pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> {
     const loadedEntry = await EntryModel.findById<IEntry>(entry.entryId).lean().exec();
     if (!loadedEntry) return { packageId: '', collectionId: '', entryId: '', layout: '' };
-
-    // const entryStyle = await readFile(path.join(paths.data, pkg.ns, 'style', `${collection.id}.css`), { encoding: 'utf-8' });
 
     const entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.id}.scss`)).css;
 
