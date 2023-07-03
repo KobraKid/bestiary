@@ -1,9 +1,15 @@
-import mongoose from "mongoose";
-
 /**
  * Represents an entry in a collection
  */
 export default interface IEntry {
+  /**
+   * Package ID
+   */
+  packageId: string,
+  /**
+   * Collection ID
+   */
+  collectionId: string,
   /**
    * Entry ID
    */

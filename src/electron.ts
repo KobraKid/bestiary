@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, IpcMainEvent, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu } from 'electron';
 import path from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
@@ -10,14 +10,16 @@ import { ICollectionConfig, IPackageConfig } from './model/Config';
 import { disconnect, getCollection, getEntry, getPackageList, setup as setupDB } from './database';
 import IEntry from './model/Entry';
 import { ICollectionMetadata } from './model/Collection';
+import { importBuiltIn, onImportClicked } from './importer';
 
 /**
  * Setup and logging
  */
-const isDev = !app.isPackaged;
 const paths = envPaths('Bestiary', { suffix: '' });
+const isDev = !app.isPackaged;
 console.log(chalk.blue(`
 ${isDev ? '🐬 ' : ''}Bestiary ${process.env.npm_package_version}
+${isDev ? '📗 ' : ''}NodeJS ${process.version}
 ${isDev ? '⚡ ' : ''}Electron: ${process.versions.electron}
 ${isDev ? '📦 ' : ''}Package directory: ${paths.data}
 ${isDev ? '⚙ ' : ''}Config directory: ${paths.config}
@@ -32,9 +34,10 @@ function createWindow() {
     height: 720,
     title: isDev ? `Bestiary | DEVELOPMENT | ${process.env.npm_package_version}` : 'Bestiary',
     darkTheme: true,
-    autoHideMenuBar: true,
+    autoHideMenuBar: !isDev,
     // frame: isDev,
     webPreferences: {
+      sandbox: false,
       preload: path.join(__dirname, 'preload.js')
     }
   });
@@ -110,19 +113,19 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
  */
 ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => getPackageList());
 
-ipcMain.handle('pkg:load-collection', async (_event: any, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
+ipcMain.handle('pkg:load-collection', async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
 
-ipcMain.handle('pkg:load-entry', async (_event: any, pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> => getEntry(pkg, collection, entry, lang))
+ipcMain.handle('pkg:load-entry', async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> => getEntry(pkg, collection, entry, lang))
 
-ipcMain.handle('pkg:file-exists', (_event: any, filePath: string): boolean => existsSync(filePath));
+ipcMain.handle('pkg:file-exists', (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
 
-ipcMain.handle('config:load-config', async (_event: any, pkg: any) => createOrLoadConfig(pkg));
+ipcMain.handle('config:load-config', async (_event: IpcMainInvokeEvent, pkg: any) => createOrLoadConfig(pkg));
 
-ipcMain.handle('config:save-config', async (_event: any, pkgPath: string, config: IPackageConfig) => saveConfig(pkgPath, config));
+ipcMain.handle('config:save-config', async (_event: IpcMainInvokeEvent, pkgPath: string, config: IPackageConfig) => saveConfig(pkgPath, config));
 
-ipcMain.handle('config:load-collection-config', async (_event: any, pkg: any, collection: string) => createOrLoadCollectionConfig(pkg, collection));
+ipcMain.handle('config:load-collection-config', async (_event: IpcMainInvokeEvent, pkg: any, collection: string) => createOrLoadCollectionConfig(pkg, collection));
 
-ipcMain.handle('config:save-collection-config', async (_event: any, pkgPath: string, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkgPath, collection, config));
+ipcMain.handle('config:save-collection-config', async (_event: IpcMainInvokeEvent, pkgPath: string, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkgPath, collection, config));
 
 ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection: string) => {
   const menu = Menu.buildFromTemplate([
@@ -141,19 +144,49 @@ ipcMain.on('context-menu:show-collection-menu', (event: IpcMainEvent, collection
   }
 });
 
-ipcMain.handle('write', (_event: any, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
+ipcMain.handle('write', (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
 
-ipcMain.handle('write-error', (_event: any, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
+ipcMain.handle('write-error', (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
 
-ipcMain.handle('eval-formula', (_event: any, expression: string, scope?: object): any => {
+ipcMain.handle('eval-formula', (_event: IpcMainInvokeEvent, expression: string, scope?: object): any => {
   return new Formula(expression).evaluate(scope || {});
 });
+
+ipcMain.on('importer:importbuiltin', (_event: IpcMainInvokeEvent, pkgName: string): void => importBuiltIn(pkgName));
 
 /**
  * Create the main window
  */
 app.whenReady().then(async () => {
   await setupDB();
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Import...',
+          accelerator: 'CmdOrCtrl+I',
+          click: onImportClicked
+        },
+        {
+          type: 'separator'
+        },
+        {
+          role: 'quit'
+        }
+      ]
+    },
+    {
+      role: 'editMenu'
+    },
+    {
+      role: 'viewMenu'
+    },
+    {
+      role: 'windowMenu'
+    }
+  ]);
+  Menu.setApplicationMenu(menu)
   createWindow();
 });
 

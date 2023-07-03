@@ -28,6 +28,10 @@ contextBridge.exposeInMainWorld('menu', {
   }
 });
 
+contextBridge.exposeInMainWorld('importer', {
+  importBuiltIn: (pkgName: string) => ipcRenderer.send('importer:importbuiltin', pkgName)
+});
+
 contextBridge.exposeInMainWorld('path', {
   join: (...paths: string[]): string => {
     let joined = '';

@@ -3,7 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = [
   {
     mode: 'development',
-    entry: './src/electron.ts',
+    entry: ['./src/electron.ts', './src/importer.ts'],
     target: 'electron-main',
     resolve: { extensions: ['.ts', '.tsx', '...'] },
     module: {
@@ -22,7 +22,8 @@ module.exports = [
   {
     mode: 'development',
     entry: {
-      app: './src/app.tsx'
+      app: './src/app.tsx',
+      importer: './src/importer.tsx'
     },
     target: 'electron-renderer',
     devtool: 'source-map',
@@ -56,7 +57,14 @@ module.exports = [
       new HtmlWebpackPlugin({
         template: './src/index.html',
         filename: 'index.html',
+        favicon: './icon-dark.ico',
         chunks: ['app']
+      }),
+      new HtmlWebpackPlugin({
+        template: './src/importer.html',
+        filename: 'importer.html',
+        favicon: './icon-light.ico',
+        chunks: ['importer']
       })
     ],
     stats: 'errors-only'

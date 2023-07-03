@@ -22,6 +22,10 @@ export interface IMenuAPI {
   manageCollection: (collectionManager: (collection: string) => void) => any
 }
 
+export interface IImporterAPI {
+  importBuiltIn: (pkgName: string) => void
+}
+
 export interface IPathAPI {
   join: (...paths: string[]) => string
 }
@@ -40,6 +44,7 @@ declare global {
     pkg: IPkgAPI,
     config: IConfigAPI,
     menu: IMenuAPI,
+    importer: IImporterAPI,
     path: IPathAPI,
     log: ILoggingAPI,
     formula: IFormulaAPI
