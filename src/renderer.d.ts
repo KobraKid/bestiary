@@ -1,12 +1,16 @@
 import { ICollectionConfig, IPackageConfig } from './model/Config';
-import { IPackageMetadata, ISO639Code } from './model/Package';
+import { IPackageSchema, ISO639Code } from './model/Package';
 import { ICollectionMetadata } from './model/Collection';
-import IEntry from './model/Entry';
+import { IEntryMetadata } from './model/Entry';
+import { Types } from 'mongoose';
 
 export interface IPkgAPI {
-  loadPackages: () => Promise<IPackageMetadata[]>,
-  loadCollection: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code) => Promise<ICollectionMetadata>,
-  loadEntry: (pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code) => Promise<IEntry>,
+  loadPackages: () => Promise<IPackageSchema[]>,
+  loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code) => Promise<ICollectionMetadata>,
+  loadCollectionEntries: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code) => void,
+  onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => void,
+  stopLoadingCollectionEntries: () => void,
+  loadEntry: (pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code) => Promise<IEntryMetadata | null>,
   fileExists: (path: string) => Promise<boolean>
 }
 

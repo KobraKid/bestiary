@@ -3,14 +3,15 @@ import path from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
 import envPaths from 'env-paths';
-import { IPackageMetadata, ISO639Code } from './model/Package';
+import { IPackageMetadata, IPackageSchema, ISO639Code } from './model/Package';
 import chalk from 'chalk';
 import Formula from 'fparser';
 import { ICollectionConfig, IPackageConfig } from './model/Config';
-import { disconnect, getCollection, getEntry, getPackageList, setup as setupDB } from './database';
-import IEntry from './model/Entry';
+import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, setup as setupDB, stopLoadingCollectionEntries } from './database';
+import { IEntryMetadata } from './model/Entry';
 import { ICollectionMetadata } from './model/Collection';
 import { importBuiltIn, onImportClicked } from './importer';
+import { Types } from 'mongoose';
 
 /**
  * Setup and logging
@@ -111,11 +112,15 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
 /**
  * Load all packages
  */
-ipcMain.handle('pkg:load-pkgs', async (): Promise<IPackageMetadata[]> => getPackageList());
+ipcMain.handle('pkg:load-pkgs', (): Promise<IPackageSchema[]> => getPackageList());
 
-ipcMain.handle('pkg:load-collection', async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
+ipcMain.handle('pkg:load-collection', (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
+ 
+ipcMain.on('pkg:load-collection-entries', (event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> => getCollectionEntries(event, pkg, collection, lang));
 
-ipcMain.handle('pkg:load-entry', async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> => getEntry(pkg, collection, entry, lang))
+ipcMain.on('pkg:stop-loading-collection', (_event: IpcMainInvokeEvent): void => stopLoadingCollectionEntries());
+
+ipcMain.handle('pkg:load-entry', async (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> => getEntry(pkg, collection, entryId, lang))
 
 ipcMain.handle('pkg:file-exists', (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
 

@@ -46,6 +46,7 @@
     "fparser": "^2.0.2",
     "mongodb": "^5.6.0",
     "mongoose": "^7.3.1",
+    "mongoose-lean-id": "^0.5.0",
     "node-sass": "^7.0.3",
     "react-indiana-drag-scroll": "^2.2.0",
     "react-transition-group": "^4.4.2"

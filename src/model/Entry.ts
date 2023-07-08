@@ -1,7 +1,9 @@
+import mongoose, { Document, Schema, Types } from "mongoose";
+
 /**
  * Represents an entry in a collection
  */
-export default interface IEntry {
+export interface IEntryMetadata {
   /**
    * Package ID
    */
@@ -13,7 +15,7 @@ export default interface IEntry {
   /**
    * Entry ID
    */
-  entryId: string,
+  id: Types.ObjectId,
   /**
    * Layout string
    */
@@ -23,3 +25,15 @@ export default interface IEntry {
    */
   style?: string
 }
+
+export interface IEntrySchema extends Pick<IEntryMetadata, 'packageId' | 'collectionId'>, Document { }
+
+const EntrySchema = new Schema<IEntrySchema>({
+  packageId: { type: String, required: true, ref: 'Package' },
+  collectionId: { type: String, required: true }
+  /* ...attributes: any */
+}, { collection: 'entries' });
+
+EntrySchema.plugin(require('mongoose-lean-id'));
+
+export default mongoose.model<IEntrySchema>('Entry', EntrySchema);

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import { convertHtmlToReact } from '@hedgedoc/html-to-react';
 import { CollectionMenu, PackageMenu } from './menu';
 import { DISPLAY_MODE, useBestiaryViewModel } from './BestiaryViewModel';
 import { PackageConfigContext, PackageContext } from './context';
 import { ICollectionMetadata } from './model/Collection';
-import IEntry from './model/Entry';
+import { IEntryMetadata } from './model/Entry';
 import { Entry } from './entry';
 import './styles/app.scss';
 import './styles/collection.scss';
@@ -30,12 +30,16 @@ const App: React.FC = () => {
   const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
   const {
     pkg, selectPkg,
-    collection, selectCollection,
+    collection, selectCollection, getCollectionEntry,
     entry, selectEntry, collectEntry,
     pkgConfig, updatePkgConfig,
     displayMode,
     canNavigateBack, navigateBack
   } = useBestiaryViewModel();
+
+  useEffect(() => {
+    window.pkg.onLoadCollectionEntry(getCollectionEntry);
+  }, []);
 
   return (
     <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
@@ -62,20 +66,39 @@ const App: React.FC = () => {
 
 interface IPageProps {
   collection: ICollectionMetadata,
-  entry: IEntry | null,
-  selectEntry: (collection: ICollectionMetadata, entry: IEntry) => void,
+  entry: IEntryMetadata | null,
+  selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void,
   displayMode: DISPLAY_MODE
 }
 
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
   const { collection, entry, selectEntry, displayMode } = props;
+
+  const [grouping, setGrouping] = useState<string>("");
+  useEffect(() => {
+    setGrouping("");
+  }, [collection.ns]);
+  const onGroup = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
+    setGrouping(event.target.value);
+  }, []);
+
   switch (displayMode) {
     case DISPLAY_MODE.collection:
       return (
-        <div className='collection-grid'>
-          {collection.style && convertHtmlToReact(collection.style)}
-          {collection.entries?.map(entry => <Entry key={entry.entryId} entry={entry} onClick={() => selectEntry(collection, entry)} />)}
-        </div>
+        <>
+          {collection.ns &&
+            <div style={{ zIndex: 1, height: 'fit-content' }}>
+              <select name='groupings' value={grouping} onChange={onGroup}>
+                <option value="">None</option>
+                {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
+              </select>
+            </div>
+          }
+          <div className='collection-grid'>
+            {collection.style && convertHtmlToReact(collection.style)}
+            {collection.entries?.map(entry => <Entry key={entry.id?.toString()} entry={entry} onClick={() => selectEntry(collection, entry)} />)}
+          </div>
+        </>
       );
     case DISPLAY_MODE.entry:
       return (
