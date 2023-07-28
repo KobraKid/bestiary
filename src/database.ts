@@ -44,8 +44,13 @@ export function getPackageList(): Promise<IPackageSchema[]> {
 
 export async function getCollection(pkg: IPackageSchema, collection: ICollectionMetadata, _lang: ISO639Code): Promise<ICollectionMetadata> {
     // get layout files
-    const collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}_preview.scss`)).css;
-
+    let collectionLayoutStyle = "";
+    try {
+        collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}_preview.scss`)).css;
+    }
+    catch (err) {
+        console.log((err as Error).message);
+    }
     return { ...collection, style: `<style>${collectionLayoutStyle}</style>` };
 }
 
@@ -54,8 +59,14 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
 
     const entries = await Entry.find({ packageId: pkg.id, collectionId: collection.ns }).lean().exec();
 
-    // get layout files
-    const collectionLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}_preview.html`), { encoding: 'utf-8' });
+    // get layout
+    let collectionLayoutTemplate = ""
+    try {
+        collectionLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}_preview.html`), { encoding: 'utf-8' });
+    }
+    catch (err) {
+        console.log((err as Error).message);
+    }
 
     for (const entry of entries) {
         const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
@@ -72,8 +83,20 @@ export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetad
     if (!loadedEntry) return null;
 
     // get layout files
-    const entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}.html`), { encoding: 'utf-8' });
-    const entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}.scss`)).css;
+    let entryLayoutTemplate = ""
+    try {
+        entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}.html`), { encoding: 'utf-8' });
+    }
+    catch (err) {
+        console.log((err as Error).message);
+    }
+    let entryStyle = "";
+    try {
+        entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}.scss`)).css;
+    }
+    catch (err) {
+        console.log((err as Error).message);
+    }
 
     const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg, collection.ns, loadedEntry, lang);
 

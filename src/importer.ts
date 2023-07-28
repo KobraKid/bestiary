@@ -1,4 +1,4 @@
-import { BrowserWindow, KeyboardEvent, MenuItem } from "electron";
+import { BrowserWindow, IpcMainInvokeEvent, KeyboardEvent, MenuItem } from "electron";
 import path from "path";
 import chalk from "chalk";
 import fs, { mkdir } from 'fs/promises';
@@ -24,16 +24,17 @@ export function onImportClicked(_menuItem: MenuItem, _browserWindow: BrowserWind
     });
 
     win.loadFile('importer.html');
+    win.webContents.openDevTools({ mode: 'right' });
 }
 
 enum BuiltInImporters {
     dqtact = 'dqtact'
 }
 
-export function importBuiltIn(pkgName: string): void {
+export function importBuiltIn(pkgName: string, event: IpcMainInvokeEvent): void {
     switch (pkgName) {
         case BuiltInImporters.dqtact:
-            import_dqtact();
+            import_dqtact(event);
             break;
     }
 }
@@ -48,7 +49,7 @@ interface IDqtactJsonEntry {
 
 const DQTactLangs = ['en', 'ja', 'ko', 'zh_TW'];
 
-async function import_dqtact(): Promise<void> {
+async function import_dqtact(event: IpcMainInvokeEvent): Promise<void> {
     const dqtactJson: IDqtactJsonEntry[] = [
         { label: "Ailments", listMethod: "POST", listKey: "ailments", nameKey: "ailment_name" },
         { label: "Buffs", listMethod: "POST", listKey: "buffs", nameKey: "buff_name" },
@@ -62,6 +63,7 @@ async function import_dqtact(): Promise<void> {
         { label: "Units", listMethod: "POST", listKey: "units", nameKey: "profile" }
     ]
     const baseURL = 'https://dqtjp.kusoge.xyz';
+    const imgResources: { img: string, baseURL: string, collection: string }[] = [];
 
     const pkg = await Package.findOneAndUpdate({ ns: BuiltInImporters.dqtact }, {
         name: "Dragon Quest Tact",
@@ -120,13 +122,13 @@ async function import_dqtact(): Promise<void> {
                     }
 
                     // Kick off image downloads
-                    __import_dqtact_save_image(element.icon, baseURL, collection.listKey);
-                    __import_dqtact_save_image(element.family?.icon, baseURL, collection.listKey);
-                    __import_dqtact_save_image(element.role?.icon, baseURL, collection.listKey);
-                    __import_dqtact_save_image(element.element?.icon, baseURL, collection.listKey);
-                    __import_dqtact_save_image(element.rarity?.icon, baseURL, collection.listKey);
-                    __import_dqtact_save_image(element.rarity?.frame, baseURL, collection.listKey);
-                    __import_dqtact_save_image(element.rarity?.background, baseURL, collection.listKey);
+                    __import_dqtact_save_image(element.icon, baseURL, collection.listKey, imgResources);
+                    __import_dqtact_save_image(element.family?.icon, baseURL, collection.listKey, imgResources);
+                    __import_dqtact_save_image(element.role?.icon, baseURL, collection.listKey, imgResources);
+                    __import_dqtact_save_image(element.element?.icon, baseURL, collection.listKey, imgResources);
+                    __import_dqtact_save_image(element.rarity?.icon, baseURL, collection.listKey, imgResources);
+                    __import_dqtact_save_image(element.rarity?.frame, baseURL, collection.listKey, imgResources);
+                    __import_dqtact_save_image(element.rarity?.background, baseURL, collection.listKey, imgResources);
                 });
 
                 // delete the old entries and add the new ones
@@ -175,36 +177,36 @@ async function import_dqtact(): Promise<void> {
     }
 
     // extra resources
-    __import_dqtact_save_image('ResistanceLevel_ChouZyakuten.png', baseURL, 'units');
-    __import_dqtact_save_image('ResistanceLevel_DaiZyakuten.png', baseURL, 'units');
-    __import_dqtact_save_image('ResistanceLevel_Hutuu.png', baseURL, 'units');
-    __import_dqtact_save_image('ResistanceLevel_Hangen.png', baseURL, 'units');
-    __import_dqtact_save_image('ResistanceLevel_Mukou.png', baseURL, 'units');
+    __import_dqtact_save_image('ResistanceLevel_ChouZyakuten.png', baseURL, 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_DaiZyakuten.png', baseURL, 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_Hutuu.png', baseURL, 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_Hangen.png', baseURL, 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_Mukou.png', baseURL, 'units', imgResources);
 
-    __import_dqtact_save_image('ResistanceLevel_ChouZyakuten.png', 'https://dqt.kusoge.xyz', 'units');
-    __import_dqtact_save_image('ResistanceLevel_DaiZyakuten.png', 'https://dqt.kusoge.xyz', 'units');
-    __import_dqtact_save_image('ResistanceLevel_Hutuu.png', 'https://dqt.kusoge.xyz', 'units');
-    __import_dqtact_save_image('ResistanceLevel_Hangen.png', 'https://dqt.kusoge.xyz', 'units');
-    __import_dqtact_save_image('ResistanceLevel_Mukou.png', 'https://dqt.kusoge.xyz', 'units');
+    __import_dqtact_save_image('ResistanceLevel_ChouZyakuten.png', 'https://dqt.kusoge.xyz', 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_DaiZyakuten.png', 'https://dqt.kusoge.xyz', 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_Hutuu.png', 'https://dqt.kusoge.xyz', 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_Hangen.png', 'https://dqt.kusoge.xyz', 'units', imgResources);
+    __import_dqtact_save_image('ResistanceLevel_Mukou.png', 'https://dqt.kusoge.xyz', 'units', imgResources);
 
-    __import_dqtact_save_image('SkillButtonBase_Attack.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Attack_2.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Attack_3.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Attack_4.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Debuff.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Debuff_2.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Debuff_3.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Debuff_4.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Heal.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Heal_2.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Heal_3.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Heal_4.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Extra.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Extra_2.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Extra_3.png', baseURL, 'skills');
-    __import_dqtact_save_image('SkillButtonBase_Extra_4.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Attack.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Attack_2.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Attack_3.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Attack_4.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Debuff.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Debuff_2.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Debuff_3.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Debuff_4.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Heal.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Heal_2.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Heal_3.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Heal_4.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Extra.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Extra_2.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Extra_3.png', baseURL, 'skills', imgResources);
+    __import_dqtact_save_image('SkillButtonBase_Extra_4.png', baseURL, 'skills', imgResources);
 
-    Resource.collection.insertMany([
+    await Resource.collection.insertMany([
         {
             resId: 'ActiveSkillElement.DisplayName.Mera',
             packageId: pkg.id,
@@ -311,6 +313,10 @@ async function import_dqtact(): Promise<void> {
             values: { ko: "방해", en: "Debuff", ja: "ぼうがい", zh_TW: "" }
         }
     ]);
+
+    await __import_dqtact_download_images(imgResources);
+
+    event.sender.send('importer:import-complete');
 }
 
 function __import_dqtact_js(key: string | undefined, pkg: IPackageSchema): void {
@@ -361,30 +367,38 @@ function __import_dqtact_res_icon(res: number): string {
     }
 }
 
-async function __import_dqtact_save_image(img: string | null | undefined, baseURL: string, collection: string) {
-    if (!img) { return; }
-
-    try {
-        await mkdir(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', collection), { recursive: true })
-    } catch (err: any) {
-        if (!err.message.startsWith('EEXIST')) { console.log(err.message); }
-    } finally {
-        // check if the file exists
-        fs.stat(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', collection, img))
-            .then(_stats => {/* file exists, no need to re-download */ })
-            .catch(() => {
+function __import_dqtact_save_image(img: string | null | undefined, baseURL: string, collection: string, imgResources: { img: string, baseURL: string, collection: string }[]) {
+    if (img && imgResources.findIndex(resource => resource.img === img && resource.collection === collection) < 0) {
+        imgResources.push({ img, baseURL, collection });
+    }
+}
+async function __import_dqtact_download_images(imgResources: { img: string, baseURL: string, collection: string }[]) {
+    for (const resource of imgResources) {
+        try {
+            await mkdir(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', resource.collection), { recursive: true })
+        } catch (err) {
+            if (!(err as Error).message.startsWith('EEXIST')) { console.log((err as Error).message); }
+        } finally {
+            // check if the file exists
+            try {
+                await fs.stat(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', resource.collection, resource.img));
+                // file exists, no need to re-download
+            }
+            catch (err) {
                 // fetch the file
-                fetch(`${baseURL}/img/icon/${img}`).then(imgResponse => {
+                try {
+                    const imgResponse = await fetch(encodeURI(`${resource.baseURL}/img/icon/${resource.img}`));
                     // convert to a blob
-                    imgResponse.blob().then(imgBlob => {
-                        // convert to a buffer
-                        imgBlob.arrayBuffer().then(imgArrayBuffer => {
-                            // write to disk
-                            fs.writeFile(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', collection, img), Buffer.from(imgArrayBuffer))
-                                .catch((err: Error) => console.log(chalk.red('Failed to save to file'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
-                        }).catch((err: Error) => console.log(chalk.red('Failed to create buffer'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
-                    }).catch((err: Error) => console.log(chalk.red('Failed to create blob'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
-                }).catch((err: Error) => console.log(chalk.red('Failed to download'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
-            });
+                    const imgBlob = await imgResponse.blob();
+                    // convert to a buffer
+                    const imgArrayBuffer = await imgBlob.arrayBuffer();
+                    // write to disk
+                    await fs.writeFile(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', resource.collection, resource.img), Buffer.from(imgArrayBuffer));
+                }
+                catch (err) {
+                    console.log(chalk.red('Failed to download'), chalk.red.bgGreen(`${resource.baseURL}/img/icon/${resource.img}`), chalk.red(`to ${resource.collection}`), err.message)
+                }
+            }
+        }
     }
 }

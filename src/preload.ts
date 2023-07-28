@@ -36,7 +36,10 @@ contextBridge.exposeInMainWorld('menu', {
 });
 
 contextBridge.exposeInMainWorld('importer', {
-  importBuiltIn: (pkgName: string) => ipcRenderer.send('importer:importbuiltin', pkgName)
+  importBuiltIn: (pkgName: string) => ipcRenderer.send('importer:importbuiltin', pkgName),
+  importComplete: (callback: Function) => {
+    ipcRenderer.on('importer:import-complete', (_event: any) => callback());
+  }
 });
 
 contextBridge.exposeInMainWorld('path', {

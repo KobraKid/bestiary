@@ -3,7 +3,7 @@ import path from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
 import envPaths from 'env-paths';
-import { IPackageMetadata, IPackageSchema, ISO639Code } from './model/Package';
+import { IPackageSchema, ISO639Code } from './model/Package';
 import chalk from 'chalk';
 import Formula from 'fparser';
 import { ICollectionConfig, IPackageConfig } from './model/Config';
@@ -157,7 +157,7 @@ ipcMain.handle('eval-formula', (_event: IpcMainInvokeEvent, expression: string, 
   return new Formula(expression).evaluate(scope || {});
 });
 
-ipcMain.on('importer:importbuiltin', (_event: IpcMainInvokeEvent, pkgName: string): void => importBuiltIn(pkgName));
+ipcMain.on('importer:importbuiltin', (event: IpcMainInvokeEvent, pkgName: string): void => importBuiltIn(pkgName, event));
 
 /**
  * Create the main window
