@@ -1,4 +1,4 @@
-import IEntry from "./Entry";
+import { IEntryMetadata } from "./Entry";
 
 export interface ICollectionMetadata {
     /**
@@ -6,13 +6,26 @@ export interface ICollectionMetadata {
      */
     name: string,
     /**
-     * Collection ID
+     * Collection namespace
      */
-    id: string,
+    ns: string,
     /**
      * Entries
      */
-    entries: IEntry[],
+    entries: IEntryMetadata[],
+    /**
+     * Groupings for entries
+     */
+    groupings: {
+        /**
+         * Grouping name
+         */
+        name: string,
+        /**
+         * Attribute to group on
+         */
+        attribute: string
+    }[],
     /**
      * Style string
      */

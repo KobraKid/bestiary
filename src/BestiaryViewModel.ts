@@ -1,7 +1,7 @@
 import { useCallback, useReducer, useState } from 'react';
 import { IPackageConfig } from './model/Config';
-import IEntry from './model/Entry';
-import { IPackageMetadata, ISO639Code } from './model/Package';
+import { IEntryMetadata } from './model/Entry';
+import { IPackageMetadata, IPackageSchema, ISO639Code } from './model/Package';
 import { ICollectionMetadata } from './model/Collection';
 
 interface BestiaryData {
@@ -9,9 +9,10 @@ interface BestiaryData {
     selectPkg: (pkg: IPackageMetadata) => void,
     collection: ICollectionMetadata,
     selectCollection: (collection: ICollectionMetadata) => void,
+    getCollectionEntry: (entry: IEntryMetadata) => void,
     collectEntry: (entryId: string, collectionConfigId: number) => void,
-    entry: IEntry | null,
-    selectEntry: (collection: ICollectionMetadata, entry: IEntry) => void,
+    entry: IEntryMetadata | null,
+    selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void,
     pkgConfig: IPackageConfig,
     updatePkgConfig: () => void,
     displayMode: DISPLAY_MODE,
@@ -38,7 +39,7 @@ export interface ViewStackframe {
     /** The view's collection */
     collection: ICollectionMetadata,
     /** The view's entry */
-    entry: IEntry | null
+    entry: IEntryMetadata | null
 }
 
 enum ViewStackframeActionType {
@@ -55,8 +56,8 @@ interface IViewStackframeDispatchAction {
 
 export function useBestiaryViewModel(): BestiaryData {
     const [pkg, setPkg] = useState<IPackageMetadata>({ name: "", ns: "", path: "", icon: "", collections: [], langs: [] });
-    const [collection, setCollection] = useState<ICollectionMetadata>({ name: "", id: "", entries: [] });
-    const [entry, setEntry] = useState<IEntry | null>(null);
+    const [collection, setCollection] = useState<ICollectionMetadata>({ name: "", ns: "", entries: [], groupings: [] });
+    const [entry, setEntry] = useState<IEntryMetadata | null>(null);
 
     const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
     const [pkgConfig, setPkgConfig] = useState<IPackageConfig>({});
@@ -66,8 +67,8 @@ export function useBestiaryViewModel(): BestiaryData {
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
         switch (action.type) {
             case ViewStackframeActionType.RESET:
-                const resetCollection: ICollectionMetadata = action.targetView?.collection ?? { name: "", id: "", entries: [] };
-                let resetEntry: IEntry | null = null;
+                const resetCollection: ICollectionMetadata = action.targetView?.collection ?? { name: "", ns: "", entries: [], groupings: [] };
+                let resetEntry: IEntryMetadata | null = null;
                 window.log.write('• navigation reset');
 
                 if (isMapView(resetCollection) && resetCollection.entries.length > 0) {
@@ -85,9 +86,9 @@ export function useBestiaryViewModel(): BestiaryData {
                 return [{ collection: resetCollection, entry: resetEntry }];
 
             case ViewStackframeActionType.NAVIGATE_FORWARDS:
-                window.log.write(`→ going from [${action.currentView?.collection?.name} ${action.currentView?.entry?.entryId ?? "collection"}]  to  [${action.targetView?.collection?.name} ${action.targetView?.entry?.entryId}]`);
+                window.log.write(`→ going from [${action.currentView?.collection?.name} ${action.currentView?.entry?.id ?? "collection"}]  to  [${action.targetView?.collection?.name} ${action.targetView?.entry?.id}]`);
                 if (!action.targetView?.collection ||
-                    (action.currentView?.collection?.name === action.targetView.collection.name && action.currentView.entry?.entryId === action.targetView.entry?.entryId)) {
+                    (action.currentView?.collection?.name === action.targetView.collection.name && action.currentView.entry?.id === action.targetView.entry?.id)) {
                     return state;
                 }
 
@@ -107,7 +108,7 @@ export function useBestiaryViewModel(): BestiaryData {
                 if (state.length < 2) { return state; }
                 const currentView = state[state.length - 1];
                 const targetView = state[state.length - 2];
-                window.log.write(`← return to  [${targetView?.collection?.name ?? "...nowhere..."} ${targetView?.entry?.entryId ?? "collection"}] from [${currentView?.collection?.name} ${currentView?.entry?.entryId ?? "collection"}]`);
+                window.log.write(`← return to  [${targetView?.collection?.name ?? "...nowhere..."} ${targetView?.entry?.id ?? "collection"}] from [${currentView?.collection?.name} ${currentView?.entry?.id ?? "collection"}]`);
 
                 if (!targetView) { return state; }
 
@@ -140,7 +141,7 @@ export function useBestiaryViewModel(): BestiaryData {
         viewStackDispatch({
             type: ViewStackframeActionType.RESET,
             targetView: {
-                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", id: "", entries: [] },
+                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", ns: "", entries: [], groupings: [] },
                 entry: null
             }
         });
@@ -148,26 +149,37 @@ export function useBestiaryViewModel(): BestiaryData {
         // window.config.loadPkgConfig(newPkg).then(setPkgConfig);
     }, []);
 
-    const selectCollection = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, _newCollection: ICollectionMetadata, lang: ISO639Code) => {
+    const selectCollection = useCallback((pkg: IPackageMetadata, _collection: ICollectionMetadata, newCollection: ICollectionMetadata, lang: ISO639Code) => {
         // if (newCollection.id === collection.id) { return; }
 
-        window.pkg.loadCollection(pkg, collection, lang).then((collection: ICollectionMetadata) => {
+        window.pkg.stopLoadingCollectionEntries();
+        window.pkg.loadCollection(pkg as IPackageSchema, newCollection, lang).then((collection: ICollectionMetadata) => {
             setCollection(collection);
-            viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { collection: collection, entry: null } })
+            window.pkg.loadCollectionEntries(pkg as IPackageSchema, collection, lang);
+            viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { collection: collection, entry: null } });
         });
     }, []);
 
-    const selectEntry = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry | null, newCollection: ICollectionMetadata | null, newEntry: IEntry, lang: ISO639Code) => {
-        if (newEntry.entryId === entry?.entryId) { return; }
+    const getCollectionEntry = useCallback((entry: IEntryMetadata) => {
+        setCollection(collection => {
+            const newCollection = {...collection};
+            newCollection.entries = newCollection.entries || [];
+            newCollection.entries.push(entry);
+            return newCollection;
+        })
+    }, []);
 
-        window.pkg.loadEntry(pkg, newCollection || collection, newEntry, lang).then((loadedEntry: IEntry) =>
-            (() => { console.log('navigating to', collection, entry); return true; })() &&
+    const selectEntry = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntryMetadata | null, newCollection: ICollectionMetadata | null, newEntry: IEntryMetadata, lang: ISO639Code) => {
+        if (newEntry.id === entry?.id) { return; }
+
+        window.pkg.stopLoadingCollectionEntries();
+        window.pkg.loadEntry(pkg as IPackageSchema, newCollection || collection, newEntry.id, lang).then((loadedEntry: IEntryMetadata) => {
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
                 currentView: { collection: collection, entry: entry },
                 targetView: { collection: newCollection || collection, entry: loadedEntry }
-            })
-        );
+            });
+        });
     }, []);
 
     const updatePkgConfig = useCallback((pkg: any) => window.config.loadPkgConfig(pkg).then(setPkgConfig), []);
@@ -202,8 +214,9 @@ export function useBestiaryViewModel(): BestiaryData {
         selectPkg: (newPkg: IPackageMetadata) => selectPkg(pkg, newPkg),
         collection,
         selectCollection: (newCollection: ICollectionMetadata) => selectCollection(pkg, collection, newCollection, lang),
+        getCollectionEntry,
         entry,
-        selectEntry: (newCollection: ICollectionMetadata | null, newEntry: IEntry) => selectEntry(pkg, collection, entry, newCollection, newEntry, lang),
+        selectEntry: (newCollection: ICollectionMetadata | null, newEntry: IEntryMetadata) => selectEntry(pkg, collection, entry, newCollection, newEntry, lang),
         collectEntry: (entryId: string, collectionConfigId: number) => collectEntry(entryId, collectionConfigId, {}, {}, pkgConfig),
         pkgConfig,
         updatePkgConfig: () => updatePkgConfig({}),

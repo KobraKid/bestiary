@@ -1,3 +1,4 @@
+import mongoose, { Document, Schema } from "mongoose";
 import { ICollectionMetadata } from "./Collection";
 
 export enum ISO639Code {
@@ -5,6 +6,19 @@ export enum ISO639Code {
   English = 'en',
   Japanese = 'ja',
   Korean = 'ko',
+}
+
+export function getLangDisplayName(lang: ISO639Code) {
+  switch (lang) {
+    case ISO639Code.Chinese:
+      return "Chinese";
+    case ISO639Code.English:
+      return "English";
+    case ISO639Code.Japanese:
+      return "Japanese";
+    case ISO639Code.Korean:
+      return "Korean";
+  }
 }
 
 /**
@@ -37,15 +51,27 @@ export interface IPackageMetadata {
   langs: ISO639Code[]
 }
 
-export function getLangDisplayName(lang: ISO639Code) {
-  switch (lang) {
-    case ISO639Code.Chinese:
-      return "Chinese";
-    case ISO639Code.English:
-      return "English";
-    case ISO639Code.Japanese:
-      return "Japanese";
-    case ISO639Code.Korean:
-      return "Korean";
-  }
-}
+export interface IPackageSchema extends IPackageMetadata, Document { }
+
+const PkgSchema = new Schema<IPackageSchema>({
+  name: { type: String, required: true },
+  ns: { type: String, required: true },
+  path: { type: String, required: false },
+  icon: { type: String, required: true },
+  collections: [{
+    ns: { type: String, required: true },
+    name: { type: String, required: true },
+    groupings: {
+      type: [{
+        name: { type: String, required: true },
+        attribute: { type: String, required: true }
+      }],
+      required: false
+    }
+  }],
+  langs: { type: [String], required: true }
+}, { collection: 'packages' });
+
+PkgSchema.plugin(require('mongoose-lean-id'));
+
+export default mongoose.model<IPackageSchema>('PackageMetadata', PkgSchema);

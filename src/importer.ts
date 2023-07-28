@@ -4,7 +4,9 @@ import chalk from "chalk";
 import fs, { mkdir } from 'fs/promises';
 import envPaths from 'env-paths';
 import * as cheerio from 'cheerio';
-import { EntryModel, PkgModel, ResourceModel } from "./database";
+import Package, { IPackageSchema } from "./model/Package";
+import Resource from "./model/Resource";
+import Entry, { IEntrySchema } from "./model/Entry";
 
 export function onImportClicked(_menuItem: MenuItem, _browserWindow: BrowserWindow, _event: KeyboardEvent): void {
     let win = new BrowserWindow({
@@ -22,8 +24,6 @@ export function onImportClicked(_menuItem: MenuItem, _browserWindow: BrowserWind
     });
 
     win.loadFile('importer.html');
-
-    // win.webContents.openDevTools({ mode: 'detach' });
 }
 
 enum BuiltInImporters {
@@ -63,16 +63,20 @@ async function import_dqtact(): Promise<void> {
     ]
     const baseURL = 'https://dqtjp.kusoge.xyz';
 
-    await PkgModel.findOneAndUpdate({ ns: BuiltInImporters.dqtact }, {
+    const pkg = await Package.findOneAndUpdate({ ns: BuiltInImporters.dqtact }, {
         name: "Dragon Quest Tact",
         ns: BuiltInImporters.dqtact,
         icon: "icon.webp",
-        collections: [{ name: "Units", id: "units" }],
+        collections: [
+            { name: "Units", ns: "units", groupings: [{ name: "Rarity", attribute: "rarity.code" }, { name: "Family", attribute: "family.code" }, { name: "Role", attribute: "role.code" }] },
+            { name: "Skills", ns: "skills", groupings: [{ name: "Rarity", attribute: "rarity.code" }, { name: "Element", attribute: "element.code" }] },
+            { name: "Items", ns: "items", groupings: [{ name: "Rank", attribute: "rankItem.code" }] }
+        ],
         langs: ["en", "ja", "ko", "zh_TW"]
     }, { upsert: true, new: true });
 
-    // first drop all resources
-    await ResourceModel.collection.deleteMany({ packageId: BuiltInImporters.dqtact });
+    // first drop all resources for the package
+    await Resource.collection.deleteMany({ packageId: pkg.id });
 
     for (let collection of dqtactJson) {
         let suffix = '';
@@ -86,8 +90,8 @@ async function import_dqtact(): Promise<void> {
 
                 // set the collection for each entry
                 (jsonResponse as any[]).forEach(element => {
-                    element.packageId = BuiltInImporters.dqtact;
-                    element.collectionId = collection.listKey;
+                    (element as IEntrySchema).packageId = pkg.id;
+                    (element as IEntrySchema).collectionId = collection.listKey;
 
                     // Do any transformations
                     if (element.eleRes) {
@@ -126,15 +130,15 @@ async function import_dqtact(): Promise<void> {
                 });
 
                 // delete the old entries and add the new ones
-                await EntryModel.collection.deleteMany({ packageId: BuiltInImporters.dqtact, collectionId: collection.listKey });
-                await EntryModel.collection.insertMany(jsonResponse);
+                await Entry.collection.deleteMany({ packageId: pkg.id, collectionId: collection.listKey });
+                await Entry.collection.insertMany(jsonResponse);
 
                 // import the names and descriptions for the collection
-                __import_dqtact_js(collection.nameKey, collection.listKey);
-                __import_dqtact_js(collection.descKey, collection.listKey);
+                __import_dqtact_js(collection.nameKey, pkg);
+                __import_dqtact_js(collection.descKey, pkg);
                 break;
             case "JS":
-                __import_dqtact_js(collection.listKey, collection.listKey);
+                __import_dqtact_js(collection.listKey, pkg);
                 break;
         }
     }
@@ -143,10 +147,10 @@ async function import_dqtact(): Promise<void> {
     for (let collection of dqtactJson) {
         switch (collection.label) {
             case 'Units':
-                const unitCursor = EntryModel.collection.find({ packageId: BuiltInImporters.dqtact, collectionId: 'units', 'no': 1 });
+                const unitCursor = Entry.collection.find<IEntrySchema>({ packageId: pkg.id, collectionId: 'units', 'no': 1 });
                 for (let unit = await unitCursor.next(); unit != null; unit = await unitCursor.next()) {
                     // unit drops
-                    const dropsCursor = EntryModel.collection.find({ packageId: BuiltInImporters.dqtact, collectionId: 'unitdrop', 'base': unit.code });
+                    const dropsCursor = Entry.collection.find({ packageId: pkg.id, collectionId: 'unitdrop', 'base': (unit as any).code });
                     let drops = [];
                     let dropRates = [];
                     for (let drop = await dropsCursor.next(); drop != null; drop = await dropsCursor.next()) {
@@ -154,7 +158,7 @@ async function import_dqtact(): Promise<void> {
                         dropRates.push(drop.rate);
                     }
                     // skills
-                    const unitPage = await fetch(`${baseURL}/unit/${unit.code}`);
+                    const unitPage = await fetch(`${baseURL}/unit/${(unit as any).code}`);
                     const $ = cheerio.load(await unitPage.text());
                     const skills = $('.skills a');
                     let skillCodes: string[] = [];
@@ -164,7 +168,7 @@ async function import_dqtact(): Promise<void> {
                             skillCodes.push(m[1]);
                         }
                     });
-                    EntryModel.collection.updateOne({ _id: unit._id }, { $set: { 'stageDrop': drops, 'dropRate': dropRates, 'skills': skillCodes } });
+                    Entry.collection.updateOne({ id: unit.id }, { $set: { 'stageDrop': drops, 'dropRate': dropRates, 'skills': skillCodes } });
                 }
                 break;
         }
@@ -183,46 +187,133 @@ async function import_dqtact(): Promise<void> {
     __import_dqtact_save_image('ResistanceLevel_Hangen.png', 'https://dqt.kusoge.xyz', 'units');
     __import_dqtact_save_image('ResistanceLevel_Mukou.png', 'https://dqt.kusoge.xyz', 'units');
 
-    ResourceModel.collection.insertMany([
+    __import_dqtact_save_image('SkillButtonBase_Attack.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Attack_2.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Attack_3.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Attack_4.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Debuff.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Debuff_2.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Debuff_3.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Debuff_4.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Heal.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Heal_2.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Heal_3.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Heal_4.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Extra.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Extra_2.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Extra_3.png', baseURL, 'skills');
+    __import_dqtact_save_image('SkillButtonBase_Extra_4.png', baseURL, 'skills');
+
+    Resource.collection.insertMany([
         {
             resId: 'ActiveSkillElement.DisplayName.Mera',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "메라", en: "Frizz", ja: "メラ", zh_TW: "美拉" }
         },
         {
             resId: 'ActiveSkillElement.DisplayName.Gira',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "기라", en: "Sizz", ja: "ギラ", zh_TW: "基拉" }
         },
         {
             resId: 'ActiveSkillElement.DisplayName.Hyado',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "히야드", en: "Crack", ja: "ヒャド", zh_TW: "夏德" }
         },
         {
             resId: 'ActiveSkillElement.DisplayName.Bagi',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "바기", en: "Woosh", ja: "バギ", zh_TW: "巴基" }
         },
         {
             resId: 'ActiveSkillElement.DisplayName.Io',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "이오", en: "Bang", ja: "イオ", zh_TW: "伊奥" }
         },
         {
             resId: 'ActiveSkillElement.DisplayName.Dein',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "데인", en: "Zap", ja: "デイン", zh_TW: "迪恩" }
         },
         {
             resId: 'ActiveSkillElement.DisplayName.Dorma',
-            packageId: BuiltInImporters.dqtact,
+            packageId: pkg.id,
             values: { ko: "도르마", en: "Zam", ja: "ドルマ", zh_TW: "德爾瑪" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Slime',
+            packageId: pkg.id,
+            values: { ko: "슬라임", en: "Slime", ja: "スライム", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Dragon',
+            packageId: pkg.id,
+            values: { ko: "드래곤", en: "Dragon", ja: "ドラゴン", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Nature',
+            packageId: pkg.id,
+            values: { ko: "자연", en: "Nature", ja: "自然", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Beast',
+            packageId: pkg.id,
+            values: { ko: "마수", en: "Beast", ja: "魔獣", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Material',
+            packageId: pkg.id,
+            values: { ko: "물질", en: "Inorganic", ja: "物質", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Devil',
+            packageId: pkg.id,
+            values: { ko: "악마", en: "Demon", ja: "悪魔", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Zombie',
+            packageId: pkg.id,
+            values: { ko: "좀비", en: "Undead", ja: "ゾンビ", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Unknown',
+            packageId: pkg.id,
+            values: { ko: "???", en: "???", ja: "？？？", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterFamily.AbbrevDisplayName.Hero',
+            packageId: pkg.id,
+            values: { ko: "영웅", en: "Hero", ja: "英雄", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterRole.AbbrevDisplayName.Tank',
+            packageId: pkg.id,
+            values: { ko: "방어", en: "Defence", ja: "ぼうぎょ", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterRole.AbbrevDisplayName.Attacker',
+            packageId: pkg.id,
+            values: { ko: "공격", en: "Attack", ja: "こうげき", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterRole.AbbrevDisplayName.Magician',
+            packageId: pkg.id,
+            values: { ko: "마법", en: "Magic", ja: "まほう", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterRole.AbbrevDisplayName.Supporter',
+            packageId: pkg.id,
+            values: { ko: "보조", en: "Support", ja: "ほじょ", zh_TW: "" }
+        },
+        {
+            resId: 'MonsterRole.AbbrevDisplayName.Debuffer',
+            packageId: pkg.id,
+            values: { ko: "방해", en: "Debuff", ja: "ぼうがい", zh_TW: "" }
         }
     ]);
 }
 
-function __import_dqtact_js(key: string | undefined, _collection: string): void {
+function __import_dqtact_js(key: string | undefined, pkg: IPackageSchema): void {
     if (!key) { return; }
 
     try {
@@ -237,7 +328,7 @@ function __import_dqtact_js(key: string | undefined, _collection: string): void 
                             if (!combinedLangs[resource]) {
                                 combinedLangs[resource] = {
                                     resId: resource,
-                                    packageId: BuiltInImporters.dqtact,
+                                    packageId: pkg.id,
                                     values: { ko: "", en: "", ja: "", zh_TW: "" }
                                 };
                             }
@@ -245,7 +336,7 @@ function __import_dqtact_js(key: string | undefined, _collection: string): void 
                         });
                     }
                 }
-                ResourceModel.collection.insertMany(Object.values(combinedLangs));
+                Resource.collection.insertMany(Object.values(combinedLangs));
             });
         });
     } catch (err: any) {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { convertHtmlToReact } from '@hedgedoc/html-to-react';
-import IEntry from './model/Entry';
+import { IEntryMetadata } from './model/Entry';
 
 export interface IEntryProps {
-    entry: IEntry | null,
+    entry: IEntryMetadata | null,
     onClick: () => void
 }
 

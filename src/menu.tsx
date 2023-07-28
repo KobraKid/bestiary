@@ -36,7 +36,6 @@ export const PackageMenu = (props: IPackageMenuProps) => {
 
   const onPkgClickedCallback = useCallback((pkg: IPackageMetadata) => {
     setExpanded(false);
-    console.log(pkg);
     onPackageClicked(pkg);
   }, []);
 
@@ -131,10 +130,10 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
       }
       {collections.map((collection: ICollectionMetadata) =>
         <CollectionMenuItem
-          key={collection.id}
+          key={collection.ns}
           name={collection.name}
           onCollectionClicked={() => onCollectionClicked(collection)}
-          onCollectionRightClicked={() => window.menu.showCollectionMenu(collection.id)} />
+          onCollectionRightClicked={() => window.menu.showCollectionMenu(collection.ns)} />
       )}
     </div>
   );

@@ -1,15 +1,22 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import path = require('path');
 import chalk from 'chalk';
-import { IPackageMetadata, ISO639Code } from './model/Package';
+import { IPackageSchema, ISO639Code } from './model/Package';
 import { ICollectionMetadata } from './model/Collection';
 import { ICollectionConfig, IPackageConfig } from './model/Config';
-import IEntry from './model/Entry';
+import { IEntryMetadata } from './model/Entry';
+import { Types } from 'mongoose';
 
 contextBridge.exposeInMainWorld('pkg', {
-  loadPackages: (): Promise<IPackageMetadata[]> => ipcRenderer.invoke('pkg:load-pkgs'),
-  loadCollection: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => ipcRenderer.invoke('pkg:load-collection', pkg, collection, lang),
-  loadEntry: (pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> => ipcRenderer.invoke('pkg:load-entry', pkg, collection, entry, lang),
+  loadPackages: (): Promise<IPackageSchema[]> => ipcRenderer.invoke('pkg:load-pkgs'),
+  loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => ipcRenderer.invoke('pkg:load-collection', pkg, collection, lang),
+  loadCollectionEntries: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): void => ipcRenderer.send('pkg:load-collection-entries', pkg, collection, lang),
+  onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => {
+    ipcRenderer.removeAllListeners('pkg:load-collection-entry');
+    ipcRenderer.on('pkg:load-collection-entry', (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
+  },
+  stopLoadingCollectionEntries: () => ipcRenderer.send('pkg:stop-loading-collection'),
+  loadEntry: (pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> => ipcRenderer.invoke('pkg:load-entry', pkg, collection, entryId, lang),
   fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke('pkg:file-exists', path)
 });
 

@@ -1,13 +1,13 @@
 import { createContext } from "react";
 import { IPackageMetadata } from "./model/Package";
 import { ICollectionMetadata } from "./model/Collection";
-import IEntry from "./model/Entry";
+import { IEntryMetadata } from "./model/Entry";
 import { ICollectionConfig, IPackageConfig } from "./model/Config";
 
 interface IPackageContext {
     pkg: IPackageMetadata,
     selectCollection: (collection: ICollectionMetadata) => void,
-    selectEntry: (collection: ICollectionMetadata, entry: IEntry) => void
+    selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void
 }
 
 export const PackageContext = createContext<IPackageContext>({

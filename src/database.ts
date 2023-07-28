@@ -1,15 +1,19 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import envPaths from 'env-paths';
 import path from 'path';
 import chalk from 'chalk';
 import sass from 'sass';
 import { readFile } from 'fs/promises';
-import { IPackageMetadata, ISO639Code } from './model/Package';
+import Package, { IPackageSchema, ISO639Code } from './model/Package';
 import { ICollectionMetadata } from './model/Collection';
-import IEntry from './model/Entry';
+import Entry, { IEntryMetadata, IEntrySchema } from './model/Entry';
+import Resource from './model/Resource';
+import { IpcMainInvokeEvent } from 'electron';
 
 const dbUrl = 'mongodb://127.0.0.1:27017/bestiary';
 const paths = envPaths('Bestiary', { suffix: '' });
+
+let isLoading = false;
 
 enum AttributeModifier {
     image = 'image',
@@ -21,37 +25,6 @@ enum AttributeModifier {
     endrepeat = 'endrepeat'
 }
 
-const PkgSchema = new Schema<IPackageMetadata>({
-    name: { type: String, required: true },
-    ns: { type: String, required: true },
-    path: { type: String, required: false },
-    icon: { type: String, required: true },
-    collections: { type: [Object], required: true },
-    langs: { type: [String], required: true }
-}, { collection: 'packages' });
-
-export const PkgModel = mongoose.model<IPackageMetadata>('PackageMetadata', PkgSchema);
-
-const EntrySchema = new Schema<IEntry>({/* [attribute: string]: any */ }, { collection: 'entries' });
-
-export const EntryModel = mongoose.model<IEntry>('Entry', EntrySchema);
-
-interface IResource {
-    resId: string,
-    packageId: string,
-    values: {
-        [ISO639Code: string]: string
-    }
-}
-
-const ResourceSchema = new Schema<IResource>({
-    resId: { type: String, required: true },
-    packageId: { type: String, required: true },
-    values: { type: Object, required: true }
-}, { collection: 'resources' });
-
-export const ResourceModel = mongoose.model<IResource>('Resource', ResourceSchema);
-
 export async function setup() {
     await mongoose.connect(dbUrl);
 }
@@ -60,8 +33,8 @@ export async function disconnect() {
     await mongoose.disconnect();
 }
 
-export function getPackageList(): Promise<IPackageMetadata[]> {
-    return PkgModel.find({}).transform(pkgs => {
+export function getPackageList(): Promise<IPackageSchema[]> {
+    return Package.find({}).transform(pkgs => {
         pkgs.forEach(pkg => {
             pkg.path = path.join(paths.data, pkg.ns);
         });
@@ -69,44 +42,55 @@ export function getPackageList(): Promise<IPackageMetadata[]> {
     }).lean().exec();
 }
 
-export async function getCollection(pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> {
-    const entries = await EntryModel.where('packageId').equals(pkg.ns).where('collectionId').equals(collection.id).lean().exec();
-    const entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.id}_preview.html`), { encoding: 'utf-8' });
-    const entryAry: IEntry[] = [];
+export async function getCollection(pkg: IPackageSchema, collection: ICollectionMetadata, _lang: ISO639Code): Promise<ICollectionMetadata> {
+    // get layout files
+    const collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}_preview.scss`)).css;
 
-    const layoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.id}_preview.scss`)).css;
-
-    for (const entry of entries) {
-        const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg.ns, collection.id, entry, lang);
-        entryAry.push({ packageId: pkg.ns, collectionId: collection.id, entryId: entry._id.toString(), layout: entryLayout });
-    }
-
-    return { ...collection, style: `<style>${layoutStyle}</style>`, entries: entryAry };
+    return { ...collection, style: `<style>${collectionLayoutStyle}</style>` };
 }
 
-export async function getEntry(pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntry, lang: ISO639Code): Promise<IEntry> {
-    const loadedEntry = await EntryModel.findById<IEntry>(entry.entryId).lean().exec();
-    if (!loadedEntry) return { packageId: '', collectionId: '', entryId: '', layout: '' };
+export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
+    isLoading = true;
 
-    const entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.id}.scss`)).css;
+    const entries = await Entry.find({ packageId: pkg.id, collectionId: collection.ns }).lean().exec();
 
-    const entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.id}.html`), { encoding: 'utf-8' });
-    const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg.ns, collection.id, loadedEntry, lang);
+    // get layout files
+    const collectionLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}_preview.html`), { encoding: 'utf-8' });
 
-    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, entryId: loadedEntry._id.toString(), style: `<style>${entryStyle}</style>`, layout: entryLayout };
+    for (const entry of entries) {
+        const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
+        event.sender.send('pkg:load-collection-entry', { packageId: pkg.id, collectionId: collection.ns, id: entry.id, layout: entryLayout });
+    }
+}
+
+export function stopLoadingCollectionEntries(): void {
+    isLoading = false;
+}
+
+export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> {
+    const loadedEntry = await Entry.findById(entryId).lean().exec();
+    if (!loadedEntry) return null;
+
+    // get layout files
+    const entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}.html`), { encoding: 'utf-8' });
+    const entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}.scss`)).css;
+
+    const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg, collection.ns, loadedEntry, lang);
+
+    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, id: loadedEntry.id, layout: entryLayout, style: `<style>${entryStyle}</style>` };
 }
 
 /**
  * Populates an entry template with its attributes
  * 
  * @param layoutTemplate The layout template
- * @param packageId The package ID
+ * @param namespace The package namespace
  * @param collectionId The collection ID
  * @param entry The entry
  * @param lang The language to inject resource strings in
  * @returns The entry as a string of HTML
  */
-async function populateEntryAttributes(layoutTemplate: string, packageId: string, collectionId: string, entry: IEntry, lang: ISO639Code): Promise<string> {
+async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionId: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayout = layoutTemplate;
 
     const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-]+)(\\|${AttributeModifier.repeat})\\}`, 'g'));
@@ -139,14 +123,14 @@ async function populateEntryAttributes(layoutTemplate: string, packageId: string
                 switch (attr[2] as AttributeModifier) {
                     case AttributeModifier.image:
                         // Pull from the image folder
-                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, packageId, 'images', collectionId, '' + attrValue));
+                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', collectionId, '' + attrValue));
                         break;
                     case AttributeModifier.rawimg:
-                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, packageId, 'images', ...attr[1].split('/')));
+                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', ...attr[1].split('/')));
                         break;
                     case AttributeModifier.resource:
                         // Get the correct resource for the current language
-                        const resource = await ResourceModel.findOne({ packageId: packageId, resId: attrValue }).lean().exec();
+                        const resource = await Resource.findOne({ packageId: pkg.id, resId: attrValue }).lean().exec();
                         if (!resource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
@@ -154,7 +138,7 @@ async function populateEntryAttributes(layoutTemplate: string, packageId: string
                         break;
                     case AttributeModifier.rawresource:
                         // Get the correct resource for the current language
-                        const rawresource = await ResourceModel.findOne({ packageId: packageId, resId: attr[1] }).lean().exec();
+                        const rawresource = await Resource.findOne({ packageId: pkg.id, resId: attr[1] }).lean().exec();
                         if (!rawresource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
@@ -174,7 +158,7 @@ async function populateEntryAttributes(layoutTemplate: string, packageId: string
     return entryLayout;
 }
 
-function getEntryAttribute(attribute: string, entry: IEntry): any {
+function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
     let attrValue: any = entry;
     let attrPath = attribute.split('.').reverse();
 
