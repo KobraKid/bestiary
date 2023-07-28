@@ -291,9 +291,9 @@ async function __import_dqtact_save_image(img: string | null | undefined, baseUR
                             // write to disk
                             fs.writeFile(path.join(envPaths('Bestiary', { suffix: '' }).data, BuiltInImporters.dqtact, 'images', collection, img), Buffer.from(imgArrayBuffer))
                                 .catch((err: Error) => console.log(chalk.red('Failed to save to file'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
-                        }).catch(() => console.log(chalk.red('Failed to create buffer'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`)));
-                    }).catch(() => console.log(chalk.red('Failed to create blob'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`)));
-                }).catch(() => console.log(chalk.red('Failed to download'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`)));
+                        }).catch((err: Error) => console.log(chalk.red('Failed to create buffer'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
+                    }).catch((err: Error) => console.log(chalk.red('Failed to create blob'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
+                }).catch((err: Error) => console.log(chalk.red('Failed to download'), chalk.red.bgGreen(`${baseURL}/img/icon/${img}`), err.message));
             });
     }
 }
