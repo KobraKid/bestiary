@@ -32,7 +32,7 @@ const EntrySchema = new Schema<IEntrySchema>({
   packageId: { type: String, required: true, ref: 'Package' },
   collectionId: { type: String, required: true }
   /* ...attributes: any */
-}, { collection: 'entries' });
+}, { collection: 'entries', strict: false });
 
 EntrySchema.plugin(require('mongoose-lean-id'));
 

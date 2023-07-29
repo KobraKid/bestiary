@@ -49,7 +49,7 @@ const App: React.FC = () => {
           setExpanded={setPkgMenuExpanded}
           onPackageClicked={selectPkg} />
         {pkg &&
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
+          <div style={{ display: 'flex', flexDirection: 'row', marginTop: '64px' }}>
             <CollectionMenu
               collections={pkg.collections}
               pkgMenuExpanded={pkgMenuExpanded}

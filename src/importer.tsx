@@ -1,10 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import * as ReactDOM from 'react-dom';
 import './styles/importer.scss';
-
-enum BuiltInImports {
-    dqtact = 'Dragon Quest Tact'
-}
+import { BuiltInImporter, getImporterName } from './importers/BuiltInImporters';
 
 enum ImportState {
     NOT_IMPORTING,
@@ -36,22 +33,22 @@ const Importer: React.FC = () => {
                     }
                     {importState === ImportState.IMPORTING_COMPLETE &&
                         <div className='import-loading-complete'>
-                            <svg height='200' width='200'>
-                            <path d='M190 0 L200 10 L50 200 L0 150 L10 140 L50 180 Z' stroke='#00CC00' fill='#00CC00' />
+                            <svg height='150' width='200'>
+                                <path d='M180 0 L200 20 L70 150 L0 80 L20 60 L70 110 Z' stroke='#00CC00' fill='#00CC00' />
                             </svg>
                         </div>
                     }
                 </div>
             }
-            {Object.keys(BuiltInImports).map(value =>
+            {Object.keys(BuiltInImporter).map(value =>
                 <div key={value} className='import-list'>
-                    <button style={{ display: 'flex' }} onClick={() => importClick(value)}>
+                    <button className='import-button' onClick={() => importClick(value)}>
                         <svg width='24' height='24'>
-                            <rect width='24' height='8' y='8' style={{ fill: 'rgb(0, 255, 0)' }} />
-                            <rect width='8' height='24' x='8' style={{ fill: 'rgb(0, 255, 0)' }} />
+                            <rect width='24' height='8' y='8' style={{ fill: 'white' }} />
+                            <rect width='8' height='24' x='8' style={{ fill: 'white' }} />
                         </svg>
                     </button>
-                    {BuiltInImports[value as keyof typeof BuiltInImports]}
+                    {getImporterName(value as BuiltInImporter)}
                 </div>
             )}
         </>

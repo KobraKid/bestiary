@@ -3,6 +3,17 @@
     flex-direction: row;
     align-items: center;
     gap: 8px;
+    margin-bottom: 8px;
+}
+
+.import-button {
+    display: flex;
+    background-color: #2EA44F;
+    border: 1px solid rgba(27,31,35,.15);
+    border-radius: 6px;
+    box-shadow: rgba(27,31,35,.1) 0 1px 0;
+    box-sizing: border-box;
+    cursor: pointer;
 }
 
 .import-mask {
