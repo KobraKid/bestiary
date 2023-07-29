@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu } from 'electron';
 import path from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { mkdir } from 'fs/promises';
@@ -10,7 +10,7 @@ import { ICollectionConfig, IPackageConfig } from './model/Config';
 import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, setup as setupDB, stopLoadingCollectionEntries } from './database';
 import { IEntryMetadata } from './model/Entry';
 import { ICollectionMetadata } from './model/Collection';
-import { importBuiltIn, onImportClicked } from './importer';
+import { onImport } from './importer';
 import { Types } from 'mongoose';
 
 /**
@@ -115,7 +115,7 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
 ipcMain.handle('pkg:load-pkgs', (): Promise<IPackageSchema[]> => getPackageList());
 
 ipcMain.handle('pkg:load-collection', (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
- 
+
 ipcMain.on('pkg:load-collection-entries', (event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> => getCollectionEntries(event, pkg, collection, lang));
 
 ipcMain.on('pkg:stop-loading-collection', (_event: IpcMainInvokeEvent): void => stopLoadingCollectionEntries());
@@ -157,8 +157,6 @@ ipcMain.handle('eval-formula', (_event: IpcMainInvokeEvent, expression: string, 
   return new Formula(expression).evaluate(scope || {});
 });
 
-ipcMain.on('importer:importbuiltin', (event: IpcMainInvokeEvent, pkgName: string): void => importBuiltIn(pkgName, event));
-
 /**
  * Create the main window
  */
@@ -171,25 +169,24 @@ app.whenReady().then(async () => {
         {
           label: 'Import...',
           accelerator: 'CmdOrCtrl+I',
-          click: onImportClicked
+          click: (_menuItem, browserWindow, _event) => {
+            browserWindow?.webContents.send('importer:import-start');
+            if (browserWindow) {
+              dialog.showOpenDialog(browserWindow, {
+                title: "Bestiary", buttonLabel: "Import", properties: ['openFile'], filters: [{ name: "JSON", extensions: ["json"] }]
+              }).then((files) => {
+                onImport(browserWindow, files);
+              });
+            }
+          }
         },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'quit'
-        }
+        { type: 'separator' },
+        { role: 'quit' }
       ]
     },
-    {
-      role: 'editMenu'
-    },
-    {
-      role: 'viewMenu'
-    },
-    {
-      role: 'windowMenu'
-    }
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' }
   ]);
   Menu.setApplicationMenu(menu)
   createWindow();

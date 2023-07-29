@@ -11,6 +11,7 @@ import './styles/app.scss';
 import './styles/collection.scss';
 import './styles/details.scss';
 import './styles/transitions.scss';
+import './styles/importer.scss';
 
 /**
  * Represents a view frame for backwards navigation
@@ -42,25 +43,28 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
-      <PackageConfigContext.Provider value={{ pkgConfig }}>
-        <PackageMenu
-          expanded={pkgMenuExpanded}
-          setExpanded={setPkgMenuExpanded}
-          onPackageClicked={selectPkg} />
-        {pkg &&
-          <div style={{ display: 'flex', flexDirection: 'row', marginTop: '64px' }}>
-            <CollectionMenu
-              collections={pkg.collections}
-              pkgMenuExpanded={pkgMenuExpanded}
-              canNavigateBack={canNavigateBack}
-              onBackArrowClicked={navigateBack}
-              onCollectionClicked={selectCollection} />
-            <Page collection={collection} entry={entry} selectEntry={selectEntry} displayMode={displayMode} />
-          </div>
-        }
-      </PackageConfigContext.Provider>
-    </PackageContext.Provider>
+    <>
+      <ImportView />
+      <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
+        <PackageConfigContext.Provider value={{ pkgConfig }}>
+          <PackageMenu
+            expanded={pkgMenuExpanded}
+            setExpanded={setPkgMenuExpanded}
+            onPackageClicked={selectPkg} />
+          {pkg &&
+            <div style={{ display: 'flex', flexDirection: 'row', marginTop: pkgMenuExpanded ? '128px' : '64px' }}>
+              <CollectionMenu
+                collections={pkg.collections}
+                pkgMenuExpanded={pkgMenuExpanded}
+                canNavigateBack={canNavigateBack}
+                onBackArrowClicked={navigateBack}
+                onCollectionClicked={selectCollection} />
+              <Page collection={collection} entry={entry} selectEntry={selectEntry} displayMode={displayMode} />
+            </div>
+          }
+        </PackageConfigContext.Provider>
+      </PackageContext.Provider>
+    </>
   );
 };
 
@@ -110,6 +114,44 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
     default:
       return null;
   }
+}
+
+enum ImportState {
+  NOT_IMPORTING,
+  IMPORTING,
+  IMPORTING_COMPLETE
+}
+
+const ImportView: React.FC = () => {
+  const [importState, setImportState] = useState<ImportState>(ImportState.NOT_IMPORTING);
+
+  useEffect(() => {
+    window.importer.importStart(() => {
+      setImportState(ImportState.IMPORTING);
+    });
+
+    window.importer.importComplete(() => {
+      setImportState(ImportState.IMPORTING_COMPLETE);
+      setTimeout(() => setImportState(ImportState.NOT_IMPORTING), 800);
+    });
+  }, []);
+
+  if (importState === ImportState.NOT_IMPORTING) { return null; }
+
+  return (
+    <div className='import-mask'>
+      {importState === ImportState.IMPORTING &&
+        <div className='import-loading' />
+      }
+      {importState === ImportState.IMPORTING_COMPLETE &&
+        <div className='import-loading-complete'>
+          <svg height='150' width='200'>
+            <path d='M180 0 L200 20 L70 150 L0 80 L20 60 L70 110 Z' stroke='#00CC00' fill='#00CC00' />
+          </svg>
+        </div>
+      }
+    </div>
+  );
 }
 
 ReactDOM.render(<App />, document.getElementById('app'));

@@ -27,7 +27,7 @@ export interface IMenuAPI {
 }
 
 export interface IImporterAPI {
-  importBuiltIn: (pkgName: string) => void,
+  importStart: (callback: Function) => void,
   importComplete: (callback: Function) => void
 }
 

@@ -100,7 +100,7 @@ export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetad
 
     const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg, collection.ns, loadedEntry, lang);
 
-    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, id: loadedEntry.id, layout: entryLayout, style: `<style>${entryStyle}</style>` };
+    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, id: loadedEntry.id, layout: entryLayout, style: `<style>${entryStyle}</style>` };
 }
 
 /**

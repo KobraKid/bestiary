@@ -13,6 +13,10 @@ export interface IEntryMetadata {
    */
   collectionId: string,
   /**
+   * Bestiary ID
+   */
+  bid: string,
+  /**
    * Entry ID
    */
   id: Types.ObjectId,
@@ -26,11 +30,12 @@ export interface IEntryMetadata {
   style?: string
 }
 
-export interface IEntrySchema extends Pick<IEntryMetadata, 'packageId' | 'collectionId'>, Document { }
+export interface IEntrySchema extends Pick<IEntryMetadata, 'packageId' | 'collectionId' | 'bid'>, Document { }
 
 const EntrySchema = new Schema<IEntrySchema>({
   packageId: { type: String, required: true, ref: 'Package' },
-  collectionId: { type: String, required: true }
+  collectionId: { type: String, required: true },
+  bid: { type: String, required: true }
   /* ...attributes: any */
 }, { collection: 'entries', strict: false });
 
