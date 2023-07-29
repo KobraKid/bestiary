@@ -36,6 +36,8 @@ export const enum DISPLAY_MODE {
  * Represents a view frame for backwards navigation
  */
 export interface ViewStackframe {
+    /** The view's package */
+    pkg: IPackageMetadata,
     /** The view's collection */
     collection: ICollectionMetadata,
     /** The view's entry */
@@ -83,7 +85,7 @@ export function useBestiaryViewModel(): BestiaryData {
                 setCollection(resetCollection);
                 setEntry(resetEntry);
 
-                return [{ collection: resetCollection, entry: resetEntry }];
+                return [{ pkg: action.targetView?.pkg || null as any, collection: resetCollection, entry: resetEntry }];
 
             case ViewStackframeActionType.NAVIGATE_FORWARDS:
                 window.log.write(`→ going from [${action.currentView?.collection?.name} ${action.currentView?.entry?.id ?? "collection"}]  to  [${action.targetView?.collection?.name} ${action.targetView?.entry?.id}]`);
@@ -121,10 +123,11 @@ export function useBestiaryViewModel(): BestiaryData {
                     }
                     else {
                         setDisplayMode(DISPLAY_MODE.collection);
+                        selectCollection(targetView.pkg, null as any, targetView.collection, lang);
                     }
                 }
-                setCollection(targetView.collection);
-                setEntry(targetView.entry);
+                // setCollection(targetView.collection);
+                // setEntry(targetView.entry);
 
                 return state.slice(0, -1);
 
@@ -141,6 +144,7 @@ export function useBestiaryViewModel(): BestiaryData {
         viewStackDispatch({
             type: ViewStackframeActionType.RESET,
             targetView: {
+                pkg: newPkg,
                 collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", ns: "", entries: [], groupings: [] },
                 entry: null
             }
@@ -156,13 +160,13 @@ export function useBestiaryViewModel(): BestiaryData {
         window.pkg.loadCollection(pkg as IPackageSchema, newCollection, lang).then((collection: ICollectionMetadata) => {
             setCollection(collection);
             window.pkg.loadCollectionEntries(pkg as IPackageSchema, collection, lang);
-            viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { collection: collection, entry: null } });
+            //viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { pkg, collection, entry: null } });
         });
     }, []);
 
     const getCollectionEntry = useCallback((entry: IEntryMetadata) => {
         setCollection(collection => {
-            const newCollection = {...collection};
+            const newCollection = { ...collection };
             newCollection.entries = newCollection.entries || [];
             newCollection.entries.push(entry);
             return newCollection;
@@ -176,8 +180,8 @@ export function useBestiaryViewModel(): BestiaryData {
         window.pkg.loadEntry(pkg as IPackageSchema, newCollection || collection, newEntry.id, lang).then((loadedEntry: IEntryMetadata) => {
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
-                currentView: { collection: collection, entry: entry },
-                targetView: { collection: newCollection || collection, entry: loadedEntry }
+                currentView: { pkg, collection, entry },
+                targetView: { pkg, collection: newCollection || collection, entry: loadedEntry }
             });
         });
     }, []);
