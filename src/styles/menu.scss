@@ -6,9 +6,10 @@ $menu-button-expanded-size: 128px;
 $menu-font-expanded-size: 1em;
 
 .package-menu {
-  position: fixed;
-  top: 0;
-  left: 0;
+  grid-column-start: 1;
+  grid-column-end: span 2;
+  grid-row-start: package-menu;
+  grid-row-end: span 1;
   display: flex;
   flex-direction: row;
   align-items: flex-end;
@@ -96,9 +97,12 @@ $menu-font-expanded-size: 1em;
 }
 
 @mixin collection-menu {
+  grid-column-start: collection-menu;
+  grid-column-end: span 1;
+  grid-row-start: collection-grid;
+  grid-row-end: span 1;
   display: flex;
   flex-direction: column;
-  width: $menu-button-collapsed-size;
   transition: top .5s ease;
 }
 

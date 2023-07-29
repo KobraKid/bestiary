@@ -2,13 +2,15 @@
 @use "_colors";
 
 .collection-grid {
-  position: absolute;
-  left: menu.$menu-button-collapsed-size;
-  width: calc(100% - menu.$menu-button-collapsed-size);
+  grid-column-start: collection-grid;
+  grid-column-end: span 1;
+  grid-row-start: collection-grid;
+  grid-row-end: span 1;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   transition: top .5s ease;
+  overflow: auto;
 }
 
 .collection-subsection {
@@ -85,4 +87,16 @@
 
 .linkItem {
   cursor: pointer;
+}
+
+.collection-page-select {
+  grid-column-start: 1;
+  grid-column-end: span 2;
+  grid-row-start: page-select;
+  grid-row-end: span 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }

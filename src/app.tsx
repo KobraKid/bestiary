@@ -52,7 +52,7 @@ const App: React.FC = () => {
             setExpanded={setPkgMenuExpanded}
             onPackageClicked={selectPkg} />
           {pkg &&
-            <div style={{ display: 'flex', flexDirection: 'row', marginTop: pkgMenuExpanded ? '128px' : '64px' }}>
+            <>
               <CollectionMenu
                 collections={pkg.collections}
                 pkgMenuExpanded={pkgMenuExpanded}
@@ -60,7 +60,7 @@ const App: React.FC = () => {
                 onBackArrowClicked={navigateBack}
                 onCollectionClicked={selectCollection} />
               <Page collection={collection} entry={entry} selectEntry={selectEntry} displayMode={displayMode} />
-            </div>
+            </>
           }
         </PackageConfigContext.Provider>
       </PackageContext.Provider>
@@ -78,6 +78,11 @@ interface IPageProps {
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
   const { collection, entry, selectEntry, displayMode } = props;
 
+  const entriesPerPage = 50;
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
   const [grouping, setGrouping] = useState<string>("");
   useEffect(() => {
     setGrouping("");
@@ -86,21 +91,41 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
     setGrouping(event.target.value);
   }, []);
 
+  const prevPage = useCallback(() => setCurrentPage(page => Math.max(page - 1, 1)), []);
+  const nextPage = useCallback((totalPages: number) => setCurrentPage(page => Math.min(page + 1, totalPages)), []);
+
+  useEffect(() => {
+    if (collection?.entries?.length) {
+      const pages = Math.max(Math.ceil(collection.entries.length / entriesPerPage), 1);
+      setTotalPages(pages);
+      setCurrentPage(page => page > pages ? 1 : page);
+    }
+    else {
+      setTotalPages(1);
+      setCurrentPage(1);
+    }
+  }, [collection]);
+
   switch (displayMode) {
     case DISPLAY_MODE.collection:
       return (
         <>
-          {collection.ns &&
+          {/* {collection.ns &&
             <div style={{ zIndex: 1, height: 'fit-content' }}>
               <select name='groupings' value={grouping} onChange={onGroup}>
                 <option value="">None</option>
                 {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
               </select>
             </div>
-          }
+          } */}
           <div className='collection-grid'>
             {collection.style && convertHtmlToReact(collection.style)}
-            {collection.entries?.map(entry => <Entry key={entry.id?.toString()} entry={entry} onClick={() => selectEntry(collection, entry)} />)}
+            {collection.entries?.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry => <Entry key={entry.id?.toString()} entry={entry} onClick={() => selectEntry(collection, entry)} />)}
+          </div>
+          <div className='collection-page-select'>
+            <button onClick={prevPage}>◀</button>
+            {`Page ${currentPage} of ${totalPages}`}
+            <button onClick={() => nextPage(totalPages)}>▶</button>
           </div>
         </>
       );

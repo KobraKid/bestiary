@@ -21,6 +21,9 @@ button {
 #app {
   height: 100%;
   width: 100%;
+  display: grid;
+  grid-template-columns: [collection-menu] 64px [collection-grid] calc(100% - 64px);
+  grid-template-rows: [package-menu] 64px [collection-grid] calc(100% - 88px) [page-select] 24px;
 }
 
 :not(input):not(textarea),
