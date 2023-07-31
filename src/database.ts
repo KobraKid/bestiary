@@ -79,6 +79,7 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
     const collectionLayoutTemplate = await getCollectionLayout(pkg, collection.ns);
 
     for (const entry of entries) {
+        if (!isLoading) { break; }
         const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
         event.sender.send('pkg:load-collection-entry', { packageId: pkg.id, collectionId: collection.ns, id: entry.id, layout: entryLayout });
     }
@@ -131,6 +132,7 @@ export function stopLoadingCollectionEntries(): void {
  * @returns An entry
  */
 export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> {
+    isLoading = false;
     const loadedEntry = await Entry.findById(entryId).lean().exec();
     if (!loadedEntry) return null;
 
