@@ -22,17 +22,28 @@ enum AttributeModifier {
     resource = 'resource',
     rawresource = 'rawresource',
     repeat = 'repeat',
-    endrepeat = 'endrepeat'
+    endrepeat = 'endrepeat',
+    link = 'link'
 }
 
+/**
+ * Set up the database connection
+ */
 export async function setup() {
     await mongoose.connect(dbUrl);
 }
 
+/**
+ * Close the database connection
+ */
 export async function disconnect() {
     await mongoose.disconnect();
 }
 
+/**
+ * Gets the list of available packages
+ * @returns The list of available packages
+ */
 export function getPackageList(): Promise<IPackageSchema[]> {
     return Package.find({}).transform(pkgs => {
         pkgs.forEach(pkg => {
@@ -42,31 +53,30 @@ export function getPackageList(): Promise<IPackageSchema[]> {
     }).lean().exec();
 }
 
+/**
+ * Gets a collection
+ * @param pkg The current package
+ * @param collection The collection to retrieve
+ * @param _lang The language to display in
+ * @returns A collection
+ */
 export async function getCollection(pkg: IPackageSchema, collection: ICollectionMetadata, _lang: ISO639Code): Promise<ICollectionMetadata> {
-    // get layout files
-    let collectionLayoutStyle = "";
-    try {
-        collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}_preview.scss`)).css;
-    }
-    catch (err) {
-        console.log((err as Error).message);
-    }
-    return { ...collection, style: `<style>${collectionLayoutStyle}</style>` };
+    const collectionStyle = getCollectionStyle(pkg, collection.ns);
+    return { ...collection, style: collectionStyle };
 }
 
+/**
+ * Loads each entry in a collection and sends the results back to the event's original sender
+ * @param event The event that triggered this action
+ * @param pkg The current package
+ * @param collection The current collection
+ * @param lang The language to display in
+ */
 export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
     isLoading = true;
 
     const entries = await Entry.find({ packageId: pkg.id, collectionId: collection.ns }).lean().exec();
-
-    // get layout
-    let collectionLayoutTemplate = ""
-    try {
-        collectionLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}_preview.html`), { encoding: 'utf-8' });
-    }
-    catch (err) {
-        console.log((err as Error).message);
-    }
+    const collectionLayoutTemplate = await getCollectionLayout(pkg, collection.ns);
 
     for (const entry of entries) {
         const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
@@ -74,46 +84,142 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
     }
 }
 
+/**
+ * Gets the 'preview' layout template for entries in a collection
+ * @param pkg The current package
+ * @param collectionNamespace The current collection's namespace
+ * @returns A template HTML string
+ */
+async function getCollectionLayout(pkg: IPackageSchema, collectionNamespace: string): Promise<string> {
+    let collectionLayoutTemplate = ""
+    try {
+        collectionLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, 'layout', 'preview', `${collectionNamespace}.html`), { encoding: 'utf-8' }));
+    }
+    catch (err) {
+        console.log((err as Error).message);
+    }
+    return collectionLayoutTemplate;
+}
+
+/**
+ * Gets the 'preview' style for entries in a collection
+ * @param pkg The current package
+ * @param collectionNamespace The current collection's namespace
+ * @returns A <style></style> element
+ */
+function getCollectionStyle(pkg: IPackageSchema, collectionNamespace: string): string {
+    let collectionLayoutStyle = "";
+    try {
+        collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', 'preview', `${collectionNamespace}.scss`)).css;
+    }
+    catch (err) {
+        console.log((err as Error).message);
+    }
+    return `<style>${collectionLayoutStyle}</style>`;
+}
+
 export function stopLoadingCollectionEntries(): void {
     isLoading = false;
 }
 
+/**
+ * Gets a single entry
+ * @param pkg The current package
+ * @param collection The current collection
+ * @param entryId The entry to retrieve
+ * @param lang The language to display in
+ * @returns An entry
+ */
 export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> {
     const loadedEntry = await Entry.findById(entryId).lean().exec();
     if (!loadedEntry) return null;
 
-    // get layout files
+    const entryLayout = await getEntryLayout(pkg, collection.ns, loadedEntry, lang);
+    const entryStyle = getEntryStyle(pkg, collection.ns);
+
+    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, id: loadedEntry.id, layout: entryLayout, style: entryStyle };
+}
+
+/**
+ * Gets the 'view' layout for an entry
+ * @param pkg The current package
+ * @param collectionNamespace The current collection's namespace
+ * @param entry The current entry
+ * @param lang The language to display in
+ * @returns An HTML string populated with attributes from the current entry
+ */
+async function getEntryLayout(pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayoutTemplate = ""
     try {
-        entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, 'layout', `${collection.ns}.html`), { encoding: 'utf-8' });
+        entryLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, 'layout', 'view', `${collectionNamespace}.html`), { encoding: 'utf-8' }));
     }
     catch (err) {
         console.log((err as Error).message);
     }
+    return await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang);
+}
+
+/**
+ * Gets the 'view' style for an entry
+ * @param pkg The current package
+ * @param collectionNamespace The current collection's namespace
+ * @returns A <style></style> element
+ */
+function getEntryStyle(pkg: IPackageSchema, collectionNamespace: string): string {
     let entryStyle = "";
     try {
-        entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', `${collection.ns}.scss`)).css;
+        entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', 'view', `${collectionNamespace}.scss`)).css;
     }
     catch (err) {
         console.log((err as Error).message);
     }
+    return `<style>${entryStyle}</style>`;
+}
 
-    const entryLayout = await populateEntryAttributes(entryLayoutTemplate, pkg, collection.ns, loadedEntry, lang);
+/**
+ * Gets the 'link' layout for an entry - falls back to the 'preview' layout if a 'link' layout doesn't exist
+ * @param pkg The current package
+ * @param collectionNamespace The linked entry's collection namespace
+ * @param entry The linked entry
+ * @param lang The language to display in
+ * @returns An HTML string populated with attributes from the linked entry
+ */
+async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
+    let linkLayoutTemplate = ""
+    try {
+        linkLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, 'layout', 'link', `${collectionNamespace}.html`), { encoding: 'utf-8' }));
+    }
+    catch (err) {
+        linkLayoutTemplate = await getCollectionLayout(pkg, collectionNamespace);
+    }
+    return await populateEntryAttributes(linkLayoutTemplate, pkg, collectionNamespace, entry, lang);
+}
 
-    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, id: loadedEntry.id, layout: entryLayout, style: `<style>${entryStyle}</style>` };
+function getLinkStyle(pkg: IPackageSchema, collectionNamespace: string): string {
+    let linkStyle = "";
+    try {
+        linkStyle = `<style>${sass.compile(path.join(paths.data, pkg.ns, 'style', 'link', `${collectionNamespace}.scss`)).css}</style>`;
+    }
+    catch (err) {
+        linkStyle = getCollectionStyle(pkg, collectionNamespace);
+    }
+    return linkStyle;
+}
+
+function removeSpaceBetweenTags(layout: string): string {
+    return layout.replace(/>\s+|\s+</g, match => match.trim());
 }
 
 /**
  * Populates an entry template with its attributes
- * 
  * @param layoutTemplate The layout template
- * @param namespace The package namespace
- * @param collectionId The collection ID
- * @param entry The entry
+ * @param pkg The current package
+ * @param collectionNamespace The collection namespace
+ * @param entry The current entry
  * @param lang The language to inject resource strings in
  * @returns The entry as a string of HTML
  */
-async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionId: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
+async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayout = layoutTemplate;
 
     const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-]+)(\\|${AttributeModifier.repeat})\\}`, 'g'));
@@ -122,8 +228,8 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
         if (repeat.length >= 3 && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
             // Find start and end of repeat section
             const repeatCount = getEntryAttribute(repeat[1], entry).length;
-            const startRepeat = entryLayout.match(new RegExp(`\\{${repeat[1]}\\|${AttributeModifier.repeat}\\}\\s*`));
-            const endRepeat = entryLayout.match(new RegExp(`\\{${repeat[1]}\\|${AttributeModifier.endrepeat}\\}\\s*`));
+            const startRepeat = entryLayout.match(new RegExp(`\\s*\\{${repeat[1]}\\|${AttributeModifier.repeat}\\}\\s*`));
+            const endRepeat = entryLayout.match(new RegExp(`\\s*\\{${repeat[1]}\\|${AttributeModifier.endrepeat}\\}\\s*`));
             const repeatText = entryLayout.substring(startRepeat ? (startRepeat.index ?? 0) + startRepeat[0].length : 0, endRepeat?.index ?? 0);
             let accumulatedText = '';
             // Replace $ with an index
@@ -135,7 +241,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
         }
     }
 
-    const modifiers = `(${AttributeModifier.image}|${AttributeModifier.rawimg}|${AttributeModifier.resource}|${AttributeModifier.rawresource}|${AttributeModifier.lang})`;
+    const modifiers = `(${Object.keys(AttributeModifier).join('|')})`;
     const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9/\.$-]+)(?:\\|${modifiers})?\\}`, 'g'));
 
     for (const attr of attributes) {
@@ -144,9 +250,24 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
             // the attribtue has a modifier
             if (attr.length >= 3 && typeof attr[2] === 'string') {
                 switch (attr[2] as AttributeModifier) {
+                    case AttributeModifier.link:
+                        const link = attrValue.split('.');
+                        if (link.length === 2) {
+                            const linkCollection = link[0]!;
+                            const linkEntry = await Entry.findOne({ packageId: pkg.id, collectionId: linkCollection, bid: link[1] }).exec();
+                            if (linkEntry) {
+                                const linkLayout = await getLinkLayout(pkg, linkCollection, linkEntry, lang);
+                                const linkStyle = getLinkStyle(pkg, linkCollection);
+                                entryLayout = entryLayout.replace(attr[0], linkStyle + linkLayout);
+                            }
+                            else {
+                                entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link));
+                            }
+                        }
+                        break;
                     case AttributeModifier.image:
                         // Pull from the image folder
-                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', collectionId, '' + attrValue));
+                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', collectionNamespace, '' + attrValue));
                         break;
                     case AttributeModifier.rawimg:
                         entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', ...attr[1].split('/')));
@@ -157,7 +278,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         if (!resource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
-                        entryLayout = entryLayout.replace(attr[0], resource?.values[lang] ?? '&lt;ERROR: UNKNOWN STRING&gt;');
+                        entryLayout = entryLayout.replace(attr[0], resource?.values[lang] ?? attributeError("Resource not found", attrValue));
                         break;
                     case AttributeModifier.rawresource:
                         // Get the correct resource for the current language
@@ -165,7 +286,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         if (!rawresource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
-                        entryLayout = entryLayout.replace(attr[0], rawresource?.values[lang] ?? '&lt;ERROR: UNKNOWN STRING&gt;');
+                        entryLayout = entryLayout.replace(attr[0], rawresource?.values[lang] ?? attributeError("Resource not found", attr[1]));
                         break;
                     case AttributeModifier.lang:
                         entryLayout = entryLayout.replace(attr[0], lang);
@@ -192,4 +313,8 @@ function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
         }
     }
     return attrValue;
+}
+
+function attributeError(err: string, attr: string): string {
+    return `<span style='color:red;background-color:black;font-weight:bold;'>&lt;ERROR: ${err} [${attr}]&gt;</span>`
 }

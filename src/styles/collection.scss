@@ -9,8 +9,8 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  transition: top .5s ease;
   overflow: auto;
+  align-content: flex-start;
 }
 
 .collection-subsection {
