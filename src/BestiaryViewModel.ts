@@ -158,6 +158,7 @@ export function useBestiaryViewModel(): BestiaryData {
 
         window.pkg.stopLoadingCollectionEntries();
         window.pkg.loadCollection(pkg as IPackageSchema, newCollection, lang).then((collection: ICollectionMetadata) => {
+            setEntry(null);
             setCollection(collection);
             window.pkg.loadCollectionEntries(pkg as IPackageSchema, collection, lang);
             //viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { pkg, collection, entry: null } });

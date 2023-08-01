@@ -197,6 +197,12 @@ async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string, e
     return await populateEntryAttributes(linkLayoutTemplate, pkg, collectionNamespace, entry, lang);
 }
 
+/**
+ * Gets the 'link' style for an entry
+ * @param pkg The current package
+ * @param collectionNamespace The linked entry's collection namespace
+ * @returns A <style></style> element
+ */
 function getLinkStyle(pkg: IPackageSchema, collectionNamespace: string): string {
     let linkStyle = "";
     try {
@@ -208,6 +214,11 @@ function getLinkStyle(pkg: IPackageSchema, collectionNamespace: string): string 
     return linkStyle;
 }
 
+/**
+ * Removes spaces between HTML tags
+ * @param layout The layout HTML string
+ * @returns The layout HTML string with spaces removed between tags
+ */
 function removeSpaceBetweenTags(layout: string): string {
     return layout.replace(/>\s+|\s+</g, match => match.trim());
 }
@@ -304,6 +315,12 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     return entryLayout;
 }
 
+/**
+ * Gets an attribute from an entry. Can retrieve top-level and sub properties
+ * @param attribute The attribute to retrieve, can be period-delimited
+ * @param entry The entry to retrieve attributes from
+ * @returns The value of the attribute
+ */
 function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
     let attrValue: any = entry;
     let attrPath = attribute.split('.').reverse();
@@ -317,6 +334,12 @@ function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
     return attrValue;
 }
 
+/**
+ * Displays an error when an attribute fails to parse
+ * @param err The error
+ * @param attr The attribute that produced the error
+ * @returns A stylized error string
+ */
 function attributeError(err: string, attr: string): string {
     return `<span style='color:red;background-color:black;font-weight:bold;'>&lt;ERROR: ${err} [${attr}]&gt;</span>`
 }

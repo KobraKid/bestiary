@@ -7,6 +7,8 @@ import fs, { mkdir } from "fs/promises";
 import envPaths from "env-paths";
 import chalk from "chalk";
 
+const paths = envPaths('Bestiary', { suffix: '' });
+
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     for (const filePath of files.filePaths) {
         const pkgJson = JSON.parse(readFileSync(filePath, { encoding: 'utf-8' }));
@@ -43,13 +45,13 @@ async function importJson(pkgJson: any) {
 
     for (const img of images) {
         try {
-            await mkdir(path.join(envPaths('Bestiary', { suffix: '' }).data, pkg.ns, 'images', img.collection), { recursive: true });
+            await mkdir(path.join(paths.data, pkg.ns, 'images', img.collection), { recursive: true });
         } catch (err) {
             if (!(err as Error).message.startsWith('EEXIST')) { console.log((err as Error).message); }
         } finally {
             // check if the file exists
             try {
-                await fs.stat(path.join(envPaths('Bestiary', { suffix: '' }).data, pkg.ns, 'images', img.collection, img.name));
+                await fs.stat(path.join(paths.data, pkg.ns, 'images', img.collection, img.name));
                 // file exists, no need to re-download
             }
             catch (err) {
@@ -61,7 +63,7 @@ async function importJson(pkgJson: any) {
                     // convert to a buffer
                     const imgArrayBuffer = await imgBlob.arrayBuffer();
                     // write to disk
-                    await fs.writeFile(path.join(envPaths('Bestiary', { suffix: '' }).data, pkg.ns, 'images', img.collection, img.name), Buffer.from(imgArrayBuffer));
+                    await fs.writeFile(path.join(paths.data, pkg.ns, 'images', img.collection, img.name), Buffer.from(imgArrayBuffer));
                 }
                 catch (err) {
                     console.log(chalk.red('Failed to download'), chalk.red.bgGreen(img.url), chalk.red(`to ${img.collection}/${img.name}`), err.message);
