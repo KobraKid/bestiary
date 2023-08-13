@@ -1,4 +1,4 @@
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
 import path from 'path';
 import chalk from 'chalk';
 import sass from 'sass';
@@ -22,7 +22,9 @@ enum AttributeModifier {
     rawresource = 'rawresource',
     repeat = 'repeat',
     endrepeat = 'endrepeat',
-    link = 'link'
+    link = 'link',
+    if = 'if',
+    endif = 'endif'
 }
 
 /**
@@ -80,7 +82,7 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
     for (const entry of entries) {
         if (!isLoading) { break; }
         const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
-        event.sender.send('pkg:load-collection-entry', { packageId: pkg.id, collectionId: collection.ns, id: entry.id, layout: entryLayout });
+        event.sender.send('pkg:load-collection-entry', { packageId: pkg.id, collectionId: collection.ns, bid: entry.bid, layout: entryLayout });
     }
 }
 
@@ -130,9 +132,9 @@ export function stopLoadingCollectionEntries(): void {
  * @param lang The language to display in
  * @returns An entry
  */
-export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> {
+export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
     isLoading = false;
-    const loadedEntry = await Entry.findById(entryId).lean().exec();
+    const loadedEntry = await Entry.findOne({ packageId: pkg.id, collectionId: collection.ns, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
 
     const entryLayout = await getEntryLayout(pkg, collection.ns, loadedEntry, lang);
@@ -222,6 +224,12 @@ function removeSpaceBetweenTags(layout: string): string {
     return layout.replace(/>\s+|\s+</g, match => match.trim());
 }
 
+interface IReplacement {
+    start: number,
+    end: number,
+    replacement: string
+}
+
 /**
  * Populates an entry template with its attributes
  * @param layoutTemplate The layout template
@@ -234,24 +242,47 @@ function removeSpaceBetweenTags(layout: string): string {
 async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayout = layoutTemplate;
 
+    let replacements: IReplacement[] = [];
+    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-]+)(\\|${AttributeModifier.if})\\}`, 'g'));
+    for (const ifdef of ifdefs) {
+        if (ifdef.length >= 3 && ifdef.index !== undefined && typeof ifdef[0] === 'string' && typeof ifdef[1] === 'string') {
+            const startIf = ifdef.index;
+            const endIf = entryLayout.indexOf(`{${ifdef[1]}|endif}`, startIf);
+            const optionalText = entryLayout.substring(startIf + ifdef[0].length, endIf);
+            const attrValue = getEntryAttribute(ifdef[1], entry);
+            replacements.push({
+                start: startIf,
+                end: endIf + ifdef[0].length + 3,
+                replacement: (attrValue !== null && attrValue !== undefined) ? optionalText : ""
+            });
+        }
+    }
+    replacements.reverse();
+    replacements.forEach(replacement => entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end));
+    
+    replacements = [];
     const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-]+)(\\|${AttributeModifier.repeat})\\}`, 'g'));
-
     for (const repeat of repeats) {
-        if (repeat.length >= 3 && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
+        if (repeat.length >= 3 && repeat.index !== undefined && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
             // Find start and end of repeat section
+            const startRepeat = repeat.index;
+            const endRepeat = entryLayout.indexOf(`{${repeat[1]}|endrepeat}`, startRepeat)
             const repeatCount = getEntryAttribute(repeat[1], entry).length;
-            const startRepeat = entryLayout.match(new RegExp(`\\s*\\{${repeat[1]}\\|${AttributeModifier.repeat}\\}\\s*`));
-            const endRepeat = entryLayout.match(new RegExp(`\\s*\\{${repeat[1]}\\|${AttributeModifier.endrepeat}\\}\\s*`));
-            const repeatText = entryLayout.substring(startRepeat ? (startRepeat.index ?? 0) + startRepeat[0].length : 0, endRepeat?.index ?? 0);
+            const repeatText = entryLayout.substring(startRepeat + repeat[0].length, endRepeat);
             let accumulatedText = '';
             // Replace $ with an index
             for (let i = 0; i < repeatCount; i++) {
                 accumulatedText += repeatText.replace(new RegExp(`\\{${repeat[1]}\\.\\$`, 'g'), `{${repeat[1]}.${i}`);
             }
-            // Replicate the text in the template the specified number of times
-            entryLayout = entryLayout.substring(0, startRepeat?.index ?? 0) + accumulatedText + entryLayout.substring(endRepeat ? (endRepeat.index ?? 0) + endRepeat[0].length : 0);
+            replacements.push({
+                start: startRepeat,
+                end: endRepeat + repeat[0].length + 3,
+                replacement: accumulatedText
+            });
         }
     }
+    replacements.reverse();
+    replacements.forEach(replacement => entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end));
 
     const modifiers = `(${Object.keys(AttributeModifier).join('|')})`;
     const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9/\.$-]+)(?:\\|${modifiers})?\\}`, 'g'));

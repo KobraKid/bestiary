@@ -11,7 +11,6 @@ import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageLi
 import { IEntryMetadata } from './model/Entry';
 import { ICollectionMetadata } from './model/Collection';
 import { onImport } from './importer';
-import { Types } from 'mongoose';
 
 /**
  * Setup and logging
@@ -120,7 +119,7 @@ ipcMain.on('pkg:load-collection-entries', (event: IpcMainInvokeEvent, pkg: IPack
 
 ipcMain.on('pkg:stop-loading-collection', (_event: IpcMainInvokeEvent): void => stopLoadingCollectionEntries());
 
-ipcMain.handle('pkg:load-entry', async (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> => getEntry(pkg, collection, entryId, lang))
+ipcMain.handle('pkg:load-entry', async (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> => getEntry(pkg, collection, entryId, lang))
 
 ipcMain.handle('pkg:file-exists', (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
 

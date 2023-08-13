@@ -121,7 +121,9 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
             }
             <br />
             {collection.style && convertHtmlToReact(collection.style)}
-            {collection.entries?.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry => <Entry key={entry.id?.toString()} entry={entry} onClick={() => selectEntry(collection, entry)} />)}
+            {collection.entries?.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry =>
+              <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection, entry)} />
+            )}
           </div>
           <div className='collection-page-select'>
             <button onClick={prevPage}>◀</button>

@@ -5,7 +5,6 @@ import { IPackageSchema, ISO639Code } from './model/Package';
 import { ICollectionMetadata } from './model/Collection';
 import { ICollectionConfig, IPackageConfig } from './model/Config';
 import { IEntryMetadata } from './model/Entry';
-import { Types } from 'mongoose';
 
 contextBridge.exposeInMainWorld('pkg', {
   loadPackages: (): Promise<IPackageSchema[]> => ipcRenderer.invoke('pkg:load-pkgs'),
@@ -16,7 +15,7 @@ contextBridge.exposeInMainWorld('pkg', {
     ipcRenderer.on('pkg:load-collection-entry', (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
   },
   stopLoadingCollectionEntries: () => ipcRenderer.send('pkg:stop-loading-collection'),
-  loadEntry: (pkg: IPackageSchema, collection: ICollectionMetadata, entryId: Types.ObjectId, lang: ISO639Code): Promise<IEntryMetadata | null> => ipcRenderer.invoke('pkg:load-entry', pkg, collection, entryId, lang),
+  loadEntry: (pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> => ipcRenderer.invoke('pkg:load-entry', pkg, collection, entryId, lang),
   fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke('pkg:file-exists', path)
 });
 

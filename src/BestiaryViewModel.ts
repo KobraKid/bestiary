@@ -164,6 +164,9 @@ export function useBestiaryViewModel(): BestiaryData {
 
     const getCollectionEntry = useCallback((entry: IEntryMetadata) => {
         setCollection(collection => {
+            if (entry.collectionId !== collection.ns) {
+                return collection;
+            }
             const newCollection = { ...collection };
             newCollection.entries = newCollection.entries || [];
             newCollection.entries.push(entry);
@@ -172,10 +175,10 @@ export function useBestiaryViewModel(): BestiaryData {
     }, []);
 
     const selectEntry = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntryMetadata | null, newCollection: ICollectionMetadata | null, newEntry: IEntryMetadata, lang: ISO639Code) => {
-        if (newEntry.id === entry?.id) { return; }
+        if (newEntry.bid === entry?.bid) { return; }
 
         window.pkg.stopLoadingCollectionEntries();
-        window.pkg.loadEntry(pkg as IPackageSchema, newCollection || collection, newEntry.id, lang).then((loadedEntry: IEntryMetadata) => {
+        window.pkg.loadEntry(pkg as IPackageSchema, newCollection || collection, newEntry.bid, lang).then((loadedEntry: IEntryMetadata) => {
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
                 currentView: { pkg, collection, entry },
