@@ -16,8 +16,8 @@ import { Types } from 'mongoose';
 /**
  * Setup and logging
  */
-const paths = envPaths('Bestiary', { suffix: '' });
-const isDev = !app.isPackaged;
+export const paths = envPaths('Bestiary', { suffix: '' });
+export const isDev = !app.isPackaged;
 console.log(chalk.blue(`
 ${isDev ? '🐬 ' : ''}Bestiary ${process.env.npm_package_version}
 ${isDev ? '📗 ' : ''}NodeJS ${process.version}

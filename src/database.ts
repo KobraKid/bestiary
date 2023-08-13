@@ -1,5 +1,4 @@
 import mongoose, { Types } from 'mongoose';
-import envPaths from 'env-paths';
 import path from 'path';
 import chalk from 'chalk';
 import sass from 'sass';
@@ -9,9 +8,9 @@ import { ICollectionMetadata } from './model/Collection';
 import Entry, { IEntryMetadata, IEntrySchema } from './model/Entry';
 import Resource from './model/Resource';
 import { IpcMainInvokeEvent } from 'electron';
+import { isDev, paths } from './electron';
 
 const dbUrl = 'mongodb://127.0.0.1:27017/bestiary';
-const paths = envPaths('Bestiary', { suffix: '' });
 
 let isLoading = false;
 
@@ -264,7 +263,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
             if (attr.length >= 3 && typeof attr[2] === 'string') {
                 switch (attr[2] as AttributeModifier) {
                     case AttributeModifier.link:
-                        const link = attrValue.split('.');
+                        const link = attrValue?.split('.') ?? [];
                         if (link.length === 2) {
                             const linkCollection = link[0]!;
                             const linkEntry = await Entry.findOne({ packageId: pkg.id, collectionId: linkCollection, bid: link[1] }).exec();
@@ -276,6 +275,9 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                             else {
                                 entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link));
                             }
+                        }
+                        else {
+                            entryLayout = entryLayout.replace(attr[0], attributeError("No link available", attrValue));
                         }
                         break;
                     case AttributeModifier.image:
@@ -341,5 +343,5 @@ function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
  * @returns A stylized error string
  */
 function attributeError(err: string, attr: string): string {
-    return `<span style='color:red;background-color:black;font-weight:bold;'>&lt;ERROR: ${err} [${attr}]&gt;</span>`
+    return isDev ? `<span style='color:red;background-color:black;font-weight:bold;'>&lt;ERROR: ${err} [${attr}]&gt;</span>` : "";
 }

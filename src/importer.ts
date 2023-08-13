@@ -2,12 +2,11 @@ import { BrowserWindow } from "electron";
 import path from "path";
 import { readFileSync } from "fs";
 import Package from "./model/Package";
-import Entry from "./model/Entry";
+import Entry, { IEntryMetadata } from "./model/Entry";
 import fs, { mkdir } from "fs/promises";
-import envPaths from "env-paths";
 import chalk from "chalk";
-
-const paths = envPaths('Bestiary', { suffix: '' });
+import Resource, { IResource } from "./model/Resource";
+import { paths } from "./electron";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     for (const filePath of files.filePaths) {
@@ -19,7 +18,7 @@ export async function onImport(window: BrowserWindow, files: Electron.OpenDialog
 
 async function importJson(pkgJson: any) {
     const metadata = pkgJson.metadata;
-    const collections = pkgJson.collections;
+    const collections: { ns: string, entries: IEntryMetadata[], images: { url: string, name: string }[], resources: IResource[] }[] = pkgJson.collections;
     const images: { url: string, collection: string, name: string }[] = [];
 
     const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
@@ -28,6 +27,7 @@ async function importJson(pkgJson: any) {
         const collectionId = collection.ns;
         const collectionEntries = collection.entries;
         const collectionImages = collection.images;
+        const collectionResources = collection.resources;
 
         for (const entry of collectionEntries) {
             if (entry.bid === null || entry.bid === undefined) { continue; }
@@ -40,6 +40,14 @@ async function importJson(pkgJson: any) {
 
         for (const img of collectionImages) {
             images.push({ url: img.url, collection: collectionId, name: img.name });
+        }
+
+        for (const resource of collectionResources) {
+            if (resource.resId === null || resource.resId === undefined) { continue; }
+            await Resource.findOneAndUpdate({ packageId: pkg.id, resId: resource.resId }, {
+                ...resource,
+                packageId: pkg.id
+            }, { upsert: true, new: true });
         }
     }
 

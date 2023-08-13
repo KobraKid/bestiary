@@ -110,15 +110,16 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
     case DISPLAY_MODE.collection:
       return (
         <>
-          {/* {collection.ns &&
-            <div style={{ zIndex: 1, height: 'fit-content' }}>
-              <select name='groupings' value={grouping} onChange={onGroup}>
-                <option value="">None</option>
-                {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
-              </select>
-            </div>
-          } */}
           <div className='collection-grid'>
+            {((collection?.groupings?.length ?? -1) > 0) &&
+              <div className='grouping-selection'>
+                <select name='groupings' value={grouping} onChange={onGroup}>
+                  <option value="">None</option>
+                  {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
+                </select>
+              </div>
+            }
+            <br />
             {collection.style && convertHtmlToReact(collection.style)}
             {collection.entries?.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry => <Entry key={entry.id?.toString()} entry={entry} onClick={() => selectEntry(collection, entry)} />)}
           </div>

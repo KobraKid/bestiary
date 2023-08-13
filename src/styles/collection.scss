@@ -89,9 +89,18 @@
   cursor: pointer;
 }
 
+.grouping-selection {
+  width: 100%;
+  height: fit-content;
+
+  select {
+    width: 100px;
+  }
+}
+
 .collection-page-select {
-  grid-column-start: 1;
-  grid-column-end: span 2;
+  grid-column-start: collection-grid;
+  grid-column-end: span 1;
   grid-row-start: page-select;
   grid-row-end: span 1;
   display: flex;

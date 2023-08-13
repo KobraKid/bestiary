@@ -81,9 +81,7 @@ export function useBestiaryViewModel(): BestiaryData {
                     resetEntry = action.targetView?.entry || null;
                 }
 
-                setEntry(null);
-                setCollection(resetCollection);
-                setEntry(resetEntry);
+                selectCollection(action.targetView?.pkg || null as any, null as any, resetCollection, lang);
 
                 return [{ pkg: action.targetView?.pkg || null as any, collection: resetCollection, entry: resetEntry }];
 
@@ -104,7 +102,7 @@ export function useBestiaryViewModel(): BestiaryData {
                 setCollection(action.targetView.collection);
                 setEntry(action.targetView.entry);
 
-                return state.concat(action.targetView);
+                return state.concat(action.currentView!);
 
             case ViewStackframeActionType.NAVIGATE_BACKWARDS:
                 if (state.length < 2) { return state; }
@@ -123,11 +121,9 @@ export function useBestiaryViewModel(): BestiaryData {
                     }
                     else {
                         setDisplayMode(DISPLAY_MODE.collection);
-                        selectCollection(targetView.pkg, null as any, targetView.collection, lang);
+                        selectCollection(state[state.length - 1]!.pkg, null as any, state[state.length - 1]!.collection, lang);
                     }
                 }
-                // setCollection(targetView.collection);
-                // setEntry(targetView.entry);
 
                 return state.slice(0, -1);
 
@@ -160,8 +156,9 @@ export function useBestiaryViewModel(): BestiaryData {
         window.pkg.loadCollection(pkg as IPackageSchema, newCollection, lang).then((collection: ICollectionMetadata) => {
             setEntry(null);
             setCollection(collection);
-            window.pkg.loadCollectionEntries(pkg as IPackageSchema, collection, lang);
-            //viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { pkg, collection, entry: null } });
+            if ((collection?.entries?.length ?? 0) === 0) {
+                window.pkg.loadCollectionEntries(pkg as IPackageSchema, collection, lang);
+            }
         });
     }, []);
 
