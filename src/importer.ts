@@ -9,11 +9,16 @@ import Resource, { IResource } from "./model/Resource";
 import { paths } from "./electron";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
-    for (const filePath of files.filePaths) {
-        const pkgJson = JSON.parse(readFileSync(filePath, { encoding: 'utf-8' }));
-        await importJson(pkgJson, (update: string) => window.webContents.send('importer:import-update', update));
+    try {
+        for (const filePath of files.filePaths) {
+            const pkgJson = JSON.parse(readFileSync(filePath, { encoding: 'utf-8' }));
+            await importJson(pkgJson, (update: string) => window.webContents.send('importer:import-update', update));
+        }
+        window.webContents.send('importer:import-complete');
     }
-    window.webContents.send('importer:import-complete');
+    catch {
+        window.webContents.send('importer:import-failed');
+    }
 }
 
 async function importJson(pkgJson: any, updateClient: (update: string) => void) {

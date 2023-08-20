@@ -104,6 +104,7 @@ $menu-font-expanded-size: 1em;
   display: flex;
   flex-direction: column;
   transition: top .5s ease;
+  overflow: auto;
 }
 
 .collection-menu-expanded {

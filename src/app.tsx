@@ -43,7 +43,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <>
+    <div className={pkgMenuExpanded ? 'app-pkg-menu-expanded' : 'app-pkg-menu-collapsed'}>
       <ImportView />
       <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
         <PackageConfigContext.Provider value={{ pkgConfig }}>
@@ -64,7 +64,7 @@ const App: React.FC = () => {
           }
         </PackageConfigContext.Provider>
       </PackageContext.Provider>
-    </>
+    </div>
   );
 };
 
@@ -147,7 +147,8 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
 enum ImportState {
   NOT_IMPORTING,
   IMPORTING,
-  IMPORTING_COMPLETE
+  IMPORT_COMPLETE,
+  IMPORT_FAILED
 }
 
 const ImportView: React.FC = () => {
@@ -164,7 +165,12 @@ const ImportView: React.FC = () => {
     })
 
     window.importer.importComplete(() => {
-      setImportState(ImportState.IMPORTING_COMPLETE);
+      setImportState(ImportState.IMPORT_COMPLETE);
+      setTimeout(() => setImportState(ImportState.NOT_IMPORTING), 800);
+    });
+
+    window.importer.importFailed(() => {
+      setImportState(ImportState.IMPORT_FAILED);
       setTimeout(() => setImportState(ImportState.NOT_IMPORTING), 800);
     });
   }, []);
@@ -179,10 +185,17 @@ const ImportView: React.FC = () => {
           <div className='import-message'>{importMessage}</div>
         </>
       }
-      {importState === ImportState.IMPORTING_COMPLETE &&
+      {importState === ImportState.IMPORT_COMPLETE &&
         <div className='import-loading-complete'>
           <svg height='150' width='200'>
             <path d='M180 0 L200 20 L70 150 L0 80 L20 60 L70 110 Z' stroke='#00CC00' fill='#00CC00' />
+          </svg>
+        </div>
+      }
+      {importState === ImportState.IMPORT_FAILED &&
+        <div className='import-loading-failed'>
+          <svg height='200' width='200'>
+            <path d='M0 20 L20 0 L100 80 L180 0 L200 20 L120 100 L200 180 L180 200 L100 120 L20 200 L0 180 L80 100 Z' stroke='#CC0000' fill='#CC0000' />
           </svg>
         </div>
       }
