@@ -152,11 +152,16 @@ enum ImportState {
 
 const ImportView: React.FC = () => {
   const [importState, setImportState] = useState<ImportState>(ImportState.NOT_IMPORTING);
+  const [importMessage, setImportMessage] = useState<string>("");
 
   useEffect(() => {
     window.importer.importStart(() => {
       setImportState(ImportState.IMPORTING);
     });
+
+    window.importer.importUpdate((update: string) => {
+      setImportMessage(update);
+    })
 
     window.importer.importComplete(() => {
       setImportState(ImportState.IMPORTING_COMPLETE);
@@ -169,7 +174,10 @@ const ImportView: React.FC = () => {
   return (
     <div className='import-mask'>
       {importState === ImportState.IMPORTING &&
-        <div className='import-loading' />
+        <>
+          <div className='import-loading' />
+          <div className='import-message'>{importMessage}</div>
+        </>
       }
       {importState === ImportState.IMPORTING_COMPLETE &&
         <div className='import-loading-complete'>

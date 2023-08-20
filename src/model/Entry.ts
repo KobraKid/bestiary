@@ -17,10 +17,6 @@ export interface IEntryMetadata {
    */
   bid: string,
   /**
-   * Entry ID
-   */
-  id: Types.ObjectId,
-  /**
    * Layout string
    */
   layout: string,

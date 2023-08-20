@@ -15,15 +15,27 @@ const dbUrl = 'mongodb://127.0.0.1:27017/bestiary';
 let isLoading = false;
 
 enum AttributeModifier {
+    /** An image located in the collection's image subfolder */
     image = 'image',
+    /** An image located in any other directory */
     rawimg = 'rawimg',
+    /** A resource image which should be displayed based on the current language */
+    resimg = 'resourceimage',
+    /** The current language */
     lang = 'lang',
+    /** A resource string based on the entry */
     resource = 'resource',
+    /** A resource string not based on an entry */
     rawresource = 'rawresource',
+    /** Starts a repeating section */
     repeat = 'repeat',
+    /** Ends a repeating section */
     endrepeat = 'endrepeat',
+    /** A link to another entry (possibly in another collection) */
     link = 'link',
+    /** Starts an optional section, only displaying if the given attribute exists on the entry */
     if = 'if',
+    /** Ends an optional section */
     endif = 'endif'
 }
 
@@ -76,13 +88,13 @@ export async function getCollection(pkg: IPackageSchema, collection: ICollection
 export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
     isLoading = true;
 
-    const entries = await Entry.find({ packageId: pkg.id, collectionId: collection.ns }).lean().exec();
+    const entries = await Entry.find({ packageId: pkg.ns, collectionId: collection.ns }).lean().exec();
     const collectionLayoutTemplate = await getCollectionLayout(pkg, collection.ns);
 
     for (const entry of entries) {
         if (!isLoading) { break; }
         const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
-        event.sender.send('pkg:load-collection-entry', { packageId: pkg.id, collectionId: collection.ns, bid: entry.bid, layout: entryLayout });
+        event.sender.send('pkg:load-collection-entry', { packageId: pkg.ns, collectionId: collection.ns, bid: entry.bid, layout: entryLayout });
     }
 }
 
@@ -134,13 +146,13 @@ export function stopLoadingCollectionEntries(): void {
  */
 export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
     isLoading = false;
-    const loadedEntry = await Entry.findOne({ packageId: pkg.id, collectionId: collection.ns, bid: entryId }).lean().exec();
+    const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collection.ns, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
 
     const entryLayout = await getEntryLayout(pkg, collection.ns, loadedEntry, lang);
     const entryStyle = getEntryStyle(pkg, collection.ns);
 
-    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, id: loadedEntry.id, layout: entryLayout, style: entryStyle };
+    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle };
 }
 
 /**
@@ -243,27 +255,39 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     let entryLayout = layoutTemplate;
 
     let replacements: IReplacement[] = [];
-    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-]+)(\\|${AttributeModifier.if})\\}`, 'g'));
+    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-_]+)\\|${AttributeModifier.if}\\|?([A-z0-9\.$-_]+)?\\}`, 'g'));
     for (const ifdef of ifdefs) {
-        if (ifdef.length >= 3 && ifdef.index !== undefined && typeof ifdef[0] === 'string' && typeof ifdef[1] === 'string') {
+        if (ifdef.length >= 2 && ifdef.index !== undefined && typeof ifdef[0] === 'string' && typeof ifdef[1] === 'string') {
             const startIf = ifdef.index;
             const endIf = entryLayout.indexOf(`{${ifdef[1]}|endif}`, startIf);
             const optionalText = entryLayout.substring(startIf + ifdef[0].length, endIf);
             const attrValue = getEntryAttribute(ifdef[1], entry);
-            replacements.push({
-                start: startIf,
-                end: endIf + ifdef[0].length + 3,
-                replacement: (attrValue !== null && attrValue !== undefined) ? optionalText : ""
-            });
+            if (ifdef.length > 2 && typeof ifdef[2] === 'string') {
+                const matchValue = ifdef[2];
+                replacements.push({
+                    start: startIf,
+                    end: endIf + ifdef[1].length + 8,
+                    replacement: (attrValue == matchValue) ? optionalText : ""
+                });
+            }
+            else {
+                replacements.push({
+                    start: startIf,
+                    end: endIf + ifdef[0].length + 3,
+                    replacement: (attrValue !== null && attrValue !== undefined) ? optionalText : ""
+                });
+            }
         }
     }
     replacements.reverse();
-    replacements.forEach(replacement => entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end));
-    
+    replacements.forEach(replacement => {
+        entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end);
+    });
+
     replacements = [];
-    const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-]+)(\\|${AttributeModifier.repeat})\\}`, 'g'));
+    const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-_]+)\\|${AttributeModifier.repeat}\\}`, 'g'));
     for (const repeat of repeats) {
-        if (repeat.length >= 3 && repeat.index !== undefined && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
+        if (repeat.length >= 2 && repeat.index !== undefined && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
             // Find start and end of repeat section
             const startRepeat = repeat.index;
             const endRepeat = entryLayout.indexOf(`{${repeat[1]}|endrepeat}`, startRepeat)
@@ -285,7 +309,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     replacements.forEach(replacement => entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end));
 
     const modifiers = `(${Object.keys(AttributeModifier).join('|')})`;
-    const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9/\.$-]+)(?:\\|${modifiers})?\\}`, 'g'));
+    const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-_]+)(?:\\|${modifiers})?\\}`, 'g'));
 
     for (const attr of attributes) {
         if (attr.length > 1 && typeof attr[0] === 'string' && typeof attr[1] === 'string') {
@@ -297,7 +321,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         const link = attrValue?.split('.') ?? [];
                         if (link.length === 2) {
                             const linkCollection = link[0]!;
-                            const linkEntry = await Entry.findOne({ packageId: pkg.id, collectionId: linkCollection, bid: link[1] }).exec();
+                            const linkEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: linkCollection, bid: link[1] }).exec();
                             if (linkEntry) {
                                 const linkLayout = await getLinkLayout(pkg, linkCollection, linkEntry, lang);
                                 const linkStyle = getLinkStyle(pkg, linkCollection);
@@ -320,7 +344,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         break;
                     case AttributeModifier.resource:
                         // Get the correct resource for the current language
-                        const resource = await Resource.findOne({ packageId: pkg.id, resId: attrValue }).lean().exec();
+                        const resource = await Resource.findOne({ packageId: pkg.ns, resId: attrValue }).lean().exec();
                         if (!resource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
@@ -328,7 +352,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         break;
                     case AttributeModifier.rawresource:
                         // Get the correct resource for the current language
-                        const rawresource = await Resource.findOne({ packageId: pkg.id, resId: attr[1] }).lean().exec();
+                        const rawresource = await Resource.findOne({ packageId: pkg.ns, resId: attr[1] }).lean().exec();
                         if (!rawresource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }

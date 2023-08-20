@@ -86,9 +86,9 @@ export function useBestiaryViewModel(): BestiaryData {
                 return [{ pkg: action.targetView?.pkg || null as any, collection: resetCollection, entry: resetEntry }];
 
             case ViewStackframeActionType.NAVIGATE_FORWARDS:
-                window.log.write(`→ going from [${action.currentView?.collection?.name} ${action.currentView?.entry?.id ?? "collection"}]  to  [${action.targetView?.collection?.name} ${action.targetView?.entry?.id}]`);
+                window.log.write(`→ going from [${action.currentView?.collection?.name} ${action.currentView?.entry?.bid ?? "collection"}]  to  [${action.targetView?.collection?.name} ${action.targetView?.entry?.bid}]`);
                 if (!action.targetView?.collection ||
-                    (action.currentView?.collection?.name === action.targetView.collection.name && action.currentView.entry?.id === action.targetView.entry?.id)) {
+                    (action.currentView?.collection?.name === action.targetView.collection.name && action.currentView.entry?.bid === action.targetView.entry?.bid)) {
                     return state;
                 }
 
@@ -108,7 +108,7 @@ export function useBestiaryViewModel(): BestiaryData {
                 if (state.length < 2) { return state; }
                 const currentView = state[state.length - 1];
                 const targetView = state[state.length - 2];
-                window.log.write(`← return to  [${targetView?.collection?.name ?? "...nowhere..."} ${targetView?.entry?.id ?? "collection"}] from [${currentView?.collection?.name} ${currentView?.entry?.id ?? "collection"}]`);
+                window.log.write(`← return to  [${targetView?.collection?.name ?? "...nowhere..."} ${targetView?.entry?.bid ?? "collection"}] from [${currentView?.collection?.name} ${currentView?.entry?.bid ?? "collection"}]`);
 
                 if (!targetView) { return state; }
 
