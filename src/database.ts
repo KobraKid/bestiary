@@ -145,7 +145,6 @@ export function stopLoadingCollectionEntries(): void {
  * @returns An entry
  */
 export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
-    isLoading = false;
     const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collection.ns, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
 
@@ -348,7 +347,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         if (!resource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
-                        entryLayout = entryLayout.replace(attr[0], resource?.values[lang] ?? attributeError("Resource not found", attrValue));
+                        entryLayout = entryLayout.replace(attr[0], escapeResource(resource?.values[lang]) ?? attributeError("Resource not found", attrValue));
                         break;
                     case AttributeModifier.rawresource:
                         // Get the correct resource for the current language
@@ -356,7 +355,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         if (!rawresource?.values[lang]) {
                             console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
                         }
-                        entryLayout = entryLayout.replace(attr[0], rawresource?.values[lang] ?? attributeError("Resource not found", attr[1]));
+                        entryLayout = entryLayout.replace(attr[0], escapeResource(rawresource?.values[lang]) ?? attributeError("Resource not found", attr[1]));
                         break;
                     case AttributeModifier.lang:
                         entryLayout = entryLayout.replace(attr[0], lang);
@@ -399,4 +398,13 @@ function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
  */
 function attributeError(err: string, attr: string): string {
     return isDev ? `<span style='color:red;background-color:black;font-weight:bold;'>&lt;ERROR: ${err} [${attr}]&gt;</span>` : "";
+}
+
+function escapeResource(resource: string | undefined): string | undefined {
+    if (!resource) return undefined;
+    return resource.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }

@@ -81,7 +81,7 @@ export function useBestiaryViewModel(): BestiaryData {
                     resetEntry = action.targetView?.entry || null;
                 }
 
-                selectCollection(action.targetView?.pkg || null as any, null as any, resetCollection, lang);
+                selectCollection(action.targetView?.pkg || null as any, null, resetCollection, lang);
 
                 return [{ pkg: action.targetView?.pkg || null as any, collection: resetCollection, entry: resetEntry }];
 
@@ -121,7 +121,7 @@ export function useBestiaryViewModel(): BestiaryData {
                     }
                     else {
                         setDisplayMode(DISPLAY_MODE.collection);
-                        selectCollection(state[state.length - 1]!.pkg, null as any, state[state.length - 1]!.collection, lang);
+                        selectCollection(state[state.length - 1]!.pkg, currentView?.collection, state[state.length - 1]!.collection, lang);
                     }
                 }
 
@@ -149,10 +149,11 @@ export function useBestiaryViewModel(): BestiaryData {
         // window.config.loadPkgConfig(newPkg).then(setPkgConfig);
     }, []);
 
-    const selectCollection = useCallback((pkg: IPackageMetadata, _collection: ICollectionMetadata, newCollection: ICollectionMetadata, lang: ISO639Code) => {
-        // if (newCollection.id === collection.id) { return; }
+    const selectCollection = useCallback((pkg: IPackageMetadata, prevCollection: ICollectionMetadata | null | undefined, newCollection: ICollectionMetadata, lang: ISO639Code) => {
+        if (newCollection.ns !== prevCollection?.ns) {
+            window.pkg.stopLoadingCollectionEntries();
+        }
 
-        window.pkg.stopLoadingCollectionEntries();
         window.pkg.loadCollection(pkg as IPackageSchema, newCollection, lang).then((collection: ICollectionMetadata) => {
             setEntry(null);
             setCollection(collection);
@@ -177,7 +178,7 @@ export function useBestiaryViewModel(): BestiaryData {
     const selectEntry = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntryMetadata | null, newCollection: ICollectionMetadata | null, newEntry: IEntryMetadata, lang: ISO639Code) => {
         if (newEntry.bid === entry?.bid) { return; }
 
-        window.pkg.stopLoadingCollectionEntries();
+        // window.pkg.stopLoadingCollectionEntries();
         window.pkg.loadEntry(pkg as IPackageSchema, newCollection || collection, newEntry.bid, lang).then((loadedEntry: IEntryMetadata) => {
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
