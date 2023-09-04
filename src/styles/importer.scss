@@ -62,3 +62,32 @@
     overflow: hidden;
     height: 41px;
 }
+
+.import-percent {
+    width: 90%;
+    height: 40px;
+    align-self: center;
+    border: 1px solid black;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    .import-percent-label {
+        align-self: center;
+        height: 0px;
+        z-index: 20;
+
+        div {
+            height: 40px;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+            line-height: 40px;
+        }
+    }
+
+    .import-percent-inner {
+        background-color: green;
+        height: 40px;
+    }
+}

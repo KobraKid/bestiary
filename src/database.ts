@@ -250,7 +250,7 @@ interface IReplacement {
  * @param lang The language to inject resource strings in
  * @returns The entry as a string of HTML
  */
-async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
+async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, _collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayout = layoutTemplate;
 
     let replacements: IReplacement[] = [];
@@ -260,7 +260,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
             const startIf = ifdef.index;
             const endIf = entryLayout.indexOf(`{${ifdef[1]}|endif}`, startIf);
             const optionalText = entryLayout.substring(startIf + ifdef[0].length, endIf);
-            const attrValue = getEntryAttribute(ifdef[1], entry);
+            const attrValue = await getEntryAttribute(ifdef[1], entry);
             if (ifdef.length > 2 && typeof ifdef[2] === 'string') {
                 const matchValue = ifdef[2];
                 replacements.push({
@@ -290,7 +290,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
             // Find start and end of repeat section
             const startRepeat = repeat.index;
             const endRepeat = entryLayout.indexOf(`{${repeat[1]}|endrepeat}`, startRepeat)
-            const repeatCount = getEntryAttribute(repeat[1], entry).length;
+            const repeatCount = (await getEntryAttribute(repeat[1], entry)).length;
             const repeatText = entryLayout.substring(startRepeat + repeat[0].length, endRepeat);
             let accumulatedText = '';
             // Replace $ with an index
@@ -308,11 +308,11 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     replacements.forEach(replacement => entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end));
 
     const modifiers = `(${Object.keys(AttributeModifier).join('|')})`;
-    const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-_]+)(?:\\|${modifiers})?\\}`, 'g'));
+    const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$->/_]+)(?:\\|${modifiers})?\\}`, 'g'));
 
     for (const attr of attributes) {
         if (attr.length > 1 && typeof attr[0] === 'string' && typeof attr[1] === 'string') {
-            const attrValue = getEntryAttribute(attr[1], entry);
+            const attrValue = await getEntryAttribute(attr[1], entry);
             // the attribtue has a modifier
             if (attr.length >= 3 && typeof attr[2] === 'string') {
                 switch (attr[2] as AttributeModifier) {
@@ -327,7 +327,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                                 entryLayout = entryLayout.replace(attr[0], linkStyle + linkLayout);
                             }
                             else {
-                                entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link));
+                                entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link.toString()));
                             }
                         }
                         else {
@@ -336,7 +336,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         break;
                     case AttributeModifier.image:
                         // Pull from the image folder
-                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', collectionNamespace, '' + attrValue));
+                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', attrValue));
                         break;
                     case AttributeModifier.rawimg:
                         entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', ...attr[1].split('/')));
@@ -377,17 +377,41 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
  * @param entry The entry to retrieve attributes from
  * @returns The value of the attribute
  */
-function getEntryAttribute(attribute: string, entry: IEntrySchema): any {
+async function getEntryAttribute(attribute: string, entry: IEntrySchema): Promise<string> {
     let attrValue: any = entry;
     let attrPath = attribute.split('.').reverse();
 
     while (attrPath.length > 0 && typeof attrValue === 'object') {
         const attr = attrPath.pop();
         if (attr) {
-            attrValue = attrValue[attr];
+            // We're jumping to a new entry's attributes
+            if (attr.includes('->')) {
+                let jump = attr.split('->',);
+                if (jump.length >= 2) {
+                    let prevAttr: string = jump[0] ?? "";
+                    let link = attrValue[prevAttr].split('.');
+                    if (link.length === 2) {
+                        attrValue = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).exec();
+                        if (!attrValue) {
+                            return "";
+                        }
+                        // queue subsequent jumps
+                        attrPath.push(jump.slice(1).join('->'));
+                    }
+                    else {
+                        return "";
+                    }
+                }
+                else {
+                    return "";
+                }
+            }
+            else {
+                attrValue = attrValue[attr];
+            }
         }
     }
-    return attrValue;
+    return attrValue ?? "";
 }
 
 /**

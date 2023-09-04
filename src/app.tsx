@@ -153,6 +153,7 @@ enum ImportState {
 
 const ImportView: React.FC = () => {
   const [importState, setImportState] = useState<ImportState>(ImportState.NOT_IMPORTING);
+  const [importPctComplete, setImportPctComplete] = useState<number>(0);
   const [importMessage, setImportMessage] = useState<string>("");
 
   useEffect(() => {
@@ -160,8 +161,9 @@ const ImportView: React.FC = () => {
       setImportState(ImportState.IMPORTING);
     });
 
-    window.importer.importUpdate((update: string) => {
+    window.importer.importUpdate((update: string, pctComplete: number) => {
       setImportMessage(update);
+      setImportPctComplete(pctComplete);
     })
 
     window.importer.importComplete(() => {
@@ -183,6 +185,12 @@ const ImportView: React.FC = () => {
         <>
           <div className='import-loading' />
           <div className='import-message'>{importMessage}</div>
+          <div className='import-percent'>
+            <div className='import-percent-label'>
+              <div>{`${Math.trunc(importPctComplete * 10000) / 100}%`}</div>
+            </div>
+            <div className='import-percent-inner' style={{ width: `${importPctComplete * 100}%` }} />
+          </div>
         </>
       }
       {importState === ImportState.IMPORT_COMPLETE &&

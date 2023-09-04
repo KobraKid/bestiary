@@ -38,8 +38,8 @@ contextBridge.exposeInMainWorld('importer', {
   importStart: (callback: Function) => {
     ipcRenderer.on('importer:import-start', (_event: any) => callback());
   },
-  importUpdate: (callback: (update: string) => void) => {
-    ipcRenderer.on('importer:import-update', (_event: any, update: string) => callback(update));
+  importUpdate: (callback: (update: string, pctComplete: number) => void) => {
+    ipcRenderer.on('importer:import-update', (_event: any, update: string, pctComplete: number) => callback(update, pctComplete));
   },
   importComplete: (callback: Function) => {
     ipcRenderer.on('importer:import-complete', (_event: any) => callback());

@@ -27,7 +27,7 @@ export interface IMenuAPI {
 
 export interface IImporterAPI {
   importStart: (callback: Function) => void,
-  importUpdate: (callback: (update: string) => void) => void,
+  importUpdate: (callback: (update: string, pctComplete: number) => void) => void,
   importComplete: (callback: Function) => void,
   importFailed: (callback: Function) => void
 }
