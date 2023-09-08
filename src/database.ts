@@ -250,17 +250,19 @@ interface IReplacement {
  * @param lang The language to inject resource strings in
  * @returns The entry as a string of HTML
  */
-async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, _collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
+async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayout = layoutTemplate;
+    let linkCache = {};
+    const start = performance.now();
 
     let replacements: IReplacement[] = [];
-    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-_]+)\\|${AttributeModifier.if}\\|?([A-z0-9\.$-_]+)?\\}`, 'g'));
+    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$->_]+)\\|${AttributeModifier.if}\\|?([A-z0-9\.$-_]+)?\\}`, 'g'));
     for (const ifdef of ifdefs) {
         if (ifdef.length >= 2 && ifdef.index !== undefined && typeof ifdef[0] === 'string' && typeof ifdef[1] === 'string') {
             const startIf = ifdef.index;
             const endIf = entryLayout.indexOf(`{${ifdef[1]}|endif}`, startIf);
             const optionalText = entryLayout.substring(startIf + ifdef[0].length, endIf);
-            const attrValue = await getEntryAttribute(ifdef[1], entry);
+            const attrValue = await getEntryAttribute(ifdef[1], entry, linkCache);
             if (ifdef.length > 2 && typeof ifdef[2] === 'string') {
                 const matchValue = ifdef[2];
                 replacements.push({
@@ -284,13 +286,13 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     });
 
     replacements = [];
-    const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$-_]+)\\|${AttributeModifier.repeat}\\}`, 'g'));
+    const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$->_]+)\\|${AttributeModifier.repeat}\\}`, 'g'));
     for (const repeat of repeats) {
         if (repeat.length >= 2 && repeat.index !== undefined && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
             // Find start and end of repeat section
             const startRepeat = repeat.index;
             const endRepeat = entryLayout.indexOf(`{${repeat[1]}|endrepeat}`, startRepeat)
-            const repeatCount = (await getEntryAttribute(repeat[1], entry)).length;
+            const repeatCount = (await getEntryAttribute(repeat[1], entry, linkCache)).length;
             const repeatText = entryLayout.substring(startRepeat + repeat[0].length, endRepeat);
             let accumulatedText = '';
             // Replace $ with an index
@@ -312,7 +314,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
 
     for (const attr of attributes) {
         if (attr.length > 1 && typeof attr[0] === 'string' && typeof attr[1] === 'string') {
-            const attrValue = await getEntryAttribute(attr[1], entry);
+            const attrValue = await getEntryAttribute(attr[1], entry, linkCache);
             // the attribtue has a modifier
             if (attr.length >= 3 && typeof attr[2] === 'string') {
                 switch (attr[2] as AttributeModifier) {
@@ -345,7 +347,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         // Get the correct resource for the current language
                         const resource = await Resource.findOne({ packageId: pkg.ns, resId: attrValue }).lean().exec();
                         if (!resource?.values[lang]) {
-                            console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
+                            console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue ?? "<unknown>"} (${attr[1]}) in lang ${lang} on ${collectionNamespace} ${entry.bid}`));
                         }
                         entryLayout = entryLayout.replace(attr[0], escapeResource(resource?.values[lang]) ?? attributeError("Resource not found", attrValue));
                         break;
@@ -353,7 +355,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                         // Get the correct resource for the current language
                         const rawresource = await Resource.findOne({ packageId: pkg.ns, resId: attr[1] }).lean().exec();
                         if (!rawresource?.values[lang]) {
-                            console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue} in lang ${lang}`));
+                            console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attr[1]} in lang ${lang}`));
                         }
                         entryLayout = entryLayout.replace(attr[0], escapeResource(rawresource?.values[lang]) ?? attributeError("Resource not found", attr[1]));
                         break;
@@ -368,6 +370,7 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
             }
         }
     }
+    if (entry.bid === "110030") { console.log(chalk.gray(`Loading ${collectionNamespace}.${entry.bid} took ${performance.now() - start}ms - ${Object.keys(linkCache).length} objects in cache: ${Object.keys(linkCache)}`)); }
     return entryLayout;
 }
 
@@ -375,9 +378,10 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
  * Gets an attribute from an entry. Can retrieve top-level and sub properties
  * @param attribute The attribute to retrieve, can be period-delimited
  * @param entry The entry to retrieve attributes from
+ * @param cache A cache of linked entries
  * @returns The value of the attribute
  */
-async function getEntryAttribute(attribute: string, entry: IEntrySchema): Promise<string> {
+async function getEntryAttribute(attribute: string, entry: IEntrySchema, cache: { [link: string]: IEntrySchema | null }): Promise<string> {
     let attrValue: any = entry;
     let attrPath = attribute.split('.').reverse();
 
@@ -389,23 +393,30 @@ async function getEntryAttribute(attribute: string, entry: IEntrySchema): Promis
                 let jump = attr.split('->',);
                 if (jump.length >= 2) {
                     let prevAttr: string = jump[0] ?? "";
-                    let link = attrValue[prevAttr].split('.');
-                    if (link.length === 2) {
-                        attrValue = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).exec();
-                        if (!attrValue) {
-                            return "";
+                    let attrLink: string = attrValue[prevAttr];
+                    // Cache links
+                    if (!cache[attrLink]) {
+                        let link: string[] = attrLink.split('.');
+                        if (link.length === 2) {
+                            cache[attrLink] = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).exec();
                         }
-                        // queue subsequent jumps
-                        attrPath.push(jump.slice(1).join('->'));
+                        else {
+                            return ""; // bad link
+                        }
                     }
-                    else {
-                        return "";
+                    attrValue = cache[attrLink];
+                    if (!attrValue) {
+                        return ""; // link not found
                     }
+                    // queue remaining attributes
+                    attrPath.push(jump.slice(1).join('->'));
                 }
                 else {
-                    return "";
+
+                    return ""; // bad jump
                 }
             }
+            // We're just getting a normal attribute
             else {
                 attrValue = attrValue[attr];
             }
