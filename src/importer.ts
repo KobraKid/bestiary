@@ -1,30 +1,31 @@
 import { BrowserWindow } from "electron";
 import path from "path";
 import { readFileSync } from "fs";
-import Package from "./model/Package";
-import Entry, { IEntryMetadata } from "./model/Entry";
+import Package, { IPackageMetadata } from "./model/Package";
+import Entry from "./model/Entry";
 import fs, { mkdir } from "fs/promises";
 import chalk from "chalk";
 import Resource, { IResource } from "./model/Resource";
 import { paths } from "./electron";
+import { ICollectionMetadata } from "./model/Collection";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
         for (const filePath of files.filePaths) {
-            const pkgJson = JSON.parse(readFileSync(filePath, { encoding: 'utf-8' }));
-            await importJson(pkgJson, (update: string, pctCompletion: number) => window.webContents.send('importer:import-update', update, pctCompletion));
+            const pkgJson = JSON.parse(readFileSync(filePath, { encoding: "utf-8" }));
+            await importJson(pkgJson, (update: string, pctCompletion: number) => window.webContents.send("importer:import-update", update, pctCompletion));
         }
-        window.webContents.send('importer:import-complete');
+        window.webContents.send("importer:import-complete");
     }
     catch (e) {
-        window.webContents.send('importer:import-failed');
+        window.webContents.send("importer:import-failed");
         console.log(chalk.red.bgWhite(e));
     }
 }
 
-async function importJson(pkgJson: any, updateClient: (update: string, pctCompletion: number) => void) {
+async function importJson(pkgJson: { metadata: IPackageMetadata, collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[], resources: IResource[] }, updateClient: (update: string, pctCompletion: number) => void) {
     const metadata = pkgJson.metadata;
-    const collections: { ns: string, entries: IEntryMetadata[], images: { url: string, name: string }[] }[] = pkgJson.collections;
+    const collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[] = pkgJson.collections;
     const resources: IResource[] = pkgJson.resources;
     const resourceCount = Math.max(resources.length, 1);
     const images: { url: string, collection: string, name: string }[] = [];
@@ -68,13 +69,13 @@ async function importJson(pkgJson: any, updateClient: (update: string, pctComple
     let currentImage = 0;
     for (const img of images) {
         try {
-            await mkdir(path.join(paths.data, pkg.ns, 'images', img.collection), { recursive: true });
+            await mkdir(path.join(paths.data, pkg.ns, "images", img.collection), { recursive: true });
         } catch (err) {
-            if (!(err as Error).message.startsWith('EEXIST')) { console.log((err as Error).message); }
+            if (!(err as Error).message.startsWith("EEXIST")) { console.log((err as Error).message); }
         } finally {
             // check if the file exists
             try {
-                await fs.stat(path.join(paths.data, pkg.ns, 'images', img.collection, img.name));
+                await fs.stat(path.join(paths.data, pkg.ns, "images", img.collection, img.name));
                 updateClient(`Image <${img.name}> already imported`, (++currentImage) / imageCount);
                 // file exists, no need to re-download
             }
@@ -88,10 +89,10 @@ async function importJson(pkgJson: any, updateClient: (update: string, pctComple
                     // convert to a buffer
                     const imgArrayBuffer = await imgBlob.arrayBuffer();
                     // write to disk
-                    await fs.writeFile(path.join(paths.data, pkg.ns, 'images', img.collection, img.name), Buffer.from(imgArrayBuffer));
+                    await fs.writeFile(path.join(paths.data, pkg.ns, "images", img.collection, img.name), Buffer.from(imgArrayBuffer));
                 }
                 catch (err) {
-                    console.log(chalk.red('Failed to download'), chalk.red.bgGreen(img.url), chalk.red(`to ${img.collection}/${img.name}`), err.message);
+                    console.log(chalk.red("Failed to download"), chalk.red.bgGreen(img.url), chalk.red(`to ${img.collection}/${img.name}`), err.message);
                 }
             }
         }

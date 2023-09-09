@@ -1,6 +1,6 @@
-import React from 'react';
-import { convertHtmlToReact } from '@hedgedoc/html-to-react';
-import { IEntryMetadata } from './model/Entry';
+import React from "react";
+import { convertHtmlToReact } from "@hedgedoc/html-to-react";
+import { IEntryMetadata } from "./model/Entry";
 
 export interface IEntryProps {
     entry: IEntryMetadata | null,
@@ -15,4 +15,4 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
             {convertHtmlToReact(entry.layout)}
         </div>
     );
-}
+};

@@ -1,7 +1,7 @@
-import { ICollectionConfig, IPackageConfig } from './model/Config';
-import { IPackageSchema, ISO639Code } from './model/Package';
-import { ICollectionMetadata } from './model/Collection';
-import { IEntryMetadata } from './model/Entry';
+import { ICollectionConfig, IPackageConfig } from "./model/Config";
+import { IPackageSchema, ISO639Code } from "./model/Package";
+import { ICollectionMetadata } from "./model/Collection";
+import { IEntryMetadata } from "./model/Entry";
 
 export interface IPkgAPI {
   loadPackages: () => Promise<IPackageSchema[]>,
@@ -14,22 +14,25 @@ export interface IPkgAPI {
 }
 
 export interface IConfigAPI {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   loadPkgConfig: (pkg: any) => Promise<IPackageConfig>,
   savePkgConfig: (pkgPath: string, config: IPackageConfig) => Promise<void>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   loadConfig: (pkg: any, collectionName: string) => Promise<ICollectionConfig[]>,
   saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => Promise<void>
 }
 
 export interface IMenuAPI {
   showCollectionMenu: (collection: string) => Promise<void>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   manageCollection: (collectionManager: (collection: string) => void) => any
 }
 
 export interface IImporterAPI {
-  importStart: (callback: Function) => void,
+  importStart: (callback: () => void) => void,
   importUpdate: (callback: (update: string, pctComplete: number) => void) => void,
-  importComplete: (callback: Function) => void,
-  importFailed: (callback: Function) => void
+  importComplete: (callback: () => void) => void,
+  importFailed: (callback: () => void) => void
 }
 
 export interface IPathAPI {
@@ -42,6 +45,7 @@ export interface ILoggingAPI {
 }
 
 export interface IFormulaAPI {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   eval: (expression: string, scope?: object) => Promise<any>
 }
 

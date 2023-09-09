@@ -1,42 +1,42 @@
-import mongoose from 'mongoose';
-import path from 'path';
-import chalk from 'chalk';
-import sass from 'sass';
-import { readFile } from 'fs/promises';
-import Package, { IPackageSchema, ISO639Code } from './model/Package';
-import { ICollectionMetadata } from './model/Collection';
-import Entry, { IEntryMetadata, IEntrySchema } from './model/Entry';
-import Resource from './model/Resource';
-import { IpcMainInvokeEvent } from 'electron';
-import { isDev, paths } from './electron';
+import mongoose from "mongoose";
+import path from "path";
+import chalk from "chalk";
+import sass from "sass";
+import { readFile } from "fs/promises";
+import Package, { IPackageSchema, ISO639Code } from "./model/Package";
+import { ICollectionMetadata } from "./model/Collection";
+import Entry, { IEntryMetadata, IEntrySchema } from "./model/Entry";
+import Resource from "./model/Resource";
+import { IpcMainInvokeEvent } from "electron";
+import { isDev, paths } from "./electron";
 
-const dbUrl = 'mongodb://127.0.0.1:27017/bestiary';
+const dbUrl = "mongodb://127.0.0.1:27017/bestiary";
 
 let isLoading = false;
 
 enum AttributeModifier {
     /** An image located in the collection's image subfolder */
-    image = 'image',
+    image = "image",
     /** An image located in any other directory */
-    rawimg = 'rawimg',
+    rawimg = "rawimg",
     /** A resource image which should be displayed based on the current language */
-    resimg = 'resourceimage',
+    resimg = "resourceimage",
     /** The current language */
-    lang = 'lang',
+    lang = "lang",
     /** A resource string based on the entry */
-    resource = 'resource',
+    resource = "resource",
     /** A resource string not based on an entry */
-    rawresource = 'rawresource',
+    rawresource = "rawresource",
     /** Starts a repeating section */
-    repeat = 'repeat',
+    repeat = "repeat",
     /** Ends a repeating section */
-    endrepeat = 'endrepeat',
+    endrepeat = "endrepeat",
     /** A link to another entry (possibly in another collection) */
-    link = 'link',
+    link = "link",
     /** Starts an optional section, only displaying if the given attribute exists on the entry */
-    if = 'if',
+    if = "if",
     /** Ends an optional section */
-    endif = 'endif'
+    endif = "endif"
 }
 
 /**
@@ -93,8 +93,8 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
 
     for (const entry of entries) {
         if (!isLoading) { break; }
-        const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang);
-        event.sender.send('pkg:load-collection-entry', { packageId: pkg.ns, collectionId: collection.ns, bid: entry.bid, layout: entryLayout });
+        const entryLayout = await populateEntryAttributes(collectionLayoutTemplate, pkg, collection.ns, entry, lang, false);
+        event.sender.send("pkg:load-collection-entry", { packageId: pkg.ns, collectionId: collection.ns, bid: entry.bid, layout: entryLayout });
     }
 }
 
@@ -105,9 +105,9 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
  * @returns A template HTML string
  */
 async function getCollectionLayout(pkg: IPackageSchema, collectionNamespace: string): Promise<string> {
-    let collectionLayoutTemplate = ""
+    let collectionLayoutTemplate = "";
     try {
-        collectionLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, 'layout', 'preview', `${collectionNamespace}.html`), { encoding: 'utf-8' }));
+        collectionLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, "layout", "preview", `${collectionNamespace}.html`), { encoding: "utf-8" }));
     }
     catch (err) {
         console.log((err as Error).message);
@@ -124,7 +124,7 @@ async function getCollectionLayout(pkg: IPackageSchema, collectionNamespace: str
 function getCollectionStyle(pkg: IPackageSchema, collectionNamespace: string): string {
     let collectionLayoutStyle = "";
     try {
-        collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', 'preview', `${collectionNamespace}.scss`)).css;
+        collectionLayoutStyle = sass.compile(path.join(paths.data, pkg.ns, "style", "preview", `${collectionNamespace}.scss`)).css;
     }
     catch (err) {
         console.log((err as Error).message);
@@ -163,14 +163,14 @@ export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetad
  * @returns An HTML string populated with attributes from the current entry
  */
 async function getEntryLayout(pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
-    let entryLayoutTemplate = ""
+    let entryLayoutTemplate = "";
     try {
-        entryLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, 'layout', 'view', `${collectionNamespace}.html`), { encoding: 'utf-8' }));
+        entryLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, "layout", "view", `${collectionNamespace}.html`), { encoding: "utf-8" }));
     }
     catch (err) {
         console.log((err as Error).message);
     }
-    return await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang);
+    return await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
 }
 
 /**
@@ -182,7 +182,7 @@ async function getEntryLayout(pkg: IPackageSchema, collectionNamespace: string, 
 function getEntryStyle(pkg: IPackageSchema, collectionNamespace: string): string {
     let entryStyle = "";
     try {
-        entryStyle = sass.compile(path.join(paths.data, pkg.ns, 'style', 'view', `${collectionNamespace}.scss`)).css;
+        entryStyle = sass.compile(path.join(paths.data, pkg.ns, "style", "view", `${collectionNamespace}.scss`)).css;
     }
     catch (err) {
         console.log((err as Error).message);
@@ -199,14 +199,14 @@ function getEntryStyle(pkg: IPackageSchema, collectionNamespace: string): string
  * @returns An HTML string populated with attributes from the linked entry
  */
 async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
-    let linkLayoutTemplate = ""
+    let linkLayoutTemplate = "";
     try {
-        linkLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, 'layout', 'link', `${collectionNamespace}.html`), { encoding: 'utf-8' }));
+        linkLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, "layout", "link", `${collectionNamespace}.html`), { encoding: "utf-8" }));
     }
     catch (err) {
         linkLayoutTemplate = await getCollectionLayout(pkg, collectionNamespace);
     }
-    return await populateEntryAttributes(linkLayoutTemplate, pkg, collectionNamespace, entry, lang);
+    return await populateEntryAttributes(linkLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
 }
 
 /**
@@ -218,7 +218,7 @@ async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string, e
 function getLinkStyle(pkg: IPackageSchema, collectionNamespace: string): string {
     let linkStyle = "";
     try {
-        linkStyle = `<style>${sass.compile(path.join(paths.data, pkg.ns, 'style', 'link', `${collectionNamespace}.scss`)).css}</style>`;
+        linkStyle = `<style>${sass.compile(path.join(paths.data, pkg.ns, "style", "link", `${collectionNamespace}.scss`)).css}</style>`;
     }
     catch (err) {
         linkStyle = getCollectionStyle(pkg, collectionNamespace);
@@ -250,20 +250,20 @@ interface IReplacement {
  * @param lang The language to inject resource strings in
  * @returns The entry as a string of HTML
  */
-async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
+async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code, debug: boolean): Promise<string> {
     let entryLayout = layoutTemplate;
-    let linkCache = {};
-    const start = performance.now();
+    const linkCache = {};
+    const startTime = debug ? performance.now() : 0;
 
     let replacements: IReplacement[] = [];
-    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$->_]+)\\|${AttributeModifier.if}\\|?([A-z0-9\.$-_]+)?\\}`, 'g'));
+    const ifdefs = entryLayout.matchAll(new RegExp(`\\{([A-z0-9.$->_]+)\\|${AttributeModifier.if}\\|?([A-z0-9.$-_]+)?\\}`, "g"));
     for (const ifdef of ifdefs) {
-        if (ifdef.length >= 2 && ifdef.index !== undefined && typeof ifdef[0] === 'string' && typeof ifdef[1] === 'string') {
+        if (ifdef.length >= 2 && ifdef.index !== undefined && typeof ifdef[0] === "string" && typeof ifdef[1] === "string") {
             const startIf = ifdef.index;
             const endIf = entryLayout.indexOf(`{${ifdef[1]}|endif}`, startIf);
             const optionalText = entryLayout.substring(startIf + ifdef[0].length, endIf);
             const attrValue = await getEntryAttribute(ifdef[1], entry, linkCache);
-            if (ifdef.length > 2 && typeof ifdef[2] === 'string') {
+            if (ifdef.length > 2 && typeof ifdef[2] === "string") {
                 const matchValue = ifdef[2];
                 replacements.push({
                     start: startIf,
@@ -285,19 +285,21 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
         entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end);
     });
 
+    const ifTime = debug ? performance.now() : 0;
+
     replacements = [];
-    const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$->_]+)\\|${AttributeModifier.repeat}\\}`, 'g'));
+    const repeats = entryLayout.matchAll(new RegExp(`\\{([A-z0-9.$->_]+)\\|${AttributeModifier.repeat}\\}`, "g"));
     for (const repeat of repeats) {
-        if (repeat.length >= 2 && repeat.index !== undefined && typeof repeat[0] === 'string' && typeof repeat[1] === 'string') {
+        if (repeat.length >= 2 && repeat.index !== undefined && typeof repeat[0] === "string" && typeof repeat[1] === "string") {
             // Find start and end of repeat section
             const startRepeat = repeat.index;
-            const endRepeat = entryLayout.indexOf(`{${repeat[1]}|endrepeat}`, startRepeat)
+            const endRepeat = entryLayout.indexOf(`{${repeat[1]}|endrepeat}`, startRepeat);
             const repeatCount = (await getEntryAttribute(repeat[1], entry, linkCache)).length;
             const repeatText = entryLayout.substring(startRepeat + repeat[0].length, endRepeat);
-            let accumulatedText = '';
+            let accumulatedText = "";
             // Replace $ with an index
             for (let i = 0; i < repeatCount; i++) {
-                accumulatedText += repeatText.replace(new RegExp(`\\{${repeat[1]}\\.\\$`, 'g'), `{${repeat[1]}.${i}`);
+                accumulatedText += repeatText.replace(new RegExp(`\\{${repeat[1]}\\.\\$`, "g"), `{${repeat[1]}.${i}`);
             }
             replacements.push({
                 start: startRepeat,
@@ -309,55 +311,63 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     replacements.reverse();
     replacements.forEach(replacement => entryLayout = entryLayout.substring(0, replacement.start) + replacement.replacement + entryLayout.substring(replacement.end));
 
-    const modifiers = `(${Object.keys(AttributeModifier).join('|')})`;
-    const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9\.$->/_]+)(?:\\|${modifiers})?\\}`, 'g'));
+    const repeatTime = debug ? performance.now() : 0;
+
+    const modifiers = `(${Object.keys(AttributeModifier).join("|")})`;
+    const attributes = entryLayout.matchAll(new RegExp(`\\{([A-z0-9.$->/_]+)(?:\\|${modifiers})?\\}`, "g"));
 
     for (const attr of attributes) {
-        if (attr.length > 1 && typeof attr[0] === 'string' && typeof attr[1] === 'string') {
+        if (attr.length > 1 && typeof attr[0] === "string" && typeof attr[1] === "string") {
             const attrValue = await getEntryAttribute(attr[1], entry, linkCache);
             // the attribtue has a modifier
-            if (attr.length >= 3 && typeof attr[2] === 'string') {
+            if (attr.length >= 3 && typeof attr[2] === "string") {
                 switch (attr[2] as AttributeModifier) {
                     case AttributeModifier.link:
-                        const link = attrValue?.split('.') ?? [];
-                        if (link.length === 2) {
-                            const linkCollection = link[0]!;
-                            const linkEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: linkCollection, bid: link[1] }).exec();
-                            if (linkEntry) {
-                                const linkLayout = await getLinkLayout(pkg, linkCollection, linkEntry, lang);
-                                const linkStyle = getLinkStyle(pkg, linkCollection);
-                                entryLayout = entryLayout.replace(attr[0], linkStyle + linkLayout);
+                        {
+                            const link = attrValue?.split(".") ?? [];
+                            if (link.length === 2) {
+                                const linkCollection = link[0]!;
+                                const linkEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: linkCollection, bid: link[1] }).exec();
+                                if (linkEntry) {
+                                    const linkLayout = await getLinkLayout(pkg, linkCollection, linkEntry, lang);
+                                    const linkStyle = getLinkStyle(pkg, linkCollection);
+                                    entryLayout = entryLayout.replace(attr[0], linkStyle + linkLayout);
+                                }
+                                else {
+                                    entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link.toString()));
+                                }
                             }
                             else {
-                                entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link.toString()));
+                                entryLayout = entryLayout.replace(attr[0], attributeError("No link available", attrValue));
                             }
-                        }
-                        else {
-                            entryLayout = entryLayout.replace(attr[0], attributeError("No link available", attrValue));
                         }
                         break;
                     case AttributeModifier.image:
                         // Pull from the image folder
-                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', attrValue));
+                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, "images", attrValue));
                         break;
                     case AttributeModifier.rawimg:
-                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, 'images', ...attr[1].split('/')));
+                        entryLayout = entryLayout.replace(attr[0], path.join(paths.data, pkg.ns, "images", ...attr[1].split("/")));
                         break;
                     case AttributeModifier.resource:
-                        // Get the correct resource for the current language
-                        const resource = await Resource.findOne({ packageId: pkg.ns, resId: attrValue }).lean().exec();
-                        if (!resource?.values[lang]) {
-                            console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue ?? "<unknown>"} (${attr[1]}) in lang ${lang} on ${collectionNamespace} ${entry.bid}`));
+                        {
+                            // Get the correct resource for the current language
+                            const resource = await Resource.findOne({ packageId: pkg.ns, resId: attrValue }).lean().exec();
+                            if (!resource?.values[lang]) {
+                                console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attrValue ?? "<unknown>"} (${attr[1]}) in lang ${lang} on ${collectionNamespace} ${entry.bid}`));
+                            }
+                            entryLayout = entryLayout.replace(attr[0], escapeResource(resource?.values[lang]) ?? attributeError("Resource not found", attrValue));
                         }
-                        entryLayout = entryLayout.replace(attr[0], escapeResource(resource?.values[lang]) ?? attributeError("Resource not found", attrValue));
                         break;
                     case AttributeModifier.rawresource:
-                        // Get the correct resource for the current language
-                        const rawresource = await Resource.findOne({ packageId: pkg.ns, resId: attr[1] }).lean().exec();
-                        if (!rawresource?.values[lang]) {
-                            console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attr[1]} in lang ${lang}`));
+                        {
+                            // Get the correct resource for the current language
+                            const rawresource = await Resource.findOne({ packageId: pkg.ns, resId: attr[1] }).lean().exec();
+                            if (!rawresource?.values[lang]) {
+                                console.log(chalk.red.bgWhiteBright(`Couldn't find resource ${attr[1]} in lang ${lang}`));
+                            }
+                            entryLayout = entryLayout.replace(attr[0], escapeResource(rawresource?.values[lang]) ?? attributeError("Resource not found", attr[1]));
                         }
-                        entryLayout = entryLayout.replace(attr[0], escapeResource(rawresource?.values[lang]) ?? attributeError("Resource not found", attr[1]));
                         break;
                     case AttributeModifier.lang:
                         entryLayout = entryLayout.replace(attr[0], lang);
@@ -370,7 +380,15 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
             }
         }
     }
-    if (entry.bid === "110030") { console.log(chalk.gray(`Loading ${collectionNamespace}.${entry.bid} took ${performance.now() - start}ms - ${Object.keys(linkCache).length} objects in cache: ${Object.keys(linkCache)}`)); }
+    if (debug) {
+        console.log(chalk.gray(`Loading ${collectionNamespace}.${entry.bid}
+    v
+    |- Computing ifs took ${chalk.red(ifTime - startTime)}ms
+    |- Computing repeats took ${chalk.green(repeatTime - ifTime)}ms
+    |- Computing attributes took ${chalk.blue(performance.now() - repeatTime)}ms
+    |- ${chalk.white(Object.keys(linkCache).length)} objects in cache
+    ^`));
+    }
     return entryLayout;
 }
 
@@ -382,21 +400,22 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
  * @returns The value of the attribute
  */
 async function getEntryAttribute(attribute: string, entry: IEntrySchema, cache: { [link: string]: IEntrySchema | null }): Promise<string> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let attrValue: any = entry;
-    let attrPath = attribute.split('.').reverse();
+    const attrPath = attribute.split(".").reverse();
 
-    while (attrPath.length > 0 && typeof attrValue === 'object') {
+    while (attrPath.length > 0 && typeof attrValue === "object") {
         const attr = attrPath.pop();
         if (attr) {
             // We're jumping to a new entry's attributes
-            if (attr.includes('->')) {
-                let jump = attr.split('->',);
+            if (attr.includes("->")) {
+                const jump = attr.split("->",);
                 if (jump.length >= 2) {
-                    let prevAttr: string = jump[0] ?? "";
-                    let attrLink: string = attrValue[prevAttr];
+                    const prevAttr: string = jump[0] ?? "";
+                    const attrLink: string = attrValue[prevAttr];
                     // Cache links
                     if (!cache[attrLink]) {
-                        let link: string[] = attrLink.split('.');
+                        const link: string[] = attrLink.split(".");
                         if (link.length === 2) {
                             cache[attrLink] = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).exec();
                         }
@@ -409,7 +428,7 @@ async function getEntryAttribute(attribute: string, entry: IEntrySchema, cache: 
                         return ""; // link not found
                     }
                     // queue remaining attributes
-                    attrPath.push(jump.slice(1).join('->'));
+                    attrPath.push(jump.slice(1).join("->"));
                 }
                 else {
 

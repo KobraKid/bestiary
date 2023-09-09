@@ -2,23 +2,23 @@ import mongoose, { Document, Schema } from "mongoose";
 import { ICollectionMetadata } from "./Collection";
 
 export enum ISO639Code {
-  Chinese = 'zh',
-  English = 'en',
-  Japanese = 'ja',
-  Korean = 'ko',
+  Chinese = "zh",
+  English = "en",
+  Japanese = "ja",
+  Korean = "ko",
 }
 
 export function getLangDisplayName(lang: ISO639Code) {
-  switch (lang) {
-    case ISO639Code.Chinese:
-      return "Chinese";
-    case ISO639Code.English:
-      return "English";
-    case ISO639Code.Japanese:
-      return "Japanese";
-    case ISO639Code.Korean:
-      return "Korean";
-  }
+    switch (lang) {
+        case ISO639Code.Chinese:
+            return "Chinese";
+        case ISO639Code.English:
+            return "English";
+        case ISO639Code.Japanese:
+            return "Japanese";
+        case ISO639Code.Korean:
+            return "Korean";
+    }
 }
 
 /**
@@ -54,24 +54,25 @@ export interface IPackageMetadata {
 export interface IPackageSchema extends IPackageMetadata, Document { }
 
 const PkgSchema = new Schema<IPackageSchema>({
-  name: { type: String, required: true },
-  ns: { type: String, required: true },
-  path: { type: String, required: false },
-  icon: { type: String, required: true },
-  collections: [{
-    ns: { type: String, required: true },
     name: { type: String, required: true },
-    groupings: {
-      type: [{
+    ns: { type: String, required: true },
+    path: { type: String, required: false },
+    icon: { type: String, required: true },
+    collections: [{
+        ns: { type: String, required: true },
         name: { type: String, required: true },
-        attribute: { type: String, required: true }
-      }],
-      required: false
-    }
-  }],
-  langs: { type: [String], required: true }
-}, { collection: 'packages' });
+        groupings: {
+            type: [{
+                name: { type: String, required: true },
+                attribute: { type: String, required: true }
+            }],
+            required: false
+        }
+    }],
+    langs: { type: [String], required: true }
+}, { collection: "packages" });
 
-PkgSchema.plugin(require('mongoose-lean-id'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+PkgSchema.plugin(require("mongoose-lean-id"));
 
-export default mongoose.model<IPackageSchema>('PackageMetadata', PkgSchema);
+export default mongoose.model<IPackageSchema>("PackageMetadata", PkgSchema);

@@ -1,8 +1,9 @@
-import { useCallback, useReducer, useState } from 'react';
-import { IPackageConfig } from './model/Config';
-import { IEntryMetadata } from './model/Entry';
-import { IPackageMetadata, IPackageSchema, ISO639Code } from './model/Package';
-import { ICollectionMetadata } from './model/Collection';
+/* eslint-disable no-case-declarations */
+import { useCallback, useReducer, useState } from "react";
+import { IPackageConfig } from "./model/Config";
+import { IEntryMetadata } from "./model/Entry";
+import { IPackageMetadata, IPackageSchema, ISO639Code } from "./model/Package";
+import { ICollectionMetadata } from "./model/Collection";
 
 interface BestiaryData {
     pkg: IPackageMetadata,
@@ -71,7 +72,7 @@ export function useBestiaryViewModel(): BestiaryData {
             case ViewStackframeActionType.RESET:
                 const resetCollection: ICollectionMetadata = action.targetView?.collection ?? { name: "", ns: "", entries: [], groupings: [] };
                 let resetEntry: IEntryMetadata | null = null;
-                window.log.write('• navigation reset');
+                window.log.write("• navigation reset");
 
                 if (isMapView(resetCollection) && resetCollection.entries.length > 0) {
                     setDisplayMode(DISPLAY_MODE.map);
@@ -81,8 +82,10 @@ export function useBestiaryViewModel(): BestiaryData {
                     resetEntry = action.targetView?.entry || null;
                 }
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 selectCollection(action.targetView?.pkg || null as any, null, resetCollection, lang);
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 return [{ pkg: action.targetView?.pkg || null as any, collection: resetCollection, entry: resetEntry }];
 
             case ViewStackframeActionType.NAVIGATE_FORWARDS:
@@ -172,7 +175,7 @@ export function useBestiaryViewModel(): BestiaryData {
             newCollection.entries = newCollection.entries || [];
             newCollection.entries.push(entry);
             return newCollection;
-        })
+        });
     }, []);
 
     const selectEntry = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, entry: IEntryMetadata | null, newCollection: ICollectionMetadata | null, newEntry: IEntryMetadata, lang: ISO639Code) => {
@@ -188,8 +191,9 @@ export function useBestiaryViewModel(): BestiaryData {
         });
     }, []);
 
-    const updatePkgConfig = useCallback((pkg: any) => window.config.loadPkgConfig(pkg).then(setPkgConfig), []);
+    const updatePkgConfig = useCallback((pkg: unknown) => window.config.loadPkgConfig(pkg).then(setPkgConfig), []);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const collectEntry = useCallback((entryId: string, collectionConfigId: number, currentPkg: any, currentCollection: any, currentConfig: IPackageConfig) => {
         // Clone current config
         const newPkgConfig: IPackageConfig = JSON.parse(JSON.stringify(currentConfig));
@@ -229,7 +233,7 @@ export function useBestiaryViewModel(): BestiaryData {
         displayMode,
         canNavigateBack: (views.length > 1),
         navigateBack
-    }
+    };
 }
 
 function isMapView(_collection: ICollectionMetadata): boolean {

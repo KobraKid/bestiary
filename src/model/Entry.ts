@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
 /**
  * Represents an entry in a collection
@@ -26,15 +26,16 @@ export interface IEntryMetadata {
   style?: string
 }
 
-export interface IEntrySchema extends Pick<IEntryMetadata, 'packageId' | 'collectionId' | 'bid'>, Document { }
+export interface IEntrySchema extends Pick<IEntryMetadata, "packageId" | "collectionId" | "bid">, Document { }
 
 const EntrySchema = new Schema<IEntrySchema>({
-  packageId: { type: String, required: true, ref: 'Package' },
-  collectionId: { type: String, required: true },
-  bid: { type: String, required: true }
-  /* ...attributes: any */
-}, { collection: 'entries', strict: false });
+    packageId: { type: String, required: true, ref: "Package" },
+    collectionId: { type: String, required: true },
+    bid: { type: String, required: true }
+    /* ...attributes: any */
+}, { collection: "entries", strict: false });
 
-EntrySchema.plugin(require('mongoose-lean-id'));
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+EntrySchema.plugin(require("mongoose-lean-id"));
 
-export default mongoose.model<IEntrySchema>('Entry', EntrySchema);
+export default mongoose.model<IEntrySchema>("Entry", EntrySchema);

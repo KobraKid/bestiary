@@ -27,6 +27,6 @@ const ResourceSchema = new Schema<IResourceSchema>({
     resId: { type: String, required: true },
     packageId: { type: String, required: true },
     values: { type: Object, required: true }
-}, { collection: 'resources' });
+}, { collection: "resources" });
 
-export default mongoose.model<IResourceSchema>('Resource', ResourceSchema);
+export default mongoose.model<IResourceSchema>("Resource", ResourceSchema);
