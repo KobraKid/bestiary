@@ -9,6 +9,7 @@ import Entry, { IEntryMetadata, IEntrySchema } from "./model/Entry";
 import Resource from "./model/Resource";
 import { IpcMainInvokeEvent } from "electron";
 import { isDev, paths } from "./electron";
+import { buildLayout } from "./layout_builder";
 
 const dbUrl = "mongodb://127.0.0.1:27017/bestiary";
 
@@ -107,7 +108,7 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
 async function getCollectionLayout(pkg: IPackageSchema, collectionNamespace: string): Promise<string> {
     let collectionLayoutTemplate = "";
     try {
-        collectionLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, "layout", "preview", `${collectionNamespace}.html`), { encoding: "utf-8" }));
+        collectionLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, "layout", "preview", `${collectionNamespace}.html`), { encoding: "utf-8" });
     }
     catch (err) {
         console.log((err as Error).message);
@@ -165,12 +166,12 @@ export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetad
 async function getEntryLayout(pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
     let entryLayoutTemplate = "";
     try {
-        entryLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, "layout", "view", `${collectionNamespace}.html`), { encoding: "utf-8" }));
+        entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, "layout", "view", `${collectionNamespace}.html`), { encoding: "utf-8" });
     }
     catch (err) {
         console.log((err as Error).message);
     }
-    return await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
+    return await buildLayout(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, {}, false); // await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
 }
 
 /**
@@ -198,15 +199,15 @@ function getEntryStyle(pkg: IPackageSchema, collectionNamespace: string): string
  * @param lang The language to display in
  * @returns An HTML string populated with attributes from the linked entry
  */
-async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code): Promise<string> {
+export async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string): Promise<string> {
     let linkLayoutTemplate = "";
     try {
-        linkLayoutTemplate = removeSpaceBetweenTags(await readFile(path.join(paths.data, pkg.ns, "layout", "link", `${collectionNamespace}.html`), { encoding: "utf-8" }));
+        linkLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, "layout", "link", `${collectionNamespace}.html`), { encoding: "utf-8" });
     }
     catch (err) {
         linkLayoutTemplate = await getCollectionLayout(pkg, collectionNamespace);
     }
-    return await populateEntryAttributes(linkLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
+    return linkLayoutTemplate;
 }
 
 /**
@@ -215,7 +216,7 @@ async function getLinkLayout(pkg: IPackageSchema, collectionNamespace: string, e
  * @param collectionNamespace The linked entry's collection namespace
  * @returns A <style></style> element
  */
-function getLinkStyle(pkg: IPackageSchema, collectionNamespace: string): string {
+export function getLinkStyle(pkg: IPackageSchema, collectionNamespace: string): string {
     let linkStyle = "";
     try {
         linkStyle = `<style>${sass.compile(path.join(paths.data, pkg.ns, "style", "link", `${collectionNamespace}.scss`)).css}</style>`;
@@ -329,9 +330,9 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
                                 const linkCollection = link[0]!;
                                 const linkEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: linkCollection, bid: link[1] }).exec();
                                 if (linkEntry) {
-                                    const linkLayout = await getLinkLayout(pkg, linkCollection, linkEntry, lang);
+                                    const linkLayout = await getLinkLayout(pkg, linkCollection);
                                     const linkStyle = getLinkStyle(pkg, linkCollection);
-                                    entryLayout = entryLayout.replace(attr[0], linkStyle + linkLayout);
+                                    entryLayout = entryLayout.replace(attr[0], linkLayout + linkStyle);
                                 }
                                 else {
                                     entryLayout = entryLayout.replace(attr[0], attributeError("Link not found", link.toString()));
@@ -383,9 +384,9 @@ async function populateEntryAttributes(layoutTemplate: string, pkg: IPackageSche
     if (debug) {
         console.log(chalk.gray(`Loading ${collectionNamespace}.${entry.bid}
     v
-    |- Computing ifs took ${chalk.red(ifTime - startTime)}ms
-    |- Computing repeats took ${chalk.green(repeatTime - ifTime)}ms
-    |- Computing attributes took ${chalk.blue(performance.now() - repeatTime)}ms
+    |- Computing ifs took        ${chalk.red((ifTime - startTime).toFixed(2))} ms
+    |- Computing repeats took    ${chalk.green((repeatTime - ifTime).toFixed(2))} ms
+    |- Computing attributes took ${chalk.blue((performance.now() - repeatTime).toFixed(2))} ms
     |- ${chalk.white(Object.keys(linkCache).length)} objects in cache
     ^`));
     }

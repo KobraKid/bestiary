@@ -3,4 +3,6 @@
 
 .details {
   background-color: colors.$dark;
+  overflow: auto;
+  grid-row: collection-grid / span 2;
 }

@@ -17,10 +17,10 @@ import "./styles/importer.scss";
  * Represents a view frame for backwards navigation
  */
 export interface ViewStackframe {
-  /** The view's collection */
-  collection: ICollectionMetadata,
-  /** The view's entry - null or undefined if the previous frame was in collection mode */
-  entry?: IEntryMetadata,
+    /** The view's collection */
+    collection: ICollectionMetadata,
+    /** The view's entry - null or undefined if the previous frame was in collection mode */
+    entry?: IEntryMetadata,
 }
 
 /**
@@ -52,15 +52,15 @@ const App: React.FC = () => {
                         setExpanded={setPkgMenuExpanded}
                         onPackageClicked={selectPkg} />
                     {pkg &&
-            <>
-                <CollectionMenu
-                    collections={pkg.collections}
-                    pkgMenuExpanded={pkgMenuExpanded}
-                    canNavigateBack={canNavigateBack}
-                    onBackArrowClicked={navigateBack}
-                    onCollectionClicked={selectCollection} />
-                <Page collection={collection} entry={entry} selectEntry={selectEntry} displayMode={displayMode} />
-            </>
+                        <>
+                            <CollectionMenu
+                                collections={pkg.collections}
+                                pkgMenuExpanded={pkgMenuExpanded}
+                                canNavigateBack={canNavigateBack}
+                                onBackArrowClicked={navigateBack}
+                                onCollectionClicked={selectCollection} />
+                            <Page collection={collection} entry={entry} selectEntry={selectEntry} displayMode={displayMode} />
+                        </>
                     }
                 </PackageConfigContext.Provider>
             </PackageContext.Provider>
@@ -69,10 +69,10 @@ const App: React.FC = () => {
 };
 
 interface IPageProps {
-  collection: ICollectionMetadata,
-  entry: IEntryMetadata | null,
-  selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void,
-  displayMode: DISPLAY_MODE
+    collection: ICollectionMetadata,
+    entry: IEntryMetadata | null,
+    selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void,
+    displayMode: DISPLAY_MODE
 }
 
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
@@ -112,18 +112,18 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
                 <>
                     <div className='collection-grid'>
                         {((collection?.groupings?.length ?? -1) > 0) &&
-              <div className='grouping-selection'>
-                  <select name='groupings' value={grouping} onChange={onGroup}>
-                      <option value="">None</option>
-                      {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
-                  </select>
-              </div>
+                            <div className='grouping-selection'>
+                                <select name='groupings' value={grouping} onChange={onGroup}>
+                                    <option value="">None</option>
+                                    {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
+                                </select>
+                            </div>
                         }
                         <br />
-                        {collection.style && convertHtmlToReact(collection.style)}
                         {collection.entries?.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry =>
                             <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection, entry)} />
                         )}
+                        {collection.style && convertHtmlToReact(collection.style)}
                     </div>
                     <div className='collection-page-select'>
                         <button onClick={prevPage}>◀</button>
@@ -135,8 +135,8 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
         case DISPLAY_MODE.entry:
             return (
                 <div className='details'>
-                    {entry?.style && convertHtmlToReact(entry.style)}
                     <Entry entry={entry} onClick={() => { }} />
+                    {entry?.style && convertHtmlToReact(entry.style)}
                 </div>
             );
         default:
@@ -145,10 +145,10 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
 };
 
 enum ImportState {
-  NOT_IMPORTING,
-  IMPORTING,
-  IMPORT_COMPLETE,
-  IMPORT_FAILED
+    NOT_IMPORTING,
+    IMPORTING,
+    IMPORT_COMPLETE,
+    IMPORT_FAILED
 }
 
 const ImportView: React.FC = () => {
@@ -182,30 +182,30 @@ const ImportView: React.FC = () => {
     return (
         <div className='import-mask'>
             {importState === ImportState.IMPORTING &&
-        <>
-            <div className='import-loading' />
-            <div className='import-message'>{importMessage}</div>
-            <div className='import-percent'>
-                <div className='import-percent-label'>
-                    <div>{`${Math.trunc(importPctComplete * 10000) / 100}%`}</div>
-                </div>
-                <div className='import-percent-inner' style={{ width: `${importPctComplete * 100}%` }} />
-            </div>
-        </>
+                <>
+                    <div className='import-loading' />
+                    <div className='import-message'>{importMessage}</div>
+                    <div className='import-percent'>
+                        <div className='import-percent-label'>
+                            <div>{`${Math.trunc(importPctComplete * 10000) / 100}%`}</div>
+                        </div>
+                        <div className='import-percent-inner' style={{ width: `${importPctComplete * 100}%` }} />
+                    </div>
+                </>
             }
             {importState === ImportState.IMPORT_COMPLETE &&
-        <div className='import-loading-complete'>
-            <svg height='150' width='200'>
-                <path d='M180 0 L200 20 L70 150 L0 80 L20 60 L70 110 Z' stroke='#00CC00' fill='#00CC00' />
-            </svg>
-        </div>
+                <div className='import-loading-complete'>
+                    <svg height='150' width='200'>
+                        <path d='M180 0 L200 20 L70 150 L0 80 L20 60 L70 110 Z' stroke='#00CC00' fill='#00CC00' />
+                    </svg>
+                </div>
             }
             {importState === ImportState.IMPORT_FAILED &&
-        <div className='import-loading-failed'>
-            <svg height='200' width='200'>
-                <path d='M0 20 L20 0 L100 80 L180 0 L200 20 L120 100 L200 180 L180 200 L100 120 L20 200 L0 180 L80 100 Z' stroke='#CC0000' fill='#CC0000' />
-            </svg>
-        </div>
+                <div className='import-loading-failed'>
+                    <svg height='200' width='200'>
+                        <path d='M0 20 L20 0 L100 80 L180 0 L200 20 L120 100 L200 180 L180 200 L100 120 L20 200 L0 180 L80 100 Z' stroke='#CC0000' fill='#CC0000' />
+                    </svg>
+                </div>
             }
         </div>
     );
