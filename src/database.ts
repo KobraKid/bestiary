@@ -62,6 +62,7 @@ export function getPackageList(): Promise<IPackageSchema[]> {
     return Package.find({}).transform(pkgs => {
         pkgs.forEach(pkg => {
             pkg.path = path.join(paths.data, pkg.ns);
+            pkg.collections = pkg.collections.filter(c => !c.hidden);
         });
         return pkgs;
     }).lean().exec();

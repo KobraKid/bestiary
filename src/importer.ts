@@ -13,7 +13,8 @@ export async function onImport(window: BrowserWindow, files: Electron.OpenDialog
     try {
         for (const filePath of files.filePaths) {
             const pkgJson = JSON.parse(readFileSync(filePath, { encoding: "utf-8" }));
-            await importJson(pkgJson, (update: string, pctCompletion: number) => window.webContents.send("importer:import-update", update, pctCompletion));
+            await importJson(pkgJson, (update: string, pctCompletion: number, totalPctCompletion: number) =>
+                window.webContents.send("importer:import-update", update, pctCompletion, totalPctCompletion));
         }
         window.webContents.send("importer:import-complete");
     }
@@ -23,7 +24,9 @@ export async function onImport(window: BrowserWindow, files: Electron.OpenDialog
     }
 }
 
-async function importJson(pkgJson: { metadata: IPackageMetadata, collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[], resources: IResource[] }, updateClient: (update: string, pctCompletion: number) => void) {
+async function importJson(
+    pkgJson: { metadata: IPackageMetadata, collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[], resources: IResource[] },
+    updateClient: (update: string, pctCompletion: number, totalPctCompletion: number) => void) {
     const metadata = pkgJson.metadata;
     const collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[] = pkgJson.collections;
     const resources: IResource[] = pkgJson.resources;
@@ -31,42 +34,71 @@ async function importJson(pkgJson: { metadata: IPackageMetadata, collections: (I
     const images: { url: string, collection: string, name: string }[] = [];
     const imageCount = Math.max(images.length, 1);
 
-    updateClient(`Importing package <${metadata.name}>`, 0);
+    updateClient(`Importing package <${metadata.name}>`, 0, 0);
+    let currentCompletion = 1;
+    let totalCompletion = collections.length + 3; // Package + Resources + Images
+    updateClient(`Importing package`, 0, currentCompletion / totalCompletion);
     const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
 
     for (const collection of collections) {
         const collectionId = collection.ns;
         const collectionEntries = collection.entries;
         const collectionImages = collection.images;
-        const entryCount = Math.max(collectionEntries.length, 1);
-        let currentEntry = 0;
+        // const entryCount = Math.max(collectionEntries.length, 1);
+        // let currentEntry = 0;
+        // currentCompletion++;
 
-        for (const entry of collectionEntries) {
-            if (entry.bid === null || entry.bid === undefined) { continue; }
-            updateClient(`Importing entry <${entry.bid}> from collection <${collectionId}>`, (++currentEntry) / entryCount);
-            await Entry.findOneAndUpdate({ packageId: pkg.ns, collectionId: collectionId, bid: entry.bid }, {
-                ...entry,
-                packageId: pkg.ns,
-                collectionId: collectionId
-            }, { upsert: true, new: true });
-        }
+        // for (const entry of collectionEntries) {
+        //     if (entry.bid === null || entry.bid === undefined) { continue; }
+        //     updateClient(`Importing entry <${entry.bid}> from collection <${collectionId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
+        //     await Entry.findOneAndUpdate({ packageId: pkg.ns, collectionId: collectionId, bid: entry.bid }, {
+        //         ...entry,
+        //         packageId: pkg.ns,
+        //         collectionId: collectionId
+        //     }, { upsert: true, new: true });
+        // }
+        updateClient(`Importing collection <${collectionId}>`, 0, ++currentCompletion / totalCompletion);
+        await Entry.bulkWrite(collectionEntries.map(entry => {
+            return {
+                updateOne: {
+                    filter: { packageId: pkg.ns, collectionId: collectionId, bid: entry.bid },
+                    update: { ...entry, packageId: pkg.ns, collectionId: collectionId },
+                    upsert: true,
+                    new: true
+                }
+            }
+        }));
 
         for (const img of collectionImages) {
             images.push({ url: img.url, collection: collectionId, name: img.name });
         }
     }
 
-    let currentResource = 0;
-    for (const resource of resources) {
-        if (resource.resId === null || resource.resId === undefined) { continue; }
-        updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount);
-        await Resource.findOneAndUpdate({ packageId: pkg.ns, resId: resource.resId }, {
-            ...resource,
-            packageId: pkg.ns
-        }, { upsert: true, new: true });
-    }
+    // let currentResource = 0;
+    // currentCompletion++;
+    // for (const resource of resources) {
+    //     if (resource.resId === null || resource.resId === undefined) { continue; }
+    //     updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
+    //     await Resource.findOneAndUpdate({ packageId: pkg.ns, resId: resource.resId }, {
+    //         ...resource,
+    //         packageId: pkg.ns
+    //     }, { upsert: true, new: true });
+    // }
+    /* ~26 minutes */
+    updateClient("Importing resources", 0, ++currentCompletion / totalCompletion);
+    await Resource.bulkWrite(resources.map(resource => {
+        return {
+            updateOne: {
+                filter: { packageId: pkg.ns, resId: resource.resId },
+                update: { ...resource, packageId: pkg.ns },
+                upsert: true,
+                new: true
+            }
+        };
+    }));
 
     let currentImage = 0;
+    currentCompletion++;
     for (const img of images) {
         try {
             await mkdir(path.join(paths.data, pkg.ns, "images", img.collection), { recursive: true });
@@ -76,11 +108,11 @@ async function importJson(pkgJson: { metadata: IPackageMetadata, collections: (I
             // check if the file exists
             try {
                 await fs.stat(path.join(paths.data, pkg.ns, "images", img.collection, img.name));
-                updateClient(`Image <${img.name}> already imported`, (++currentImage) / imageCount);
+                updateClient(`Image <${img.name}> already imported`, (++currentImage) / imageCount, currentCompletion / totalCompletion);
                 // file exists, no need to re-download
             }
             catch (err) {
-                updateClient(`Importing image <${img.name}>`, (++currentImage) / imageCount);
+                updateClient(`Importing image <${img.name}>`, (++currentImage) / imageCount, currentCompletion / totalCompletion);
                 // fetch the file
                 try {
                     const imgResponse = await fetch(encodeURI(img.url));

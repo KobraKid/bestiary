@@ -10,6 +10,10 @@ export interface ICollectionMetadata {
      */
     ns: string,
     /**
+     * Collection is hidden
+     */
+    hidden?: boolean,
+    /**
      * Entries
      */
     entries: IEntryMetadata[],

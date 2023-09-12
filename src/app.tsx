@@ -153,6 +153,7 @@ enum ImportState {
 
 const ImportView: React.FC = () => {
     const [importState, setImportState] = useState<ImportState>(ImportState.NOT_IMPORTING);
+    const [importTotalComplete, setImportTotalComplete] = useState<number>(0);
     const [importPctComplete, setImportPctComplete] = useState<number>(0);
     const [importMessage, setImportMessage] = useState<string>("");
 
@@ -161,8 +162,9 @@ const ImportView: React.FC = () => {
             setImportState(ImportState.IMPORTING);
         });
 
-        window.importer.importUpdate((update: string, pctComplete: number) => {
+        window.importer.importUpdate((update: string, pctComplete: number, totalPctCompletion: number) => {
             setImportMessage(update);
+            setImportTotalComplete(totalPctCompletion);
             setImportPctComplete(pctComplete);
         });
 
@@ -187,9 +189,15 @@ const ImportView: React.FC = () => {
                     <div className='import-message'>{importMessage}</div>
                     <div className='import-percent'>
                         <div className='import-percent-label'>
-                            <div>{`${Math.trunc(importPctComplete * 10000) / 100}%`}</div>
+                            <div>{`${Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importPctComplete * 100)}%`}</div>
                         </div>
                         <div className='import-percent-inner' style={{ width: `${importPctComplete * 100}%` }} />
+                    </div>
+                    <div className='import-percent'>
+                        <div className='import-percent-label'>
+                            <div>{`${Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importTotalComplete * 100)}%`}</div>
+                        </div>
+                        <div className='import-percent-inner' style={{ width: `${importTotalComplete * 100}%` }} />
                     </div>
                 </>
             }

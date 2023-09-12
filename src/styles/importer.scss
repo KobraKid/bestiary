@@ -56,7 +56,6 @@
 
 .import-message {
     font-size: 2em;
-    color: green;
     align-self: flex-start;
     width: 90%;
     overflow: hidden;
@@ -73,9 +72,11 @@
     align-items: flex-start;
 
     .import-percent-label {
-        align-self: center;
+        align-self: flex-end;
+        margin-right: 8px;
         height: 0px;
         z-index: 20;
+        font-family: monospace;
 
         div {
             height: 40px;

@@ -10,18 +10,18 @@ import leftArrow from "./assets/icons/left.png";
  * Props for the package menu
  */
 interface IPackageMenuProps {
-  /**
-   * Whether the menu is expanded
-   */
-  expanded: boolean,
-  /**
-   * Sets whether the menu is expanded
-   */
-  setExpanded: (expanded: boolean) => void,
-  /**
-   * The callback handler for when a package is clicked
-   */
-  onPackageClicked: (pkg: IPackageMetadata) => void,
+    /**
+     * Whether the menu is expanded
+     */
+    expanded: boolean,
+    /**
+     * Sets whether the menu is expanded
+     */
+    setExpanded: (expanded: boolean) => void,
+    /**
+     * The callback handler for when a package is clicked
+     */
+    onPackageClicked: (pkg: IPackageMetadata) => void,
 }
 
 /**
@@ -64,22 +64,22 @@ export const PackageMenu = (props: IPackageMenuProps) => {
  * Props for the package menu item
  */
 interface IPackageMenuItemProps {
-  /**
-   * Package name
-   */
-  name: string,
-  /**
-   * Packagen icon
-   */
-  icon: string,
-  /**
-   * Display the item expanded
-   */
-  expanded: boolean,
-  /**
-   * Callback for when the package is clicked
-   */
-  onPkgClicked: () => void,
+    /**
+     * Package name
+     */
+    name: string,
+    /**
+     * Packagen icon
+     */
+    icon: string,
+    /**
+     * Display the item expanded
+     */
+    expanded: boolean,
+    /**
+     * Callback for when the package is clicked
+     */
+    onPkgClicked: () => void,
 }
 
 /**
@@ -106,11 +106,11 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
  * Props for the collection menu
  */
 interface ICollectionMenuProps {
-  collections: ICollectionMetadata[],
-  onCollectionClicked: (collection: ICollectionMetadata) => void,
-  canNavigateBack: boolean,
-  onBackArrowClicked: () => void,
-  pkgMenuExpanded: boolean,
+    collections: ICollectionMetadata[],
+    onCollectionClicked: (collection: ICollectionMetadata) => void,
+    canNavigateBack: boolean,
+    onBackArrowClicked: () => void,
+    pkgMenuExpanded: boolean,
 }
 
 /**
@@ -124,9 +124,9 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
     return (
         <div className={`collection-menu-${pkgMenuExpanded ? "expanded" : "collapsed"}`}>
             {canNavigateBack &&
-        <div className='collection-menu-button'>
-            <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: "pointer" }} onClick={onBackArrowClicked} />
-        </div>
+                <div className='collection-menu-button'>
+                    <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: "pointer" }} onClick={onBackArrowClicked} />
+                </div>
             }
             {collections.map((collection: ICollectionMetadata) =>
                 <CollectionMenuItem
@@ -143,9 +143,9 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
  * Props for the collection menu item
  */
 interface ICollectionMenuItemProps {
-  name: string,
-  onCollectionClicked: () => void;
-  onCollectionRightClicked: () => void;
+    name: string,
+    onCollectionClicked: () => void;
+    onCollectionRightClicked: () => void;
 }
 
 /**

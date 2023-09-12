@@ -2,10 +2,10 @@ import mongoose, { Document, Schema } from "mongoose";
 import { ICollectionMetadata } from "./Collection";
 
 export enum ISO639Code {
-  Chinese = "zh",
-  English = "en",
-  Japanese = "ja",
-  Korean = "ko",
+    Chinese = "zh",
+    English = "en",
+    Japanese = "ja",
+    Korean = "ko",
 }
 
 export function getLangDisplayName(lang: ISO639Code) {
@@ -25,30 +25,30 @@ export function getLangDisplayName(lang: ISO639Code) {
  * Represents a package's metadata
  */
 export interface IPackageMetadata {
-  /**
-   * Package name
-   */
-  name: string,
-  /** 
-   * Package namespace
-   */
-  ns: string,
-  /**
-   * Package location
-   */
-  path: string,
-  /**
-   * Package icon
-   */
-  icon: string,
-  /**
-   * List of collections contained in this package
-   */
-  collections: ICollectionMetadata[],
-  /**
-   * List of supported languages, as ISO 639-1 codes
-   */
-  langs: ISO639Code[]
+    /**
+     * Package name
+     */
+    name: string,
+    /** 
+     * Package namespace
+     */
+    ns: string,
+    /**
+     * Package location
+     */
+    path: string,
+    /**
+     * Package icon
+     */
+    icon: string,
+    /**
+     * List of collections contained in this package
+     */
+    collections: ICollectionMetadata[],
+    /**
+     * List of supported languages, as ISO 639-1 codes
+     */
+    langs: ISO639Code[]
 }
 
 export interface IPackageSchema extends IPackageMetadata, Document { }
@@ -61,6 +61,7 @@ const PkgSchema = new Schema<IPackageSchema>({
     collections: [{
         ns: { type: String, required: true },
         name: { type: String, required: true },
+        hidden: { type: Boolean, required: false },
         groupings: {
             type: [{
                 name: { type: String, required: true },

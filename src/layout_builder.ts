@@ -11,7 +11,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
     let depth = 0;
     const param1 = "[A-z0-9/.>$()*/+-]+";
     const param2 = "{{eval\\|[A-z0-9\\[\\].>$()*/+-]+}}";
-    const commandRegex = new RegExp(`^\\s?(\\w+)(?:\\|(${param1}))?(?:\\|(${param2}|${param1}))?`);
+    const commandRegex = new RegExp(`^\\s?(\\w+)(?:\\|(${param1}))?(?:\\|(${param2}|${param1}))?\\s*`);
     let layout = "";
 
     let forLoopStart = 0;
@@ -93,8 +93,6 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                                 }
                                 const linkedEntry = cache[linkParam];
                                 if (linkedEntry) {
-                                    console.log(`found linked entry ${linkedEntry.bid} in collection ${link[0]}`);
-                                    console.log(await getLinkLayout(pkg, link[0]!));
                                     const linkedLayout = await buildLayout(
                                         await getLinkLayout(pkg, link[0]!),
                                         pkg, link[0]!, linkedEntry, lang, cache, true);
@@ -210,7 +208,7 @@ async function getEntryAttribute(attribute: string, entry: IEntrySchema, cache: 
                     const prevAttr: string = jump[0] ?? "";
                     const attrLink: string = attrValue[prevAttr];
                     // Cache links
-                    if (!cache[attrLink]) {
+                    if (attrLink && !cache[attrLink]) {
                         const link: string[] = attrLink.split(".");
                         if (link.length === 2) {
                             cache[attrLink] = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).lean().exec();
