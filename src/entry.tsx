@@ -10,6 +10,7 @@ export interface IEntryProps {
 export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     const { entry, onClick } = props;
     if (!entry) { return null; }
+
     return (
         <div onClick={onClick}>
             {convertHtmlToReact(entry.layout)}

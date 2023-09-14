@@ -80,7 +80,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                                     console.log(chalk.red.bgWhiteBright(`Couldn't find resource @${attributePath} (${getParam<string>(command, 1)}) in lang ${lang} on ${collectionNamespace} ${entry.bid}`));
                                 }
                             }
-                            layout += resource?.values[lang] ?? "";
+                            layout += escapeResource(resource?.values[lang] ?? "");
                         }
                         break;
                     case "preview":
@@ -236,4 +236,13 @@ async function getEntryAttribute(attribute: string, entry: IEntrySchema, cache: 
         }
     }
     return attrValue ?? "";
+}
+
+function escapeResource(resource: string | undefined): string | undefined {
+    if (!resource) return undefined;
+    return resource.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
 }

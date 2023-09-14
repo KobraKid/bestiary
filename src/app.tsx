@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
+import useScript from "./hooks/useScript";
 import { CollectionMenu, PackageMenu } from "./menu";
 import { DISPLAY_MODE, useBestiaryViewModel } from "./BestiaryViewModel";
 import { PackageConfigContext, PackageContext } from "./context";
@@ -105,6 +106,8 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
             setCurrentPage(1);
         }
     }, [collection]);
+
+    useScript(entry?.script);
 
     switch (displayMode) {
         case DISPLAY_MODE.collection:

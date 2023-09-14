@@ -152,8 +152,9 @@ export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetad
 
     const entryLayout = await getEntryLayout(pkg, collection.ns, loadedEntry, lang);
     const entryStyle = getEntryStyle(pkg, collection.ns);
+    const entryScript = await readFile(path.join(paths.data, pkg.ns, "scripts", `${collection.ns}.js`), { encoding: "utf-8" });
 
-    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle };
+    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
 }
 
 /**

@@ -23,7 +23,11 @@ export interface IEntryMetadata {
     /**
      * Style string
      */
-    style?: string
+    style?: string,
+    /**
+     * Script string
+     */
+    script?: string
 }
 
 export interface IEntrySchema extends Pick<IEntryMetadata, "packageId" | "collectionId" | "bid">, Document { }
