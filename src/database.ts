@@ -172,7 +172,7 @@ async function getEntryLayout(pkg: IPackageSchema, collectionNamespace: string, 
     catch (err) {
         console.log((err as Error).message);
     }
-    return await buildLayout(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, {}, false); // await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
+    return await buildLayout(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, {}, true); // await populateEntryAttributes(entryLayoutTemplate, pkg, collectionNamespace, entry, lang, true);
 }
 
 /**

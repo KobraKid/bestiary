@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Types } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 import { ISO639Code } from "./Package";
 
 /**
@@ -28,5 +28,6 @@ const ResourceSchema = new Schema<IResourceSchema>({
     packageId: { type: String, required: true },
     values: { type: Object, required: true }
 }, { collection: "resources" });
+ResourceSchema.index({ packageId: 1, resId: 1 }, { name: "resource_link" });
 
 export default mongoose.model<IResourceSchema>("Resource", ResourceSchema);

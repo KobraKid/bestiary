@@ -174,7 +174,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
     v
     |- Computing took ${chalk.yellow((performance.now() - startTime).toFixed(2))} ms
     |- ${chalk.white(Object.keys(cache).length)} objects in cache
-    |- ${charsParsed} characters parsed, ${layoutTemplate.length - charsParsed} characters skipped
+    |- ${charsParsed} characters parsed, ${layoutTemplate.length - charsParsed} characters skipped (${(1 - (charsParsed / layoutTemplate.length)).toFixed(2)}%)
     ^`));
     }
     return layout;
