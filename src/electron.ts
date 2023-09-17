@@ -45,7 +45,7 @@ function createWindow() {
     win.loadFile("index.html");
 
     if (isDev) {
-        win.webContents.openDevTools({ mode: "detach" });
+        win.webContents.openDevTools({ mode: "undocked" });
     }
 }
 
@@ -115,7 +115,7 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
  */
 ipcMain.handle("pkg:load-pkgs", (): Promise<IPackageSchema[]> => getPackageList());
 
-ipcMain.handle("pkg:load-collection", (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> => getCollection(pkg, collection, lang));
+ipcMain.handle("pkg:load-collection", (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata): Promise<ICollectionMetadata> => getCollection(pkg, collection));
 
 ipcMain.on("pkg:load-collection-entries", (event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> => getCollectionEntries(event, pkg, collection, lang));
 

@@ -59,7 +59,7 @@ interface IViewStackframeDispatchAction {
 
 export function useBestiaryViewModel(): BestiaryData {
     const [pkg, setPkg] = useState<IPackageMetadata>({ name: "", ns: "", path: "", icon: "", collections: [], langs: [] });
-    const [collection, setCollection] = useState<ICollectionMetadata>({ name: "", ns: "", entries: [], groupings: [] });
+    const [collection, setCollection] = useState<ICollectionMetadata>({ name: "", ns: "", entries: [], groupings: [], sortings: [] });
     const [entry, setEntry] = useState<IEntryMetadata | null>(null);
 
     const [displayMode, setDisplayMode] = useState<DISPLAY_MODE>(DISPLAY_MODE.collection);
@@ -70,7 +70,7 @@ export function useBestiaryViewModel(): BestiaryData {
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
         switch (action.type) {
             case ViewStackframeActionType.RESET:
-                const resetCollection: ICollectionMetadata = action.targetView?.collection ?? { name: "", ns: "", entries: [], groupings: [] };
+                const resetCollection: ICollectionMetadata = action.targetView?.collection ?? { name: "", ns: "", entries: [], groupings: [], sortings: [] };
                 let resetEntry: IEntryMetadata | null = null;
                 window.log.write("• navigation reset");
 
@@ -144,7 +144,7 @@ export function useBestiaryViewModel(): BestiaryData {
             type: ViewStackframeActionType.RESET,
             targetView: {
                 pkg: newPkg,
-                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", ns: "", entries: [], groupings: [] },
+                collection: newPkg.collections.length > 0 ? newPkg.collections[0]! : { name: "", ns: "", entries: [], groupings: [], sortings: [] },
                 entry: null
             }
         });
@@ -157,7 +157,7 @@ export function useBestiaryViewModel(): BestiaryData {
             window.pkg.stopLoadingCollectionEntries();
         }
 
-        window.pkg.loadCollection(pkg as IPackageSchema, newCollection, lang).then((collection: ICollectionMetadata) => {
+        window.pkg.loadCollection(pkg as IPackageSchema, newCollection).then((collection: ICollectionMetadata) => {
             setEntry(null);
             setCollection(collection);
             if ((collection?.entries?.length ?? 0) === 0) {

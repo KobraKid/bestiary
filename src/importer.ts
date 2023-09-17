@@ -36,8 +36,8 @@ async function importJson(
 
     updateClient(`Importing package <${metadata.name}>`, 0, 0);
     let currentCompletion = 1;
-    let totalCompletion = collections.length + 3; // Package + Resources + Images
-    updateClient(`Importing package`, 0, currentCompletion / totalCompletion);
+    const totalCompletion = collections.length + 3; // Package + Resources + Images
+    updateClient("Importing package", 0, currentCompletion / totalCompletion);
     const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
 
     for (const collection of collections) {
@@ -66,7 +66,7 @@ async function importJson(
                     upsert: true,
                     new: true
                 }
-            }
+            };
         }));
 
         for (const img of collectionImages) {

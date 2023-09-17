@@ -4,14 +4,17 @@ import Entry, { IEntrySchema } from "./model/Entry";
 import { IPackageSchema, ISO639Code } from "./model/Package";
 import { paths } from "./electron";
 import Resource from "./model/Resource";
-import { getLinkLayout, getLinkStyle } from "./database";
 import Formula from "fparser";
+import { ViewType, getEntryAttribute, getLayout, getStyle } from "./database";
 
-export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code, cache: { [link: string]: IEntrySchema | null }, debug: boolean): Promise<string> {
+export async function buildLayout(layoutTemplate: string | undefined, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code, cache: { [link: string]: IEntrySchema | null }, debug: boolean): Promise<string> {
+    if (layoutTemplate === null || layoutTemplate === undefined) return "";
+
     let depth = 0;
-    const param1 = "[A-z0-9/.>$()*/+-]+";
-    const param2 = "{{eval\\|[A-z0-9\\[\\].>$()*/+-]+}}";
-    const commandRegex = new RegExp(`^\\s?(\\w+)(?:\\|(${param1}))?(?:\\|(${param2}|${param1}))?\\s*`);
+    const param = "[A-z0-9\\[\\].>$()*/+-]+";
+    const evalParam = `{{eval\\|${param}}}`;
+    const attrParam = `{{attribute\\|${param}}}`;
+    const commandRegex = new RegExp(`^\\s?(\\w+)(?:\\|(${param}))?(?:\\|(${evalParam}|${attrParam}|${param}))?\\s*`);
     let layout = "";
 
     let forLoopStart = 0;
@@ -58,7 +61,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                                 image = getParam<string>(command, 1);
                             }
                             else {
-                                image = await getEntryAttribute(getParam<string>(command, 1), entry, cache);
+                                image = await getEntryAttribute(getParam<string>(command, 1), entry, cache) as string;
                             }
                             layout += path.join(paths.data, pkg.ns, "images", image);
                         }
@@ -85,7 +88,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                         break;
                     case "preview":
                         {
-                            const linkParam: string = await getEntryAttribute(getParam<string>(command, 1), entry, cache);
+                            const linkParam = await getEntryAttribute(getParam<string>(command, 1), entry, cache) as string;
                             const link = linkParam.split(".");
                             if (link.length === 2) {
                                 if (!cache[linkParam]) {
@@ -93,11 +96,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                                 }
                                 const linkedEntry = cache[linkParam];
                                 if (linkedEntry) {
-                                    const linkedLayout = await buildLayout(
-                                        await getLinkLayout(pkg, link[0]!),
-                                        pkg, link[0]!, linkedEntry, lang, cache, true);
-                                    const linkedStyle = getLinkStyle(pkg, link[0]!);
-                                    layout += (linkedLayout + linkedStyle);
+                                    layout += await buildLayout(await getLayout(pkg, link[0]!, ViewType.preview), pkg, link[0]!, linkedEntry, lang, cache, true) + getStyle(pkg, link[0]!, ViewType.preview);
                                 }
                             }
                         }
@@ -110,7 +109,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                                 passesCheck = !!ifProp;
                             }
                             else {
-                                if (compare.startsWith("{{eval")) {
+                                if (compare.startsWith("{{eval") || compare.startsWith("{{attribute")) {
                                     passesCheck = ifProp == await buildLayout(compare, pkg, collectionNamespace, entry, lang, cache, false);
                                 }
                                 else {
@@ -130,7 +129,7 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
                                 forLoopReplacement = ""; // replace prop with #
                             }
                             else {
-                                forLoopCount = await getEntryAttribute(getParam<string>(command, 2) + ".length", entry, cache);
+                                forLoopCount = await getEntryAttribute(getParam<string>(command, 2) + ".length", entry, cache) as number;
                                 forLoopReplacement = getParam<string>(command, 2) + "."; // replace prop with attribute.#
                             }
                             forLoopStart = i + command[0].length; // add the full length of the matched command
@@ -182,60 +181,6 @@ export async function buildLayout(layoutTemplate: string, pkg: IPackageSchema, c
 
 function getParam<T>(command: RegExpMatchArray, paramNumber: number): T {
     return command[paramNumber + 1]! as T;
-}
-
-/**
- * Gets an attribute from an entry. Can retrieve top-level and sub properties
- * @param attribute The attribute to retrieve, can be period-delimited
- * @param entry The entry to retrieve attributes from
- * @param cache A cache of linked entries
- * @returns The value of the attribute
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getEntryAttribute(attribute: string, entry: IEntrySchema, cache: { [link: string]: IEntrySchema | null }): Promise<any> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let attrValue: any = entry;
-    if (attribute == null) { return ""; }
-    const attrPath = attribute.split(".").reverse();
-
-    while (attrPath.length > 0 && typeof attrValue === "object") {
-        const attr = attrPath.pop();
-        if (attr) {
-            // We're jumping to a new entry's attributes
-            if (attr.includes("->")) {
-                const jump = attr.split("->",);
-                if (jump.length >= 2) {
-                    const prevAttr: string = jump[0] ?? "";
-                    const attrLink: string = attrValue[prevAttr];
-                    // Cache links
-                    if (attrLink && !cache[attrLink]) {
-                        const link: string[] = attrLink.split(".");
-                        if (link.length === 2) {
-                            cache[attrLink] = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).lean().exec();
-                        }
-                        else {
-                            return ""; // bad link
-                        }
-                    }
-                    attrValue = cache[attrLink];
-                    if (!attrValue) {
-                        return ""; // link not found
-                    }
-                    // queue remaining attributes
-                    attrPath.push(jump.slice(1).join("->"));
-                }
-                else {
-
-                    return ""; // bad jump
-                }
-            }
-            // We're just getting a normal attribute
-            else {
-                attrValue = attrValue[attr];
-            }
-        }
-    }
-    return attrValue ?? "";
 }
 
 function escapeResource(resource: string | undefined): string | undefined {

@@ -17,6 +17,19 @@ export interface IEntryMetadata {
      */
     bid: string,
     /**
+     * The values to use when grouping this entry
+     */
+    groupings?: {
+        name: string,
+        path: string,
+        bucketValue: unknown
+    }[],
+    sortings?: {
+        name: string,
+        path: string,
+        value: unknown
+    }[],
+    /**
      * Layout string
      */
     layout: string,

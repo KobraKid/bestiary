@@ -1,7 +1,5 @@
-import React, { ChangeEvent, useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { convertHtmlToReact } from "@hedgedoc/html-to-react";
-import useScript from "./hooks/useScript";
 import { CollectionMenu, PackageMenu } from "./menu";
 import { DISPLAY_MODE, useBestiaryViewModel } from "./BestiaryViewModel";
 import { PackageConfigContext, PackageContext } from "./context";
@@ -9,10 +7,9 @@ import { ICollectionMetadata } from "./model/Collection";
 import { IEntryMetadata } from "./model/Entry";
 import { Entry } from "./entry";
 import "./styles/app.scss";
-import "./styles/collection.scss";
-import "./styles/details.scss";
 import "./styles/transitions.scss";
 import "./styles/importer.scss";
+import { Collection } from "./collection";
 
 /**
  * Represents a view frame for backwards navigation
@@ -79,69 +76,11 @@ interface IPageProps {
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
     const { collection, entry, selectEntry, displayMode } = props;
 
-    const entriesPerPage = 50;
-
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [totalPages, setTotalPages] = useState<number>(1);
-
-    const [grouping, setGrouping] = useState<string>("");
-    useEffect(() => {
-        setGrouping("");
-    }, [collection.ns]);
-    const onGroup = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-        setGrouping(event.target.value);
-    }, []);
-
-    const prevPage = useCallback(() => setCurrentPage(page => Math.max(page - 1, 1)), []);
-    const nextPage = useCallback((totalPages: number) => setCurrentPage(page => Math.min(page + 1, totalPages)), []);
-
-    useEffect(() => {
-        if (collection?.entries?.length) {
-            const pages = Math.max(Math.ceil(collection.entries.length / entriesPerPage), 1);
-            setTotalPages(pages);
-            setCurrentPage(page => page > pages ? 1 : page);
-        }
-        else {
-            setTotalPages(1);
-            setCurrentPage(1);
-        }
-    }, [collection]);
-
-    useScript(entry?.script);
-
     switch (displayMode) {
         case DISPLAY_MODE.collection:
-            return (
-                <>
-                    <div className='collection-grid'>
-                        {((collection?.groupings?.length ?? -1) > 0) &&
-                            <div className='grouping-selection'>
-                                <select name='groupings' value={grouping} onChange={onGroup}>
-                                    <option value="">None</option>
-                                    {collection.groupings.map(grouping => <option key={grouping.attribute} value={grouping.attribute}>{grouping.name}</option>)}
-                                </select>
-                            </div>
-                        }
-                        <br />
-                        {collection.entries?.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry =>
-                            <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection, entry)} />
-                        )}
-                        {collection.style && convertHtmlToReact(collection.style)}
-                    </div>
-                    <div className='collection-page-select'>
-                        <button onClick={prevPage}>◀</button>
-                        {`Page ${currentPage} of ${totalPages}`}
-                        <button onClick={() => nextPage(totalPages)}>▶</button>
-                    </div>
-                </>
-            );
+            return (collection && collection.ns.length > 0) ? <Collection collection={collection} selectEntry={selectEntry} /> : null;
         case DISPLAY_MODE.entry:
-            return (
-                <div className='details'>
-                    <Entry entry={entry} onClick={() => { }} />
-                    {entry?.style && convertHtmlToReact(entry.style)}
-                </div>
-            );
+            return entry ? <Entry entry={entry} /> : null;
         default:
             return null;
     }
@@ -192,13 +131,13 @@ const ImportView: React.FC = () => {
                     <div className='import-message'>{importMessage}</div>
                     <div className='import-percent'>
                         <div className='import-percent-label'>
-                            <div>{`${Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importPctComplete * 100)}%`}</div>
+                            <div>{`${Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importPctComplete * 100)}%`}</div>
                         </div>
                         <div className='import-percent-inner' style={{ width: `${importPctComplete * 100}%` }} />
                     </div>
                     <div className='import-percent'>
                         <div className='import-percent-label'>
-                            <div>{`${Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importTotalComplete * 100)}%`}</div>
+                            <div>{`${Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importTotalComplete * 100)}%`}</div>
                         </div>
                         <div className='import-percent-inner' style={{ width: `${importTotalComplete * 100}%` }} />
                     </div>

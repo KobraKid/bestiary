@@ -9,8 +9,8 @@ import { IEntryMetadata } from "./model/Entry";
 contextBridge.exposeInMainWorld("pkg", {
     loadPackages: (): Promise<IPackageSchema[]> =>
         ipcRenderer.invoke("pkg:load-pkgs"),
-    loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<ICollectionMetadata> =>
-        ipcRenderer.invoke("pkg:load-collection", pkg, collection, lang),
+    loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata): Promise<ICollectionMetadata> =>
+        ipcRenderer.invoke("pkg:load-collection", pkg, collection),
     loadCollectionEntries: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): void =>
         ipcRenderer.send("pkg:load-collection-entries", pkg, collection, lang),
     onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => {

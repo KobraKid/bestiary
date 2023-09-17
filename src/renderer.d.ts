@@ -5,7 +5,7 @@ import { IEntryMetadata } from "./model/Entry";
 
 export interface IPkgAPI {
   loadPackages: () => Promise<IPackageSchema[]>,
-  loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code) => Promise<ICollectionMetadata>,
+  loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata) => Promise<ICollectionMetadata>,
   loadCollectionEntries: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code) => void,
   onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => void,
   stopLoadingCollectionEntries: () => void,
