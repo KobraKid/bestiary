@@ -1,13 +1,12 @@
-import path from "path";
 import chalk from "chalk";
 import Entry, { IEntrySchema } from "./model/Entry";
-import { IPackageSchema, ISO639Code } from "./model/Package";
+import { IPackageMetadata, ISO639Code } from "./model/Package";
 import { paths } from "./electron";
 import Resource from "./model/Resource";
 import Formula from "fparser";
 import { ViewType, getEntryAttribute, getLayout, getStyle } from "./database";
 
-export async function buildLayout(layoutTemplate: string | undefined, pkg: IPackageSchema, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code, cache: { [link: string]: IEntrySchema | null }, debug: boolean): Promise<string> {
+export async function buildLayout(layoutTemplate: string | undefined, pkg: IPackageMetadata, collectionNamespace: string, entry: IEntrySchema, lang: ISO639Code, cache: { [link: string]: IEntrySchema | null }, debug: boolean): Promise<string> {
     if (layoutTemplate === null || layoutTemplate === undefined) return "";
 
     let depth = 0;
@@ -63,7 +62,7 @@ export async function buildLayout(layoutTemplate: string | undefined, pkg: IPack
                             else {
                                 image = await getEntryAttribute(getParam<string>(command, 1), entry, cache) as string;
                             }
-                            layout += path.join(paths.data, pkg.ns, "images", image);
+                            layout += paths.data.replace(/\\/g, "/") + "/" + pkg.ns + "/" + "images" + "/" + image; // path.join(paths.data, pkg.ns, "images", image);
                         }
                         break;
                     case "resource":
@@ -96,9 +95,17 @@ export async function buildLayout(layoutTemplate: string | undefined, pkg: IPack
                                 }
                                 const linkedEntry = cache[linkParam];
                                 if (linkedEntry) {
-                                    layout += await buildLayout(await getLayout(pkg, link[0]!, ViewType.preview), pkg, link[0]!, linkedEntry, lang, cache, true) + getStyle(pkg, link[0]!, ViewType.preview);
+                                    layout +=
+                                        await buildLayout(await getLayout(pkg, link[0]!, ViewType.preview), pkg, link[0]!, linkedEntry, lang, cache, false)
+                                        + await buildLayout(getStyle(pkg, link[0]!, ViewType.preview), pkg, link[0]!, linkedEntry, lang, cache, false);
                                 }
                             }
+                        }
+                        break;
+                    case "link":
+                        {
+                            const link = await getEntryAttribute(getParam<string>(command, 1), entry, cache) as string;
+                            layout += `data-bestiary-link="${link}"`;
                         }
                         break;
                     case "if":

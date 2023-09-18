@@ -128,7 +128,7 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
                     <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: "pointer" }} onClick={onBackArrowClicked} />
                 </div>
             }
-            {collections.map((collection: ICollectionMetadata) =>
+            {collections.filter(collection => !collection.hidden).map(collection =>
                 <CollectionMenuItem
                     key={collection.ns}
                     name={collection.name}

@@ -2,15 +2,22 @@ import { useEffect } from "react";
 
 const useScript = (contents?: string) => {
     useEffect(() => {
-        if (contents) {
-            const script = document.createElement("script");
-            script.text = contents ?? "";
-            document.body.appendChild(script);
-            return () => {
-                document.body.removeChild(script);
-            };
+        const script = document.createElement("script");
+        script.text = contents + `
+        {
+            // Build links
+            document.querySelectorAll("[data-bestiary-link]").forEach(link => {
+                link.addEventListener('click', () => {
+                    const event = new CustomEvent("link", { detail: link.dataset.bestiaryLink });
+                    window.dispatchEvent(event);
+                });
+            });
         }
-        return () => { };
+        `;
+        document.body.appendChild(script);
+        return () => {
+            document.body.removeChild(script);
+        };
     }, [contents]);
 };
 

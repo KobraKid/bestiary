@@ -1,37 +1,27 @@
-import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import React, { ChangeEvent, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ICollectionMetadata, IGrouping, ISorting } from "./model/Collection";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
+import { PackageContext } from "./context";
 import { Entry } from "./entry";
 import { IEntryMetadata } from "./model/Entry";
 import "./styles/collection.scss";
 
 export interface ICollectionProps {
     collection: ICollectionMetadata;
-    selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void,
 }
 
-export const Collection: React.FC<ICollectionProps> = (props: ICollectionProps) => {
-    const { collection, selectEntry } = props;
+export interface IPagingProps {
+    currentPage: number,
+    totalPages: number,
+    entriesPerPage: number,
+    prevPage: () => void,
+    nextPage: () => void
+}
 
-    const entriesPerPage = 50;
+export const Collection: React.FC<ICollectionProps & IPagingProps> = (props: ICollectionProps & IPagingProps) => {
+    const { collection, currentPage, totalPages, entriesPerPage, prevPage, nextPage } = props;
 
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [totalPages, setTotalPages] = useState<number>(1);
-
-    const prevPage = useCallback(() => setCurrentPage(page => Math.max(page - 1, 1)), []);
-    const nextPage = useCallback((totalPages: number) => setCurrentPage(page => Math.min(page + 1, totalPages)), []);
-
-    useEffect(() => {
-        if (collection.entries?.length) {
-            const pages = Math.max(Math.ceil(collection.entries.length / entriesPerPage), 1);
-            setTotalPages(pages);
-            setCurrentPage(page => page > pages ? 1 : page);
-        }
-        else {
-            setTotalPages(1);
-            setCurrentPage(1);
-        }
-    }, [collection]);
+    const { selectEntry } = useContext(PackageContext);
 
     const [grouping, setGrouping] = useState<IGrouping | undefined>();
     const buckets: { name: string, value?: string, min?: number, max?: number }[] | undefined = useMemo(
@@ -85,14 +75,14 @@ export const Collection: React.FC<ICollectionProps> = (props: ICollectionProps) 
 
     useEffect(() => {
         setGrouping(undefined);
-        setSorting(collection.sortings.length > 0 ? collection.sortings[0] : undefined);
+        setSorting((collection.sortings?.length ?? -1) > 0 ? collection.sortings[0] : undefined);
         setDescending(false);
     }, [collection]);
 
     return (
         <>
             <div className="collection-grid">
-                {(collection.groupings.length) &&
+                {(collection.groupings?.length) &&
                     <div className="grouping-selection">
                         Group by:
                         <select name="groupings" value={grouping?.path} onChange={onGroup}>
@@ -101,7 +91,7 @@ export const Collection: React.FC<ICollectionProps> = (props: ICollectionProps) 
                         </select>
                     </div>
                 }
-                {(collection.sortings.length) &&
+                {(collection.sortings?.length) &&
                     <div className="grouping-selection">
                         Sort by:
                         <select name="sortings" value={sorting?.path} onChange={onSort}>
@@ -117,17 +107,17 @@ export const Collection: React.FC<ICollectionProps> = (props: ICollectionProps) 
                 <br />
                 {buckets
                     ? buckets.map(bucket =>
-                        <Group key={bucket.name} collection={collection} selectEntry={selectEntry}
+                        <Group key={bucket.name} collection={collection}
                             name={bucket.name} path={grouping?.path ?? ""} min={bucket.min} max={bucket.max} value={bucket.value} descending={descending} />)
                     : [...collection.entries ?? []].sort((a, b) => compareEntry(a, b, sorting?.path, descending)).slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry =>
-                        <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection, entry)} />)
+                        <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection.ns, entry.bid)} />)
                 }
                 {collection.style && convertHtmlToReact(collection.style)}
             </div>
             <div className="collection-page-select">
                 <button onClick={prevPage}>◀</button>
                 {`Page ${currentPage} of ${totalPages}`}
-                <button onClick={() => nextPage(totalPages)}>▶</button>
+                <button onClick={nextPage}>▶</button>
             </div>
         </>
     );
@@ -148,7 +138,9 @@ interface ISortProps {
 }
 
 const Group: React.FC<ICollectionProps & IBucketProps & ISortProps> = (props: ICollectionProps & IBucketProps & ISortProps) => {
-    const { collection, selectEntry, name: bucketName, path: bucketPath, min, max, value, name: _sortName, path: sortPath, descending } = props;
+    const { collection, name: bucketName, path: bucketPath, min, max, value, path: sortPath, descending } = props;
+
+    const { selectEntry } = useContext(PackageContext);
 
     return (
         <>
@@ -157,7 +149,7 @@ const Group: React.FC<ICollectionProps & IBucketProps & ISortProps> = (props: IC
                 collection.entries
                     ?.filter(entry => filterEntry(entry, bucketPath, min, max, value))
                     ?.sort((a, b) => compareEntry(a, b, sortPath, descending))
-                    ?.map(entry => <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection, entry)} />)
+                    ?.map(entry => <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection.ns, entry.bid)} />)
             }
         </>
     );

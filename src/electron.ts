@@ -1,11 +1,11 @@
 import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu } from "electron";
+import chalk from "chalk";
+import envPaths from "env-paths";
+import Formula from "fparser";
 import path from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { mkdir } from "fs/promises";
-import envPaths from "env-paths";
-import { IPackageSchema, ISO639Code } from "./model/Package";
-import chalk from "chalk";
-import Formula from "fparser";
+import { IPackageMetadata, ISO639Code } from "./model/Package";
 import { ICollectionConfig, IPackageConfig } from "./model/Config";
 import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, setup as setupDB, stopLoadingCollectionEntries } from "./database";
 import { IEntryMetadata } from "./model/Entry";
@@ -113,15 +113,15 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
 /**
  * Load all packages
  */
-ipcMain.handle("pkg:load-pkgs", (): Promise<IPackageSchema[]> => getPackageList());
+ipcMain.handle("pkg:load-pkgs", (): Promise<IPackageMetadata[]> => getPackageList());
 
-ipcMain.handle("pkg:load-collection", (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata): Promise<ICollectionMetadata> => getCollection(pkg, collection));
+ipcMain.handle("pkg:load-collection", (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => getCollection(pkg, collection));
 
-ipcMain.on("pkg:load-collection-entries", (event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> => getCollectionEntries(event, pkg, collection, lang));
+ipcMain.on("pkg:load-collection-entries", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> => getCollectionEntries(event, pkg, collection, lang));
 
 ipcMain.on("pkg:stop-loading-collection", (_event: IpcMainInvokeEvent): void => stopLoadingCollectionEntries());
 
-ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> => getEntry(pkg, collection, entryId, lang));
+ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> => getEntry(pkg, collectionId, entryId, lang));
 
 ipcMain.handle("pkg:file-exists", (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
 

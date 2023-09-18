@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CollectionMenu, PackageMenu } from "./menu";
-import { DISPLAY_MODE, useBestiaryViewModel } from "./BestiaryViewModel";
+import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
 import { PackageConfigContext, PackageContext } from "./context";
 import { ICollectionMetadata } from "./model/Collection";
 import { IEntryMetadata } from "./model/Entry";
@@ -28,36 +28,50 @@ export interface ViewStackframe {
 const App: React.FC = () => {
     const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
     const {
-        pkg, selectPkg,
-        collection, selectCollection, getCollectionEntry,
-        entry, selectEntry, collectEntry,
-        pkgConfig, updatePkgConfig,
-        displayMode,
-        canNavigateBack, navigateBack
-    } = useBestiaryViewModel();
+        view,
+        canNavigateBack,
+        selectPkg,
+        selectCollection,
+        selectEntry,
+        addEntryToCollection,
+        pkgConfig, // updatePkgConfig,
+        navigateBack
+    } = useViewModel();
+
+    const handleLinkEvent = useCallback((e: CustomEvent) => {
+        const link = e.detail.split(".");
+        if (link.length === 2) {
+            selectEntry(link[0], link[1]);
+        }
+    }, [selectEntry]);
 
     useEffect(() => {
-        window.pkg.onLoadCollectionEntry(getCollectionEntry);
+        window.pkg.onLoadCollectionEntry(addEntryToCollection);
     }, []);
+
+    useEffect(() => {
+        window.addEventListener("link", handleLinkEvent, false);
+        return () => window.removeEventListener("link", handleLinkEvent);
+    }, [handleLinkEvent]);
 
     return (
         <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}>
             <ImportView />
-            <PackageContext.Provider value={{ pkg, selectCollection, selectEntry }}>
+            <PackageContext.Provider value={{ pkg: view.pkg, selectCollection, selectEntry }}>
                 <PackageConfigContext.Provider value={{ pkgConfig }}>
                     <PackageMenu
                         expanded={pkgMenuExpanded}
                         setExpanded={setPkgMenuExpanded}
                         onPackageClicked={selectPkg} />
-                    {pkg &&
+                    {view.pkg &&
                         <>
                             <CollectionMenu
-                                collections={pkg.collections}
+                                collections={view.pkg.collections}
                                 pkgMenuExpanded={pkgMenuExpanded}
                                 canNavigateBack={canNavigateBack}
                                 onBackArrowClicked={navigateBack}
                                 onCollectionClicked={selectCollection} />
-                            <Page collection={collection} entry={entry} selectEntry={selectEntry} displayMode={displayMode} />
+                            <Page collection={view.collection} entry={view.entry} displayMode={view.displayMode} />
                         </>
                     }
                 </PackageConfigContext.Provider>
@@ -68,17 +82,43 @@ const App: React.FC = () => {
 
 interface IPageProps {
     collection: ICollectionMetadata,
-    entry: IEntryMetadata | null,
-    selectEntry: (collection: ICollectionMetadata, entry: IEntryMetadata) => void,
+    entry: IEntryMetadata | undefined,
     displayMode: DISPLAY_MODE
 }
 
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
-    const { collection, entry, selectEntry, displayMode } = props;
+    const { collection, entry, displayMode } = props;
+
+    const entriesPerPage = 50;
+
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [totalPages, setTotalPages] = useState<number>(1);
+
+    const prevPage = useCallback(() => setCurrentPage(page => Math.max(page - 1, 1)), []);
+    const nextPage = useCallback((totalPages: number) => setCurrentPage(page => Math.min(page + 1, totalPages)), []);
+
+    useEffect(() => {
+        if (displayMode === DISPLAY_MODE.collection) {
+            if (collection.entries?.length) {
+                const pages = Math.max(Math.ceil(collection.entries.length / entriesPerPage), 1);
+                setTotalPages(pages);
+                setCurrentPage(page => page > pages ? 1 : page);
+            }
+            else {
+                setTotalPages(1);
+                setCurrentPage(1);
+            }
+        }
+    }, [collection]);
 
     switch (displayMode) {
         case DISPLAY_MODE.collection:
-            return (collection && collection.ns.length > 0) ? <Collection collection={collection} selectEntry={selectEntry} /> : null;
+            return (collection && collection.ns.length > 0)
+                ? <Collection
+                    collection={collection}
+                    currentPage={currentPage} totalPages={totalPages} entriesPerPage={entriesPerPage}
+                    prevPage={prevPage} nextPage={() => nextPage(totalPages)} />
+                : null;
         case DISPLAY_MODE.entry:
             return entry ? <Entry entry={entry} /> : null;
         default:

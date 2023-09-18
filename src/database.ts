@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import path from "path";
 import sass from "sass";
 import { readFile } from "fs/promises";
-import Package, { IPackageSchema, ISO639Code } from "./model/Package";
+import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "./model/Package";
 import { ICollectionMetadata } from "./model/Collection";
 import Entry, { IEntryMetadata, IEntrySchema } from "./model/Entry";
 import { IpcMainInvokeEvent } from "electron";
@@ -40,7 +40,6 @@ export function getPackageList(): Promise<IPackageSchema[]> {
     return Package.find({}).transform(pkgs => {
         pkgs.forEach(pkg => {
             pkg.path = path.join(paths.data, pkg.ns);
-            pkg.collections = pkg.collections.filter(c => !c.hidden);
         });
         return pkgs;
     }).lean().exec();
@@ -53,7 +52,7 @@ export function getPackageList(): Promise<IPackageSchema[]> {
  * @param _lang The language to display in
  * @returns A collection
  */
-export async function getCollection(pkg: IPackageSchema, collection: ICollectionMetadata): Promise<ICollectionMetadata> {
+export async function getCollection(pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> {
     const collectionStyle = getStyle(pkg, collection.ns, ViewType.preview);
     return { ...collection, style: collectionStyle };
 }
@@ -65,7 +64,7 @@ export async function getCollection(pkg: IPackageSchema, collection: ICollection
  * @param collection The current collection
  * @param lang The language to display in
  */
-export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
+export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
     isLoading = true;
 
     const entries = await Entry.find({ packageId: pkg.ns, collectionId: collection.ns }).lean().exec();
@@ -76,22 +75,22 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
         const cache = {};
         const entryLayout = await buildLayout(collectionLayoutTemplate, pkg, collection.ns, entry, lang, cache, false);
         const groupings = await Promise.all(
-            collection.groupings.map(async grouping => {
+            collection.groupings?.map(async grouping => {
                 return {
                     name: grouping.name,
                     path: grouping.path,
                     bucketValue: await getEntryAttribute(grouping.path, entry, cache)
                 };
-            })
+            }) ?? []
         );
         const sortings = await Promise.all(
-            collection.sortings.map(async sorting => {
+            collection.sortings?.map(async sorting => {
                 return {
                     name: sorting.name,
                     path: sorting.path,
                     value: await getEntryAttribute(sorting.path, entry, cache)
                 };
-            })
+            }) ?? []
         );
         event.sender.send("pkg:load-collection-entry", {
             packageId: pkg.ns,
@@ -111,19 +110,19 @@ export function stopLoadingCollectionEntries(): void {
 /**
  * Gets a single entry
  * @param pkg The current package
- * @param collection The current collection
+ * @param collectionId The current collection
  * @param entryId The entry to retrieve
  * @param lang The language to display in
  * @returns An entry
  */
-export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
-    const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collection.ns, bid: entryId }).lean().exec();
+export async function getEntry(pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
+    const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collectionId, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
     const cache = {};
 
-    const entryLayout = await buildLayout(await getLayout(pkg, collection.ns, ViewType.view), pkg, collection.ns, loadedEntry, lang, cache, true);
-    const entryScript = await buildLayout(await getScript(pkg, collection.ns), pkg, collection.ns, loadedEntry, lang, cache, true);
-    const entryStyle = getStyle(pkg, collection.ns, ViewType.view);
+    const entryLayout = await buildLayout(await getLayout(pkg, collectionId, ViewType.view), pkg, collectionId, loadedEntry, lang, cache, true);
+    const entryScript = await buildLayout(await getScript(pkg, collectionId), pkg, collectionId, loadedEntry, lang, cache, false);
+    const entryStyle = await buildLayout(getStyle(pkg, collectionId, ViewType.view), pkg, collectionId, loadedEntry, lang, cache, false);
 
     return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
 }
@@ -136,7 +135,7 @@ export async function getEntry(pkg: IPackageSchema, collection: ICollectionMetad
  * @param lang The language to display in
  * @returns An HTML string populated with attributes from the current entry
  */
-export async function getLayout(pkg: IPackageSchema, collectionNamespace: string, layoutType: ViewType): Promise<string> {
+export async function getLayout(pkg: IPackageMetadata, collectionNamespace: string, layoutType: ViewType): Promise<string> {
     let entryLayoutTemplate = "";
     try {
         entryLayoutTemplate = await readFile(path.join(paths.data, pkg.ns, "layout", layoutType, `${collectionNamespace}.html`), { encoding: "utf-8" });
@@ -153,7 +152,7 @@ export async function getLayout(pkg: IPackageSchema, collectionNamespace: string
  * @param collectionNamespace The current collection's namespace
  * @returns JavaScript code
  */
-export async function getScript(pkg: IPackageSchema, collectionNamespace: string): Promise<string | undefined> {
+export async function getScript(pkg: IPackageMetadata, collectionNamespace: string): Promise<string | undefined> {
     try {
         return await readFile(path.join(paths.data, pkg.ns, "scripts", `${collectionNamespace}.js`), { encoding: "utf-8" });
     }
@@ -169,7 +168,7 @@ export async function getScript(pkg: IPackageSchema, collectionNamespace: string
  * @param collectionNamespace The current collection's namespace
  * @returns A <style></style> element
  */
-export function getStyle(pkg: IPackageSchema, collectionNamespace: string, styleType: ViewType): string | undefined {
+export function getStyle(pkg: IPackageMetadata, collectionNamespace: string, styleType: ViewType): string | undefined {
     try {
         return `<style>${sass.compile(path.join(paths.data, pkg.ns, "style", styleType, `${collectionNamespace}.scss`)).css}</style>`;
     }

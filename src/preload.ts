@@ -1,25 +1,25 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron";
 import path = require("path");
 import chalk from "chalk";
-import { IPackageSchema, ISO639Code } from "./model/Package";
+import { IPackageMetadata, ISO639Code } from "./model/Package";
 import { ICollectionMetadata } from "./model/Collection";
 import { ICollectionConfig, IPackageConfig } from "./model/Config";
 import { IEntryMetadata } from "./model/Entry";
 
 contextBridge.exposeInMainWorld("pkg", {
-    loadPackages: (): Promise<IPackageSchema[]> =>
+    loadPackages: (): Promise<IPackageMetadata[]> =>
         ipcRenderer.invoke("pkg:load-pkgs"),
-    loadCollection: (pkg: IPackageSchema, collection: ICollectionMetadata): Promise<ICollectionMetadata> =>
+    loadCollection: (pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> =>
         ipcRenderer.invoke("pkg:load-collection", pkg, collection),
-    loadCollectionEntries: (pkg: IPackageSchema, collection: ICollectionMetadata, lang: ISO639Code): void =>
+    loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): void =>
         ipcRenderer.send("pkg:load-collection-entries", pkg, collection, lang),
     onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => {
         ipcRenderer.removeAllListeners("pkg:load-collection-entry");
         ipcRenderer.on("pkg:load-collection-entry", (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
     },
     stopLoadingCollectionEntries: () => ipcRenderer.send("pkg:stop-loading-collection"),
-    loadEntry: (pkg: IPackageSchema, collection: ICollectionMetadata, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> =>
-        ipcRenderer.invoke("pkg:load-entry", pkg, collection, entryId, lang),
+    loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> =>
+        ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
     fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
 });
 
