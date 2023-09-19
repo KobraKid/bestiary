@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, 
 import chalk from "chalk";
 import envPaths from "env-paths";
 import Formula from "fparser";
+import Handlebars from "handlebars";
 import path from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { mkdir } from "fs/promises";
@@ -11,11 +12,13 @@ import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageLi
 import { IEntryMetadata } from "./model/Entry";
 import { ICollectionMetadata } from "./model/Collection";
 import { onImport } from "./importer";
+import { registerHelpers } from "./layout_builder";
 
 /**
  * Setup and logging
  */
 export const paths = envPaths("Bestiary", { suffix: "" });
+export const hb = registerHelpers(Handlebars);
 export const isDev = !app.isPackaged;
 console.log(chalk.blue(`
 ${isDev ? "🐬 " : ""}Bestiary ${process.env.npm_package_version}
