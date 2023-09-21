@@ -4,7 +4,7 @@ import sass from "sass";
 import { readFile } from "fs/promises";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "./model/Package";
 import { ICollectionMetadata } from "./model/Collection";
-import Entry, { IEntryMetadata, IEntrySchema } from "./model/Entry";
+import Entry, { IEntryMetadata } from "./model/Entry";
 import { IpcMainInvokeEvent } from "electron";
 import { hb, paths } from "./electron";
 import { buildLayout } from "./layout_builder";
@@ -19,22 +19,22 @@ export enum ViewType {
 }
 
 /**
- * Set up the database connection
+ * Set up the database connection.
  */
 export async function setup() {
     await mongoose.connect(dbUrl);
 }
 
 /**
- * Close the database connection
+ * Close the database connection.
  */
 export async function disconnect() {
     await mongoose.disconnect();
 }
 
 /**
- * Gets the list of available packages
- * @returns The list of available packages
+ * Gets the list of available packages.
+ * @returns The list of available packages.
  */
 export function getPackageList(): Promise<IPackageSchema[]> {
     return Package.find({}).transform(pkgs => {
@@ -46,11 +46,11 @@ export function getPackageList(): Promise<IPackageSchema[]> {
 }
 
 /**
- * Gets a collection
- * @param pkg The current package
- * @param collection The collection to retrieve
- * @param _lang The language to display in
- * @returns A collection
+ * Gets a collection.
+ * @param pkg The current package.
+ * @param collection The collection to retrieve.
+ * @param _lang The language to display in.
+ * @returns A collection.
  */
 export async function getCollection(pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> {
     const collectionStyle = getStyle(pkg.ns, collection.ns, ViewType.preview);
@@ -58,11 +58,11 @@ export async function getCollection(pkg: IPackageMetadata, collection: ICollecti
 }
 
 /**
- * Loads each entry in a collection and sends the results back to the event's original sender
- * @param event The event that triggered this action
- * @param pkg The current package
- * @param collection The current collection
- * @param lang The language to display in
+ * Loads each entry in a collection and sends the results back to the event's original sender.
+ * @param event The event that triggered this action.
+ * @param pkg The current package.
+ * @param collection The current collection.
+ * @param lang The language to display in.
  */
 export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
     isLoading = true;
@@ -79,7 +79,7 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
                 return {
                     name: grouping.name,
                     path: grouping.path,
-                    bucketValue: await getEntryAttribute(entry.packageId, grouping.path, entry, cache)
+                    bucketValue: await getAttribute(entry.packageId, grouping.path, entry, cache)
                 };
             }) ?? []
         );
@@ -88,7 +88,7 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
                 return {
                     name: sorting.name,
                     path: sorting.path,
-                    value: await getEntryAttribute(entry.packageId, sorting.path, entry, cache)
+                    value: await getAttribute(entry.packageId, sorting.path, entry, cache)
                 };
             }) ?? []
         );
@@ -108,12 +108,12 @@ export function stopLoadingCollectionEntries(): void {
 }
 
 /**
- * Gets a single entry
- * @param pkg The current package
- * @param collectionId The current collection
- * @param entryId The entry to retrieve
- * @param lang The language to display in
- * @returns An entry
+ * Gets a single entry.
+ * @param pkg The current package.
+ * @param collectionId The current collection.
+ * @param entryId The entry to retrieve.
+ * @param lang The language to display in.
+ * @returns An entry.
  */
 export async function getEntry(pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
 
@@ -135,12 +135,12 @@ export async function getEntry(pkg: IPackageMetadata, collectionId: string, entr
 }
 
 /**
- * Gets the layout for an entry
- * @param pkg The current package
- * @param collectionNamespace The current collection's namespace
- * @param entry The current entry
- * @param lang The language to display in
- * @returns An HTML string populated with attributes from the current entry
+ * Gets the layout for an entry.
+ * @param pkg The current package.
+ * @param collectionNamespace The current collection's namespace.
+ * @param entry The current entry.
+ * @param lang The language to display in.
+ * @returns An HTML string populated with attributes from the current entry.
  */
 export async function getLayout(pkgId: string, collectionNamespace: string, layoutType: ViewType): Promise<string> {
     let entryLayoutTemplate = "";
@@ -154,10 +154,10 @@ export async function getLayout(pkgId: string, collectionNamespace: string, layo
 }
 
 /**
- * Gets the script for an entry
- * @param pkg The current package
- * @param collectionNamespace The current collection's namespace
- * @returns JavaScript code
+ * Gets the script for an entry.
+ * @param pkg The current package.
+ * @param collectionNamespace The current collection's namespace.
+ * @returns JavaScript code.
  */
 export async function getScript(pkgId: string, collectionNamespace: string): Promise<string | undefined> {
     try {
@@ -170,10 +170,10 @@ export async function getScript(pkgId: string, collectionNamespace: string): Pro
 }
 
 /**
- * Gets the style for an entry
- * @param pkg The current package
- * @param collectionNamespace The current collection's namespace
- * @returns A <style></style> element
+ * Gets the style for an entry.
+ * @param pkg The current package.
+ * @param collectionNamespace The current collection's namespace.
+ * @returns A <style></style> element.
  */
 export function getStyle(pkgId: string, collectionNamespace: string, styleType: ViewType): string | undefined {
     try {
@@ -186,16 +186,17 @@ export function getStyle(pkgId: string, collectionNamespace: string, styleType: 
 }
 
 /**
- * Gets an attribute from an entry. Can retrieve top-level and sub properties
- * @param attribute The attribute to retrieve, can be period-delimited
- * @param entry The entry to retrieve attributes from
- * @param cache A cache of linked entries
- * @returns The value of the attribute
+ * Gets an attribute from an Entry (or generic object),
+ * can retrieve top-level and sub properties.
+ * 
+ * @param attribute The attribute to retrieve, can be period- or arrow-delimited.
+ * @param obj The object to retrieve attributes from.
+ * @param cache A cache of linked entries.
+ * @returns The value of the attribute.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getEntryAttribute(packageId: string, attribute: string, entry: IEntrySchema, cache: { [link: string]: IEntrySchema | null }): Promise<unknown> {
+export async function getAttribute(packageId: string, attribute: string, obj: object, cache: { [link: string]: object | null }): Promise<unknown> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let attrValue: any = entry;
+    let attrValue: any = obj;
     if (attribute == null) { return ""; }
     const attrPath = attribute.split(".").reverse();
 
