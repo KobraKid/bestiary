@@ -3,7 +3,7 @@ import { useEffect } from "react";
 const useScript = (contents?: string) => {
     useEffect(() => {
         const script = document.createElement("script");
-        script.text = contents + `
+        script.text = `${contents ?? ""}
         {
             // Build links
             document.querySelectorAll("[data-bestiary-link]").forEach(link => {

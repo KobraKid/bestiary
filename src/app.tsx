@@ -10,6 +10,7 @@ import "./styles/app.scss";
 import "./styles/transitions.scss";
 import "./styles/importer.scss";
 import { Collection } from "./collection";
+import useScript from "./hooks/useScript";
 
 /**
  * Represents a view frame for backwards navigation
@@ -110,6 +111,8 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
             }
         }
     }, [collection]);
+
+    useScript(entry?.script);
 
     switch (displayMode) {
         case DISPLAY_MODE.collection:

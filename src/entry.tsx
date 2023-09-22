@@ -1,7 +1,6 @@
 import React, {  } from "react";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
 import { IEntryMetadata } from "./model/Entry";
-import useScript from "./hooks/useScript";
 import "./styles/details.scss";
 
 export interface IEntryProps {
@@ -17,8 +16,6 @@ export interface IEntryProps {
 
 export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     const { entry, onClick } = props;
-
-    useScript(entry.script);
 
     return (
         <div className='details'>

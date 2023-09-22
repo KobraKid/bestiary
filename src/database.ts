@@ -2,20 +2,31 @@ import mongoose from "mongoose";
 import path from "path";
 import sass from "sass";
 import { readFile } from "fs/promises";
+import { AsyncTemplateDelegate } from "handlebars-async-helpers";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "./model/Package";
 import { ICollectionMetadata } from "./model/Collection";
-import Entry, { IEntryMetadata } from "./model/Entry";
+import Entry, { IEntryMetadata, IEntrySchema } from "./model/Entry";
 import { IpcMainInvokeEvent } from "electron";
-import { hb, paths } from "./electron";
-import { buildLayout } from "./layout_builder";
+import { hb, isDev, paths } from "./electron";
+
+type EntryLayoutContext = { entry: IEntrySchema, lang: ISO639Code };
+type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
 
 const dbUrl = "mongodb://127.0.0.1:27017/bestiary";
+
+const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema, lang: ISO639Code }> } = {};
 
 let isLoading = false;
 
 export enum ViewType {
     view = "view",
     preview = "preview"
+}
+
+enum FileType {
+    layout = "layout",
+    script = "scripts",
+    style = "style"
 }
 
 /**
@@ -68,12 +79,12 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
     isLoading = true;
 
     const entries = await Entry.find({ packageId: pkg.ns, collectionId: collection.ns }).lean().exec();
-    const collectionLayoutTemplate = await getLayout(pkg.ns, collection.ns, ViewType.preview);
+    const layout = await getLayout(pkg.ns, collection.ns, ViewType.preview);
 
     for (const entry of entries) {
         if (!isLoading) { break; }
         const cache = {};
-        const entryLayout = await buildLayout(collectionLayoutTemplate, pkg.ns, collection.ns, entry, lang, cache, false);
+        const entryLayout = await layout({ entry, lang });
         const groupings = await Promise.all(
             collection.groupings?.map(async grouping => {
                 return {
@@ -116,20 +127,12 @@ export function stopLoadingCollectionEntries(): void {
  * @returns An entry.
  */
 export async function getEntry(pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
-
-
     const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collectionId, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
-    const cache = {};
 
-    const layout = await readFile(path.join(paths.data, pkg.ns, "layout", ViewType.view, `${collectionId}.hbs`));
-
-    const template = hb.compile(layout.toString());
-
-    const entryLayout = await template({ entry: loadedEntry, lang });
-    // await buildLayout(await getLayout(pkg.ns, collectionId, ViewType.view), pkg, collectionId, loadedEntry, lang, cache, true);
-    const entryScript = await buildLayout(await getScript(pkg.ns, collectionId), pkg.ns, collectionId, loadedEntry, lang, cache, false);
-    const entryStyle = await buildLayout(getStyle(pkg.ns, collectionId, ViewType.view), pkg.ns, collectionId, loadedEntry, lang, cache, false);
+    const entryLayout = await (await getLayout(pkg.ns, collectionId, ViewType.view))({ entry: loadedEntry, lang });
+    const entryScript = await (await getScript(pkg.ns, collectionId))({ entry: loadedEntry, lang });
+    const entryStyle = getStyle(pkg.ns, collectionId, ViewType.view);
 
     return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
 }
@@ -138,19 +141,11 @@ export async function getEntry(pkg: IPackageMetadata, collectionId: string, entr
  * Gets the layout for an entry.
  * @param pkg The current package.
  * @param collectionNamespace The current collection's namespace.
- * @param entry The current entry.
- * @param lang The language to display in.
+ * @param viewType The type of view we are loading.
  * @returns An HTML string populated with attributes from the current entry.
  */
-export async function getLayout(pkgId: string, collectionNamespace: string, layoutType: ViewType): Promise<string> {
-    let entryLayoutTemplate = "";
-    try {
-        entryLayoutTemplate = await readFile(path.join(paths.data, pkgId, "layout", layoutType, `${collectionNamespace}.html`), { encoding: "utf-8" });
-    }
-    catch (err) {
-        console.log((err as Error).message);
-    }
-    return entryLayoutTemplate;
+export async function getLayout(pkgId: string, collectionNamespace: string, viewType: ViewType): Promise<EntryLayoutFile> {
+    return getFile(pkgId, collectionNamespace, FileType.layout, viewType);
 }
 
 /**
@@ -159,14 +154,8 @@ export async function getLayout(pkgId: string, collectionNamespace: string, layo
  * @param collectionNamespace The current collection's namespace.
  * @returns JavaScript code.
  */
-export async function getScript(pkgId: string, collectionNamespace: string): Promise<string | undefined> {
-    try {
-        return await readFile(path.join(paths.data, pkgId, "scripts", `${collectionNamespace}.js`), { encoding: "utf-8" });
-    }
-    catch (err) {
-        console.log((err as Error).message);
-    }
-    return undefined;
+export async function getScript(pkgId: string, collectionNamespace: string): Promise<EntryLayoutFile> {
+    return getFile(pkgId, collectionNamespace, FileType.script);
 }
 
 /**
@@ -175,14 +164,29 @@ export async function getScript(pkgId: string, collectionNamespace: string): Pro
  * @param collectionNamespace The current collection's namespace.
  * @returns A <style></style> element.
  */
-export function getStyle(pkgId: string, collectionNamespace: string, styleType: ViewType): string | undefined {
+export function getStyle(pkgId: string, collectionNamespace: string, viewType: ViewType): string | undefined {
     try {
-        return `<style>${sass.compile(path.join(paths.data, pkgId, "style", styleType, `${collectionNamespace}.scss`)).css}</style>`;
+        return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${collectionNamespace}.scss`)).css}</style>`;
     }
     catch (err) {
         console.log((err as Error).message);
     }
     return undefined;
+}
+
+async function getFile(pkgId: string, collectionNamespace: string, fileType: FileType, viewType?: ViewType): Promise<EntryLayoutFile> {
+    const key = `${pkgId}${collectionNamespace}${viewType}`;
+    if (!layoutCache[key] || isDev) {
+        try {
+            const file = await readFile(path.join(paths.data, pkgId, fileType, viewType ?? "", `${collectionNamespace}.${fileType === FileType.script ? "js" : "hbs"}`), { encoding: "utf-8" });
+            layoutCache[key] = hb.compile(file.toString());
+        }
+        catch (err) {
+            console.log((err as Error).message);
+            layoutCache[key] = () => new Promise<string>(() => ""); // cache an empty string to skip trying to re-get file on each cache miss
+        }
+    }
+    return layoutCache[key]!; // we guarantee that the cache holds a value even when an error is thrown
 }
 
 /**
