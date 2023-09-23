@@ -29,7 +29,7 @@ async function importJson(
     updateClient: (update: string, pctCompletion: number, totalPctCompletion: number) => void) {
     const metadata = pkgJson.metadata;
     const collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[] = pkgJson.collections;
-    const resources: IResource[] = pkgJson.resources;
+    const resources: IResource[] = pkgJson.resources ?? [];
     const resourceCount = Math.max(resources.length, 1);
     const images: { url: string, collection: string, name: string }[] = [];
     const imageCount = Math.max(images.length, 1);
@@ -44,58 +44,69 @@ async function importJson(
         const collectionId = collection.ns;
         const collectionEntries = collection.entries;
         const collectionImages = collection.images;
-        // const entryCount = Math.max(collectionEntries.length, 1);
-        // let currentEntry = 0;
-        // currentCompletion++;
 
-        // for (const entry of collectionEntries) {
-        //     if (entry.bid === null || entry.bid === undefined) { continue; }
-        //     updateClient(`Importing entry <${entry.bid}> from collection <${collectionId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
-        //     await Entry.findOneAndUpdate({ packageId: pkg.ns, collectionId: collectionId, bid: entry.bid }, {
-        //         ...entry,
-        //         packageId: pkg.ns,
-        //         collectionId: collectionId
-        //     }, { upsert: true, new: true });
-        // }
-        updateClient(`Importing collection <${collectionId}>`, 0, ++currentCompletion / totalCompletion);
-        await Entry.bulkWrite(collectionEntries.map(entry => {
-            return {
-                updateOne: {
-                    filter: { packageId: pkg.ns, collectionId: collectionId, bid: entry.bid },
-                    update: { ...entry, packageId: pkg.ns, collectionId: collectionId },
-                    upsert: true,
-                    new: true
-                }
-            };
-        }));
+        //#region One at a time
+        const entryCount = Math.max(collectionEntries.length, 1);
+        let currentEntry = 0;
+        currentCompletion++;
+
+        for (const entry of collectionEntries) {
+            if (entry.bid === null || entry.bid === undefined) { continue; }
+            updateClient(`Importing entry <${entry.bid}> from collection <${collectionId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
+            await Entry.findOneAndUpdate({ packageId: pkg.ns, collectionId: collectionId, bid: entry.bid }, {
+                ...entry,
+                packageId: pkg.ns,
+                collectionId: collectionId
+            }, { upsert: true, new: true });
+        }
+        //#endregion
+
+        //#region Bulk
+        // updateClient(`Importing collection <${collectionId}>`, 0, ++currentCompletion / totalCompletion);
+        // await Entry.bulkWrite(collectionEntries.map(entry => {
+        //     return {
+        //         updateOne: {
+        //             filter: { packageId: pkg.ns, collectionId: collectionId, bid: entry.bid },
+        //             update: { ...entry, packageId: pkg.ns, collectionId: collectionId },
+        //             upsert: true,
+        //             new: true
+        //         }
+        //     };
+        // }));
+        //#endregion
 
         for (const img of collectionImages) {
             images.push({ url: img.url, collection: collectionId, name: img.name });
         }
     }
 
-    // let currentResource = 0;
-    // currentCompletion++;
-    // for (const resource of resources) {
-    //     if (resource.resId === null || resource.resId === undefined) { continue; }
-    //     updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
-    //     await Resource.findOneAndUpdate({ packageId: pkg.ns, resId: resource.resId }, {
-    //         ...resource,
-    //         packageId: pkg.ns
-    //     }, { upsert: true, new: true });
-    // }
+    //#region One at a time
+    let currentResource = 0;
+    currentCompletion++;
+    for (const resource of resources) {
+        if (resource.resId === null || resource.resId === undefined) { continue; }
+        updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
+        await Resource.findOneAndUpdate({ packageId: pkg.ns, resId: resource.resId }, {
+            ...resource,
+            packageId: pkg.ns
+        }, { upsert: true, new: true });
+    }
+    //#endregion
+
     /* ~26 minutes */
-    updateClient("Importing resources", 0, ++currentCompletion / totalCompletion);
-    await Resource.bulkWrite(resources.map(resource => {
-        return {
-            updateOne: {
-                filter: { packageId: pkg.ns, resId: resource.resId },
-                update: { ...resource, packageId: pkg.ns },
-                upsert: true,
-                new: true
-            }
-        };
-    }));
+    //#region Bulk
+    // updateClient("Importing resources", 0, ++currentCompletion / totalCompletion);
+    // await Resource.bulkWrite(resources.map(resource => {
+    //     return {
+    //         updateOne: {
+    //             filter: { packageId: pkg.ns, resId: resource.resId },
+    //             update: { ...resource, packageId: pkg.ns },
+    //             upsert: true,
+    //             new: true
+    //         }
+    //     };
+    // }));
+    //#endregion
 
     let currentImage = 0;
     currentCompletion++;

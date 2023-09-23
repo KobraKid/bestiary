@@ -18,8 +18,9 @@ declare module "handlebars-async-helpers" {
             compile<Context = unknown>(input: any, options?: CompileOptions): AsyncTemplateDelegate<Context>;
         }
 
-        type HelperOptions = Omit<Handlebars.HelperOptions, "fn"> & {
+        type HelperOptions = Omit<Handlebars.HelperOptions, "fn" | "inverse"> & {
             fn<Context = unknown>(input: Context, options?: RuntimeOptions): Promise<string>;
+            inverse<Context = unknown>(input: Context, options?: RuntimeOptions): Promise<string>;
         };
     }
 

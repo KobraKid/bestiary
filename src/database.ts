@@ -183,7 +183,7 @@ async function getFile(pkgId: string, collectionNamespace: string, fileType: Fil
         }
         catch (err) {
             console.log((err as Error).message);
-            layoutCache[key] = () => new Promise<string>(() => ""); // cache an empty string to skip trying to re-get file on each cache miss
+            layoutCache[key] = async () => { return ""; }; // cache an empty string to skip trying to re-get file on each cache miss
         }
     }
     return layoutCache[key]!; // we guarantee that the cache holds a value even when an error is thrown

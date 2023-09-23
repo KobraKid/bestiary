@@ -92,18 +92,24 @@ async function __eachHelper(context: object, options: HelperOptions): Promise<st
     const array: [] = await getAttribute(entry.packageId, attributePath, context ?? entry, {}) ?? this;
     let result = "";
 
-    for (let i = 0; i < array.length; i++) {
-        result += await options.fn(array[i], { data: options.data, blockParams: [array[i], i] });
+    if (array.length > 0) {
+        for (let i = 0; i < array.length; i++) {
+            result += await options.fn(array[i], { data: options.data, blockParams: [array[i], i] });
+        }
+    }
+    else {
+        result = await options.inverse(this);
     }
 
     return result;
 }
 
-async function __viewHelper(hb: AsyncHandlebars, context: object, options: HelperOptions): Promise<string | SafeString> {
+async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const lang = getDataFromOptions<ISO639Code>(options, "lang");
     if (entry) {
-        const [linkedCollectionId, linkedBid]: [string, string] = (await getAttribute(entry.packageId, options.hash["path"], context ?? entry, {}) as string).split(".") as [string, string];
+        const attrPath = (typeof context === "string") ? context : options.hash["path"];
+        const [linkedCollectionId, linkedBid]: [string, string] = (await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as string).split(".") as [string, string];
         const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: linkedCollectionId, bid: linkedBid }).lean().exec();
         if (linkedEntry) {
             const layout = await (await getLayout(linkedEntry.packageId, linkedCollectionId, ViewType.preview))({ entry: linkedEntry, lang });
@@ -114,7 +120,7 @@ async function __viewHelper(hb: AsyncHandlebars, context: object, options: Helpe
     return "";
 }
 
-async function __imageHelper(hb: AsyncHandlebars, context: object, options: HelperOptions): Promise<string | SafeString> {
+async function __imageHelper(hb: AsyncHandlebars, context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
 
     if (!entry) { return ""; }
@@ -148,7 +154,16 @@ async function __imageHelper(hb: AsyncHandlebars, context: object, options: Help
     });
 
     if (src === "") {
-        src = prefix + await getAttribute(entry.packageId, attributePath, context ?? entry, {}) + suffix;
+        if (typeof context === "string") {
+            const link = context.split(".");
+            const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).lean().exec();
+            if (linkedEntry) {
+                src = prefix + await getAttribute(entry.packageId, attributePath, linkedEntry, {}) + suffix;
+            }
+        }
+        else {
+            src = prefix + await getAttribute(entry.packageId, attributePath, context ?? entry, {}) + suffix;
+        }
     }
 
     return new hb.SafeString(`<img src="${path.join(paths.data, entry.packageId, "images", src)}" ${attributes.join(" ")} />`);
@@ -175,7 +190,7 @@ async function __stringHelper(context: object, options: HelperOptions): Promise<
     }
 
     const resource = await Resource.findOne({ packageId: entry.packageId, resId }).lean().exec();
-    return hb.escapeExpression(resource?.values[lang] ?? "");
+    return new hb.SafeString(resource?.values[lang] ?? "");
 }
 
 function __pathHelper(context: string, options: HelperOptions): string | SafeString {
