@@ -1,10 +1,10 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron";
 import path = require("path");
 import chalk from "chalk";
-import { IPackageMetadata, ISO639Code } from "./model/Package";
-import { ICollectionMetadata } from "./model/Collection";
-import { ICollectionConfig, IPackageConfig } from "./model/Config";
-import { IEntryMetadata } from "./model/Entry";
+import { IPackageMetadata, ISO639Code } from "../model/Package";
+import { ICollectionMetadata } from "../model/Collection";
+import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { IEntryMetadata } from "../model/Entry";
 
 contextBridge.exposeInMainWorld("pkg", {
     loadPackages: (): Promise<IPackageMetadata[]> =>

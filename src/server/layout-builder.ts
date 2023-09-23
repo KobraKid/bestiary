@@ -2,9 +2,9 @@ import asyncHelpers, { AsyncHandlebars, HelperOptions } from "handlebars-async-h
 import path from "path";
 import { SafeString } from "handlebars";
 import { hb, paths } from "./electron";
-import Entry, { IEntrySchema } from "./model/Entry";
-import { ISO639Code } from "./model/Package";
-import Resource from "./model/Resource";
+import Entry, { IEntrySchema } from "../model/Entry";
+import { ISO639Code } from "../model/Package";
+import Resource from "../model/Resource";
 import { ViewType, getAttribute, getLayout, getStyle } from "./database";
 
 function getDataFromOptions<T>(options: HelperOptions, data: string): T {

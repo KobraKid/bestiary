@@ -1,7 +1,7 @@
 import React, {  } from "react";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
-import { IEntryMetadata } from "./model/Entry";
-import "./styles/details.scss";
+import { IEntryMetadata } from "../../model/Entry";
+import "../styles/details.scss";
 
 export interface IEntryProps {
     /**

@@ -1,13 +1,13 @@
 import { BrowserWindow } from "electron";
 import path from "path";
 import { readFileSync } from "fs";
-import Package, { IPackageMetadata } from "./model/Package";
-import Entry from "./model/Entry";
+import Package, { IPackageMetadata } from "../model/Package";
+import Entry from "../model/Entry";
 import fs, { mkdir } from "fs/promises";
 import chalk from "chalk";
-import Resource, { IResource } from "./model/Resource";
+import Resource, { IResource } from "../model/Resource";
 import { paths } from "./electron";
-import { ICollectionMetadata } from "./model/Collection";
+import { ICollectionMetadata } from "../model/Collection";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {

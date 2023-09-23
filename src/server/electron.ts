@@ -6,13 +6,13 @@ import Handlebars from "handlebars";
 import path from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { mkdir } from "fs/promises";
-import { IPackageMetadata, ISO639Code } from "./model/Package";
-import { ICollectionConfig, IPackageConfig } from "./model/Config";
+import { IPackageMetadata, ISO639Code } from "../model/Package";
+import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, setup as setupDB, stopLoadingCollectionEntries } from "./database";
-import { IEntryMetadata } from "./model/Entry";
-import { ICollectionMetadata } from "./model/Collection";
+import { IEntryMetadata } from "../model/Entry";
+import { ICollectionMetadata } from "../model/Collection";
 import { onImport } from "./importer";
-import { registerHelpers } from "./layout_builder";
+import { registerHelpers } from "./layout-builder";
 
 /**
  * Setup and logging

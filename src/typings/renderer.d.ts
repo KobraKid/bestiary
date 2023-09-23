@@ -1,7 +1,7 @@
-import { ICollectionConfig, IPackageConfig } from "./model/Config";
-import { IPackageMetadata, ISO639Code } from "./model/Package";
-import { ICollectionMetadata } from "./model/Collection";
-import { IEntryMetadata } from "./model/Entry";
+import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { IPackageMetadata, ISO639Code } from "../model/Package";
+import { ICollectionMetadata } from "../model/Collection";
+import { IEntryMetadata } from "../model/Entry";
 
 export interface IPkgAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,

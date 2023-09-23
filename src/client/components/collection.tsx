@@ -1,10 +1,10 @@
 import React, { ChangeEvent, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { ICollectionMetadata, IGrouping, ISorting } from "./model/Collection";
+import { ICollectionMetadata, IGrouping, ISorting } from "../../model/Collection";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
-import { PackageContext } from "./context";
+import { PackageContext } from "../context";
 import { Entry } from "./entry";
-import { IEntryMetadata } from "./model/Entry";
-import "./styles/collection.scss";
+import { IEntryMetadata } from "../../model/Entry";
+import "../styles/collection.scss";
 
 export interface ICollectionProps {
     collection: ICollectionMetadata;

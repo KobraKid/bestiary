@@ -1,8 +1,8 @@
 import { useCallback, useReducer, useState } from "react";
-import { IPackageConfig } from "../model/Config";
-import { IEntryMetadata } from "../model/Entry";
-import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionMetadata } from "../model/Collection";
+import { IPackageConfig } from "../../model/Config";
+import { IEntryMetadata } from "../../model/Entry";
+import { IPackageMetadata, ISO639Code } from "../../model/Package";
+import { ICollectionMetadata } from "../../model/Collection";
 
 interface BestiaryData {
     readonly view: ViewStackframe,

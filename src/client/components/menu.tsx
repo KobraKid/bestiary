@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { IPackageMetadata } from "./model/Package";
-import { ICollectionMetadata } from "./model/Collection";
-import "./styles/menu.scss";
-import upArrow from "./assets/icons/up.png";
-import downArrow from "./assets/icons/down.png";
-import leftArrow from "./assets/icons/left.png";
+import { IPackageMetadata } from "../../model/Package";
+import { ICollectionMetadata } from "../../model/Collection";
+import "../styles/menu.scss";
+import upArrow from "../../assets/icons/up.png";
+import downArrow from "../../assets/icons/down.png";
+import leftArrow from "../../assets/icons/left.png";
 
 /**
  * Props for the package menu

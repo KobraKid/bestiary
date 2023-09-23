@@ -3,9 +3,9 @@ import path from "path";
 import sass from "sass";
 import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
-import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "./model/Package";
-import { ICollectionMetadata } from "./model/Collection";
-import Entry, { IEntryMetadata, IEntrySchema } from "./model/Entry";
+import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
+import { ICollectionMetadata } from "../model/Collection";
+import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { IpcMainInvokeEvent } from "electron";
 import { hb, isDev, paths } from "./electron";
 

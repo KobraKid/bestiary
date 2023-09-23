@@ -1,7 +1,7 @@
 import { createContext } from "react";
-import { IPackageMetadata } from "./model/Package";
-import { ICollectionMetadata } from "./model/Collection";
-import { ICollectionConfig, IPackageConfig } from "./model/Config";
+import { IPackageMetadata } from "../model/Package";
+import { ICollectionMetadata } from "../model/Collection";
+import { ICollectionConfig, IPackageConfig } from "../model/Config";
 
 interface IPackageContext {
     pkg: IPackageMetadata,
