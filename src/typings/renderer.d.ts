@@ -2,6 +2,7 @@ import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { ICollectionMetadata } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
+import { IMap } from "../model/Map";
 
 export interface IPkgAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,
@@ -9,7 +10,7 @@ export interface IPkgAPI {
   loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code) => void,
   onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => void,
   stopLoadingCollectionEntries: () => void,
-  loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | null>,
+  loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
   fileExists: (path: string) => Promise<boolean>
 }
 

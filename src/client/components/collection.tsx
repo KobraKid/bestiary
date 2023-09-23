@@ -82,7 +82,7 @@ export const Collection: React.FC<ICollectionProps & IPagingProps> = (props: ICo
     return (
         <>
             <div className="collection-grid">
-                {(collection.groupings?.length) &&
+                {(collection.groupings && collection.groupings.length > 0) &&
                     <div className="grouping-selection">
                         Group by:
                         <select name="groupings" value={grouping?.path} onChange={onGroup}>
@@ -91,7 +91,7 @@ export const Collection: React.FC<ICollectionProps & IPagingProps> = (props: ICo
                         </select>
                     </div>
                 }
-                {(collection.sortings?.length) &&
+                {(collection.sortings && collection.sortings.length > 0) &&
                     <div className="grouping-selection">
                         Sort by:
                         <select name="sortings" value={sorting?.path} onChange={onSort}>

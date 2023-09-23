@@ -70,6 +70,10 @@ export interface ICollectionMetadata {
      */
     hidden?: boolean,
     /**
+     * Collection is a map
+     */
+    isMap?: boolean,
+    /**
      * Entries
      */
     entries: IEntryMetadata[],

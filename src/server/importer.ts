@@ -42,8 +42,8 @@ async function importJson(
 
     for (const collection of collections) {
         const collectionId = collection.ns;
-        const collectionEntries = collection.entries;
-        const collectionImages = collection.images;
+        const collectionEntries = collection.entries ?? [];
+        const collectionImages = collection.images ?? [];
 
         //#region One at a time
         const entryCount = Math.max(collectionEntries.length, 1);

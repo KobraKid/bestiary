@@ -6,13 +6,14 @@ import Handlebars from "handlebars";
 import path from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { mkdir } from "fs/promises";
-import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, setup as setupDB, stopLoadingCollectionEntries } from "./database";
-import { IEntryMetadata } from "../model/Entry";
-import { ICollectionMetadata } from "../model/Collection";
 import { onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
+import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { IPackageMetadata, ISO639Code } from "../model/Package";
+import { ICollectionMetadata } from "../model/Collection";
+import { IEntryMetadata } from "../model/Entry";
+import { IMap } from "../model/Map";
 
 /**
  * Setup and logging
@@ -124,7 +125,7 @@ ipcMain.on("pkg:load-collection-entries", (event: IpcMainInvokeEvent, pkg: IPack
 
 ipcMain.on("pkg:stop-loading-collection", (_event: IpcMainInvokeEvent): void => stopLoadingCollectionEntries());
 
-ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> => getEntry(pkg, collectionId, entryId, lang));
+ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => getEntry(pkg, collectionId, entryId, lang));
 
 ipcMain.handle("pkg:file-exists", (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
 

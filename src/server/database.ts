@@ -1,13 +1,15 @@
 import mongoose from "mongoose";
 import path from "path";
 import sass from "sass";
+import { IpcMainInvokeEvent } from "electron";
 import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
+import { hb, isDev, paths } from "./electron";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
 import { ICollectionMetadata } from "../model/Collection";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
-import { IpcMainInvokeEvent } from "electron";
-import { hb, isDev, paths } from "./electron";
+import { ILandmark, IMap } from "../model/Map";
+import Resource, { IResource } from "../model/Resource";
 
 type EntryLayoutContext = { entry: IEntrySchema, lang: ISO639Code };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
@@ -126,15 +128,42 @@ export function stopLoadingCollectionEntries(): void {
  * @param lang The language to display in.
  * @returns An entry.
  */
-export async function getEntry(pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> {
+export async function getEntry(pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> {
     const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collectionId, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
+
+    if (pkg.collections.find(c => c.ns === collectionId)?.isMap) {
+        return getMap(pkg, loadedEntry, lang);
+    }
 
     const entryLayout = await (await getLayout(pkg.ns, collectionId, ViewType.view))({ entry: loadedEntry, lang });
     const entryScript = await (await getScript(pkg.ns, collectionId))({ entry: loadedEntry, lang });
     const entryStyle = getStyle(pkg.ns, collectionId, ViewType.view);
 
     return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
+}
+
+async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Code): Promise<IMap> {
+    const map = entry as Omit<IEntryMetadata, "layout" | "style" | "script"> as IMap;
+    const name = await Resource.findOne({ packageId: pkg.ns, resId: map.name }).lean().exec() as IResource;
+    const landmarks: ILandmark[] = [];
+    for (const landmark of map.landmarks) {
+        const link = landmark.link?.split(".");
+        if (link && link.length === 2) {
+            const landmarkEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: link[0], bid: link[1] }).lean().exec();
+            if (landmarkEntry) {
+                const layout = await getLayout(pkg.ns, link[0]!, ViewType.preview);
+                const preview = await layout({ entry: landmarkEntry, lang });
+                landmarks.push({ ...landmark, preview });
+            }
+        }
+    }
+    return {
+        ...map,
+        name: name.values[lang] ?? "",
+        image: path.join(paths.data, pkg.ns, "images", map.image),
+        landmarks
+    };
 }
 
 /**

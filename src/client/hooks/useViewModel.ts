@@ -1,8 +1,9 @@
 import { useCallback, useReducer, useState } from "react";
 import { IPackageConfig } from "../../model/Config";
-import { IEntryMetadata } from "../../model/Entry";
 import { IPackageMetadata, ISO639Code } from "../../model/Package";
 import { ICollectionMetadata } from "../../model/Collection";
+import { IEntryMetadata } from "../../model/Entry";
+import { IMap } from "../../model/Map";
 
 interface BestiaryData {
     readonly view: ViewStackframe,
@@ -39,7 +40,7 @@ export interface ViewStackframe {
     /** The view's collection */
     collection: ICollectionMetadata,
     /** The view's entry */
-    entry?: IEntryMetadata,
+    entry?: IEntryMetadata | IMap,
     /** The view's dispaly mode */
     displayMode: DISPLAY_MODE
 }
@@ -73,7 +74,7 @@ export function useViewModel(): BestiaryData {
                     let resetEntry = action.targetView.entry;
                     let displayMode = DISPLAY_MODE.collection;
 
-                    if (isMapView(resetCollection) && resetCollection.entries.length > 0) {
+                    if (resetCollection.isMap && resetCollection.entries.length > 0) {
                         displayMode = DISPLAY_MODE.map;
                         resetEntry = resetCollection.entries.at(0);
                     }
@@ -85,7 +86,7 @@ export function useViewModel(): BestiaryData {
                 if (action.targetView && action.targetView.entry) {
                     window.log.write(`→ navigating to [${action.targetView.collection.name} ${action.targetView.entry.bid}]`);
 
-                    const displayMode = isMapView(action.targetView.collection) ? DISPLAY_MODE.map : DISPLAY_MODE.entry;
+                    const displayMode = (action.targetView.collection.isMap) ? DISPLAY_MODE.map : DISPLAY_MODE.entry;
 
                     return state.concat({ ...action.targetView, displayMode });
                 }
@@ -212,11 +213,6 @@ export function useViewModel(): BestiaryData {
         updatePkgConfig: () => updatePkgConfig({}),
         navigateBack
     };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function isMapView(_collection: ICollectionMetadata): boolean {
-    return false;
 }
 
 function getFirstVisibleCollection(pkg: IPackageMetadata): ICollectionMetadata {

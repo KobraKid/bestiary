@@ -31,12 +31,12 @@
     }
 }
 
-.poi-container {
+.landmark-container {
     height: 0px;
     width: 0px;
 }
 
-@keyframes poiFlash {
+@keyframes landmarkFlash {
     0% {
         background-color: rgba(0, 0, 0, 0);
     }
@@ -50,16 +50,17 @@
     }
 }
 
-.poi {
-    animation: poiFlash 2s infinite;
+.landmark {
+    animation: landmarkFlash 2s infinite;
     cursor: pointer;
 
-    &>.poi-preview {
+    &>.landmark-preview {
         z-index: 999;
-        visibility: hidden;
+        opacity: 0;
+        animation: opacity 0.3s ease-in-out;
     }
 
-    &:hover>.poi-preview {
-        visibility: visible;
+    &:hover>.landmark-preview {
+        opacity: 1;
     }
 }

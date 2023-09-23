@@ -2,15 +2,17 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CollectionMenu, PackageMenu } from "./components/menu";
 import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
+import useScript from "./hooks/useScript";
 import { PackageConfigContext, PackageContext } from "./context";
 import { ICollectionMetadata } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
+import { IMap } from "../model/Map";
+import { Collection } from "./components/collection";
 import { Entry } from "./components/entry";
+import { Map } from "./components/map";
 import "./styles/app.scss";
 import "./styles/transitions.scss";
 import "./styles/importer.scss";
-import { Collection } from "./components/collection";
-import useScript from "./hooks/useScript";
 
 /**
  * Represents a view frame for backwards navigation
@@ -124,6 +126,8 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
                 : null;
         case DISPLAY_MODE.entry:
             return entry ? <Entry entry={entry} /> : null;
+        case DISPLAY_MODE.map:
+            return entry ? <Map map={entry as IMap} /> : null;
         default:
             return null;
     }

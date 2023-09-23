@@ -5,6 +5,7 @@ import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { ICollectionMetadata } from "../model/Collection";
 import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
+import { IMap } from "../model/Map";
 
 contextBridge.exposeInMainWorld("pkg", {
     loadPackages: (): Promise<IPackageMetadata[]> =>
@@ -18,7 +19,7 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.on("pkg:load-collection-entry", (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
     },
     stopLoadingCollectionEntries: () => ipcRenderer.send("pkg:stop-loading-collection"),
-    loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | null> =>
+    loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
         ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
     fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
 });

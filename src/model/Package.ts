@@ -62,10 +62,17 @@ const PkgSchema = new Schema<IPackageSchema>({
         ns: { type: String, required: true },
         name: { type: String, required: true },
         hidden: { type: Boolean, required: false },
+        isMap: { type: Boolean, required: false },
         groupings: {
             type: [{
                 name: { type: String, required: true },
-                attribute: { type: String, required: true }
+                path: { type: String, required: true },
+                buckets: {
+                    type: [{
+                        name: { type: String, required: true },
+                        value: { type: Schema.Types.Mixed, required: true }
+                    }], required: true
+                }
             }],
             required: false
         }
