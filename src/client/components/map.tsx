@@ -31,11 +31,11 @@ export const Map: React.FC<IMapProps> = (props: IMapProps) => {
     const onWheelZoomCallback = useCallback((e: WheelEvent<HTMLImageElement>) => {
         if (e.deltaY < 0) {
             // Scroll up (zoom in)
-            setScale(scale => (scale < maxScale) ? scale + increment : maxScale);
+            setScale(scale => (Math.trunc(scale * 100) < (maxScale * 100)) ? scale + increment : maxScale);
         }
         else if (e.deltaY > 0) {
             // Scroll down (zoom out)
-            setScale(scale => (scale > minScale) ? scale - increment : minScale);
+            setScale(scale => (Math.trunc(scale * 100) > (minScale * 100)) ? scale - increment : minScale);
         }
     }, []);
 

@@ -154,7 +154,8 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
             if (landmarkEntry) {
                 const layout = await getLayout(pkg.ns, link[0]!, ViewType.preview);
                 const preview = await layout({ entry: landmarkEntry, lang });
-                landmarks.push({ ...landmark, preview });
+                const style = getStyle(pkg.ns, link[0]!, ViewType.preview);
+                landmarks.push({ ...landmark, preview: preview + style });
             }
         }
     }

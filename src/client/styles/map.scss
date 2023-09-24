@@ -58,6 +58,7 @@
         z-index: 999;
         opacity: 0;
         animation: opacity 0.3s ease-in-out;
+        pointer-events: none;
     }
 
     &:hover>.landmark-preview {
