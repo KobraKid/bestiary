@@ -6,6 +6,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "sourceMap": true,
     "removeComments": true,
     "alwaysStrict": true,
     "allowUnreachableCode": false,

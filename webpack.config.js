@@ -7,6 +7,7 @@ module.exports = [
         mode: "development",
         entry: ["./src/server/electron.ts"],
         target: "electron-main",
+        devtool: "source-map",
         resolve: { extensions: [".ts", ".tsx", "..."] },
         module: {
             rules: [{
@@ -17,7 +18,8 @@ module.exports = [
         },
         output: {
             path: __dirname + "/dist",
-            filename: "index.js"
+            filename: "index.js",
+            devtoolModuleFilenameTemplate: "[absolute-resource-path]"
         },
         stats: "errors-only"
     },
@@ -52,7 +54,8 @@ module.exports = [
         },
         output: {
             path: __dirname + "/dist",
-            filename: "[name].js"
+            filename: "[name].js",
+            devtoolModuleFilenameTemplate: "[absolute-resource-path]"
         },
         plugins: [
             new HtmlWebpackPlugin({

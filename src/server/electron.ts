@@ -46,11 +46,13 @@ function createWindow() {
         }
     });
 
-    win.loadFile("index.html");
+    win.loadFile(path.join(__dirname, "index.html"));
 
-    if (isDev) {
-        win.webContents.openDevTools({ mode: "undocked" });
-    }
+    win.on("ready-to-show", () => {
+        if (isDev) {
+            win.webContents.openDevTools({ mode: "undocked" });
+        }
+    });
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

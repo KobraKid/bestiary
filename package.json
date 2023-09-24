@@ -2,12 +2,12 @@
   "name": "bestiary",
   "version": "1.0.0",
   "description": "Bestiary - flexible and customizable",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "start": "chcp 65001 && npm run build && concurrently \"npm:electron\" \"npm:watch\" -k -c \"yellow,gray\"",
-    "build": "webpack --config ./webpack.config.js",
+    "start": "chcp 65001 && concurrently \"npm:electron\" \"npm:watch\" -k -c \"yellow,gray\"",
     "electron": "electron ./dist/index.js",
     "watch": "webpack --config ./webpack.config.js --watch",
+    "build": "webpack --config ./webpack.config.js",
     "package": "npm run build && copy package.json dist\\package.json && npx electron-packager ./dist Bestiary --overwrite --icon=icon-light.ico",
     "prod": ".\\bestiary-win32-x64\\bestiary.exe"
   },
