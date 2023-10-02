@@ -190,7 +190,7 @@ async function __stringHelper(context: object, options: HelperOptions): Promise<
     }
 
     const resource = await Resource.findOne({ packageId: entry.packageId, resId }).lean().exec();
-    return new hb.SafeString(resource?.values[lang] ?? "");
+    return new hb.SafeString(escapeString(resource?.values[lang] ?? ""));
 }
 
 function __pathHelper(context: string, options: HelperOptions): string | SafeString {
@@ -221,4 +221,8 @@ async function __eqHelper(context: unknown, arg1: unknown, options: HelperOption
         rCompare = await getAttribute(entry.packageId, rPath, arg1 ?? entry, {});
     }
     return lCompare == rCompare ? (await options.fn(this)) : (await options.inverse(this));
+}
+
+function escapeString(str: string): string {
+    return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
