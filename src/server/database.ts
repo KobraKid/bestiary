@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { SortOrder } from "mongoose";
 import path from "path";
 import sass from "sass";
 import { IpcMainInvokeEvent } from "electron";
@@ -6,7 +6,7 @@ import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
 import { hb, isDev, paths } from "./electron";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
-import { ICollectionMetadata } from "../model/Collection";
+import { ICollectionMetadata, ISorting } from "../model/Collection";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { ILandmark, IMap } from "../model/Map";
 import Resource, { IResource } from "../model/Resource";
@@ -17,6 +17,13 @@ type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
 const dbUrl = "mongodb://127.0.0.1:27017/bestiary";
 
 const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema, lang: ISO639Code }> } = {};
+
+/** Number of entries per page */
+const entriesPerPage = 50;
+/** Page number from 0 to page-1 */
+let page = 0;
+/** Number of pages for this collection */
+let pages = 0;
 
 let isLoading = false;
 
@@ -29,6 +36,15 @@ enum FileType {
     layout = "layout",
     script = "scripts",
     style = "style"
+}
+
+interface CollectionEntryParams {
+    event: IpcMainInvokeEvent,
+    pkg: IPackageMetadata,
+    collection: ICollectionMetadata,
+    lang: ISO639Code,
+    sortBy?: ISorting,
+    sortDescending?: boolean
 }
 
 /**
@@ -60,14 +76,37 @@ export function getPackageList(): Promise<IPackageSchema[]> {
 
 /**
  * Gets a collection.
+ * @param event The event that triggered this action.
  * @param pkg The current package.
  * @param collection The collection to retrieve.
  * @param _lang The language to display in.
  * @returns A collection.
  */
-export async function getCollection(pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> {
+export async function getCollection(event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> {
+    // Send page count
+    pages = Math.max(Math.ceil(await Entry.countDocuments({ packageId: pkg.ns, collectionId: collection.ns }).exec() / entriesPerPage), 1);
+    event.sender.send("pkg:update-page-count", pages);
+    page = 0;
+    event.sender.send("pkg:update-page-number", page);
+
     const collectionStyle = getStyle(pkg.ns, collection.ns, ViewType.preview);
     return { ...collection, style: collectionStyle };
+}
+
+export async function prevPage(params: CollectionEntryParams) {
+    const { event } = params;
+    page = Math.max(page - 1, 0);
+    event.sender.send("pkg:update-page-number", page);
+    getCollectionEntries(params);
+
+}
+
+export async function nextPage(params: CollectionEntryParams) {
+    const { event } = params;
+    page = Math.min(page + 1, pages - 1);
+    event.sender.send("pkg:update-page-number", page);
+    getCollectionEntries(params);
+
 }
 
 /**
@@ -77,10 +116,20 @@ export async function getCollection(pkg: IPackageMetadata, collection: ICollecti
  * @param collection The current collection.
  * @param lang The language to display in.
  */
-export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> {
-    isLoading = true;
+export async function getCollectionEntries(params: CollectionEntryParams): Promise<void> {
+    const { event, pkg, collection, lang, sortBy, sortDescending } = params;
 
-    const entries = await Entry.find({ packageId: pkg.ns, collectionId: collection.ns }).lean().exec();
+    isLoading = true;
+    const sortArg: [string, SortOrder][] | undefined = sortBy ? [[sortBy.path, sortDescending ? -1 : 1]] : [["bid", 1]];
+
+
+    const entries = await Entry.find({ packageId: pkg.ns, collectionId: collection.ns })
+        .sort(sortArg)
+        .collation({ locale: "en_US", numericOrdering: true })
+        .skip(entriesPerPage * page)
+        .limit(entriesPerPage)
+        .lean()
+        .exec();
     const layout = await getLayout(pkg.ns, collection.ns, ViewType.preview);
 
     for (const entry of entries) {
@@ -96,16 +145,25 @@ export async function getCollectionEntries(event: IpcMainInvokeEvent, pkg: IPack
                 };
             }) ?? []
         );
-        const sortings = await Promise.all(
+        const sortings = [...await Promise.all(
             collection.sortings?.map(async sorting => {
                 return {
-                    name: sorting.name,
+                    name: sorting.name + "(Ascending)",
+                    path: "^" + sorting.path,
+                    value: await getAttribute(entry.packageId, sorting.path, entry, cache)
+                };
+            }) ?? []
+        ),
+        ...await Promise.all(
+            collection.sortings?.map(async sorting => {
+                return {
+                    name: sorting.name + "(Descending)",
                     path: sorting.path,
                     value: await getAttribute(entry.packageId, sorting.path, entry, cache)
                 };
             }) ?? []
-        );
-        event.sender.send("pkg:load-collection-entry", {
+        )];
+        event.sender.send("pkg:on-entry-loaded", {
             packageId: pkg.ns,
             collectionId: collection.ns,
             bid: entry.bid,

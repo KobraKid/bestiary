@@ -2,7 +2,7 @@ import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron";
 import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionMetadata } from "../model/Collection";
+import { ICollectionMetadata, ISorting } from "../model/Collection";
 import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
@@ -12,19 +12,35 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.invoke("pkg:load-pkgs"),
     loadCollection: (pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> =>
         ipcRenderer.invoke("pkg:load-collection", pkg, collection),
-    loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): void =>
-        ipcRenderer.send("pkg:load-collection-entries", pkg, collection, lang),
+    loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean): void =>
+        ipcRenderer.send("pkg:load-collection-entries", pkg, collection, lang, sortBy, sortDescending),
     onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => {
-        ipcRenderer.removeAllListeners("pkg:load-collection-entry");
-        ipcRenderer.on("pkg:load-collection-entry", (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
+        ipcRenderer.removeAllListeners("pkg:on-entry-loaded");
+        ipcRenderer.on("pkg:on-entry-loaded", (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
     },
-    stopLoadingCollectionEntries: () => ipcRenderer.send("pkg:stop-loading-collection"),
+    onUpdatePageCount: (callback: (pageCount: number) => void) => {
+        ipcRenderer.removeAllListeners("pkg:update-page-count");
+        ipcRenderer.on("pkg:update-page-count", (_event: IpcRendererEvent, pageCount: number) => callback(pageCount));
+    },
+    onUpdatePageNumber: (callback: (page: number) => void) => {
+        ipcRenderer.removeAllListeners("pkg:update-page-number");
+        ipcRenderer.on("pkg:update-page-number", (_event: IpcRendererEvent, page: number) => callback(page));
+    },
+    prevPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
+        ipcRenderer.send("pkg:prev-page", pkg, collection, lang, sortBy, sortDescending),
+    nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
+        ipcRenderer.send("pkg:next-page", pkg, collection, lang, sortBy, sortDescending),
+    stopLoadingCollectionEntries: () =>
+        ipcRenderer.send("pkg:stop-loading-collection"),
     loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
         ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
     fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
 });
 
 contextBridge.exposeInMainWorld("config", {
+    onShowOptions: (callback: () => void) => {
+        ipcRenderer.on("options:show-options", () => callback());
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     loadPkgConfig: (pkg: any) => ipcRenderer.invoke("config:load-config", pkg),
     savePkgConfig: (pkgPath: string, config: IPackageConfig) => ipcRenderer.invoke("config:save-config", pkgPath, config),

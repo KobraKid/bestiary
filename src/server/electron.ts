@@ -6,12 +6,12 @@ import Handlebars from "handlebars";
 import path from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { mkdir } from "fs/promises";
-import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, setup as setupDB, stopLoadingCollectionEntries } from "./database";
+import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, nextPage, prevPage, setup as setupDB, stopLoadingCollectionEntries } from "./database";
 import { onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionMetadata } from "../model/Collection";
+import { ICollectionMetadata, ISorting } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 
@@ -121,11 +121,33 @@ function saveCollectionConfig(pkgPath: string, collectionName: string, config: I
  */
 ipcMain.handle("pkg:load-pkgs", (): Promise<IPackageMetadata[]> => getPackageList());
 
-ipcMain.handle("pkg:load-collection", (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => getCollection(pkg, collection));
+ipcMain.handle("pkg:load-collection", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => getCollection(event, pkg, collection));
 
-ipcMain.on("pkg:load-collection-entries", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code): Promise<void> => getCollectionEntries(event, pkg, collection, lang));
+ipcMain.on("pkg:load-collection-entries", (
+    event: IpcMainInvokeEvent,
+    pkg: IPackageMetadata,
+    collection: ICollectionMetadata,
+    lang: ISO639Code,
+    sortBy?: ISorting,
+    sortDescending?: boolean): Promise<void> =>
+    getCollectionEntries({ event, pkg, collection, lang, sortBy, sortDescending }));
 
-ipcMain.on("pkg:stop-loading-collection", (_event: IpcMainInvokeEvent): void => stopLoadingCollectionEntries());
+ipcMain.on("pkg:prev-page", (
+    event: IpcMainInvokeEvent,
+    pkg: IPackageMetadata,
+    collection: ICollectionMetadata,
+    lang: ISO639Code,
+    sortBy?: ISorting,
+    sortDescending?: boolean) => prevPage({ event, pkg, collection, lang, sortBy, sortDescending }));
+ipcMain.on("pkg:next-page", (
+    event: IpcMainInvokeEvent,
+    pkg: IPackageMetadata,
+    collection: ICollectionMetadata,
+    lang: ISO639Code,
+    sortBy?: ISorting,
+    sortDescending?: boolean) => nextPage({ event, pkg, collection, lang, sortBy, sortDescending }));
+
+ipcMain.on("pkg:stop-loading-collection", (): void => stopLoadingCollectionEntries());
 
 ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => getEntry(pkg, collectionId, entryId, lang));
 
@@ -175,9 +197,16 @@ app.whenReady().then(async () => {
             label: "File",
             submenu: [
                 {
+                    label: "Options",
+                    accelerator: "CmdOrCtrl+O",
+                    click: (_menuItem, browserWindow) => {
+                        browserWindow?.webContents.send("options:open-options");
+                    }
+                },
+                {
                     label: "Import...",
                     accelerator: "CmdOrCtrl+I",
-                    click: (_menuItem, browserWindow, _event) => {
+                    click: (_menuItem, browserWindow) => {
                         browserWindow?.webContents.send("importer:import-start");
                         if (browserWindow) {
                             dialog.showOpenDialog(browserWindow, {

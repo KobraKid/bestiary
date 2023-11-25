@@ -1,20 +1,25 @@
 import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionMetadata } from "../model/Collection";
+import { ICollectionMetadata, ISorting } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 
 export interface IPkgAPI {
   loadPackages: () => Promise<IPackageMetadata[]>,
   loadCollection: (pkg: IPackageMetadata, collection: ICollectionMetadata) => Promise<ICollectionMetadata>,
-  loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code) => void,
+  loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
   onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => void,
+  onUpdatePageCount: (callback: (pageCount: number) => void) => void,
+  onUpdatePageNumber: (callback: (page: number) => void) => void,
+  prevPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
+  nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
   stopLoadingCollectionEntries: () => void,
   loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
   fileExists: (path: string) => Promise<boolean>
 }
 
 export interface IConfigAPI {
+  onShowOptions: (callback: () => void) => void,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   loadPkgConfig: (pkg: any) => Promise<IPackageConfig>,
   savePkgConfig: (pkgPath: string, config: IPackageConfig) => Promise<void>,

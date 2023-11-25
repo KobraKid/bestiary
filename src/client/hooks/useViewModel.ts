@@ -1,7 +1,7 @@
-import { useCallback, useReducer, useState } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 import { IPackageConfig } from "../../model/Config";
 import { IPackageMetadata, ISO639Code } from "../../model/Package";
-import { ICollectionMetadata } from "../../model/Collection";
+import { ICollectionMetadata, ISorting } from "../../model/Collection";
 import { IEntryMetadata } from "../../model/Entry";
 import { IMap } from "../../model/Map";
 
@@ -10,6 +10,7 @@ interface BestiaryData {
     canNavigateBack: boolean,
     selectPkg: (pkg: IPackageMetadata) => void,
     selectCollection: (collection: ICollectionMetadata) => void,
+    updateCollection: (sortBy?: ISorting, sortDescending?: boolean) => void,
     selectEntry: (collectionId: string, entryId: string) => void,
     selectLang: (lang: ISO639Code) => void,
     addEntryToCollection: (entry: IEntryMetadata) => void,
@@ -17,6 +18,8 @@ interface BestiaryData {
     pkgConfig: IPackageConfig,
     updatePkgConfig: () => void,
     navigateBack: () => void,
+    prevPage: () => void,
+    nextPage: () => void
 }
 
 /**
@@ -125,44 +128,61 @@ export function useViewModel(): BestiaryData {
         displayMode: DISPLAY_MODE.collection
     }]);
 
-    const selectPkg = useCallback((oldPkg: IPackageMetadata, newPkg: IPackageMetadata) => {
-        if (newPkg.ns === oldPkg.ns) { return; }
-        selectCollection(newPkg, "", getFirstVisibleCollection(newPkg), lang);
+    const view = useRef<ViewStackframe>({
+        pkg: { ns: "", name: "", path: "", icon: "", collections: [], langs: [] },
+        collection: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
+        displayMode: DISPLAY_MODE.collection
+    });
+
+    view.current = views.at(-1)!;
+
+    const selectPkg = useCallback((newPkg: IPackageMetadata) => {
+        if (newPkg.ns === view.current.pkg.ns) { return; }
+        selectCollection(newPkg, getFirstVisibleCollection(newPkg), lang);
 
         // window.config.loadPkgConfig(newPkg).then(setPkgConfig);
     }, []);
 
-    const selectCollection = useCallback((pkg: IPackageMetadata, prevCollectionId: string, newCollection: ICollectionMetadata, lang: ISO639Code) => {
-        if (newCollection.ns !== prevCollectionId) {
-            // Reload entries for the new collection
-            window.pkg.stopLoadingCollectionEntries();
-            newCollection.entries = [];
-        }
+    const selectCollection = useCallback((pkg: IPackageMetadata, newCollection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => {
+        window.pkg.stopLoadingCollectionEntries();
+        newCollection.entries = [];
 
         window.pkg.loadCollection(pkg, newCollection).then(collection => {
             viewStackDispatch({
                 type: ViewStackframeActionType.RESET,
-                targetView: { pkg: pkg, collection: collection }
+                targetView: { pkg, collection }
             });
-            if ((collection.entries?.length ?? 0) === 0) {
-                window.pkg.loadCollectionEntries(pkg, collection, lang);
-            }
+            // if ((collection.entries?.length ?? 0) === 0) {
+            window.pkg.loadCollectionEntries(pkg, collection, lang, sortBy, sortDescending);
+            // }
         });
     }, []);
 
     const addEntryToCollection = useCallback((entry: IEntryMetadata) =>
         viewStackDispatch({ type: ViewStackframeActionType.COLLECT_ENTRY, newEntry: entry }), []);
 
-    const selectEntry = useCallback((pkg: IPackageMetadata, prevCollection: ICollectionMetadata, prevEntry: IEntryMetadata | undefined, newCollectionId: string, newEntryId: string, lang: ISO639Code) => {
-        if (newCollectionId === prevCollection.ns && newEntryId === prevEntry?.bid) { return; }
+    const selectEntry = useCallback((newCollectionId: string, newEntryId: string, lang: ISO639Code) => {
+        if (newCollectionId === view.current.collection.ns && newEntryId === view.current.entry?.bid) { return; }
 
-        window.pkg.loadEntry(pkg, newCollectionId, newEntryId, lang).then(loadedEntry => {
+        window.pkg.loadEntry(view.current.pkg, newCollectionId, newEntryId, lang).then(loadedEntry => {
             if (!loadedEntry) { return; }
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
-                targetView: { pkg, collection: getCollectionById(pkg, newCollectionId), entry: loadedEntry }
+                targetView: { pkg: view.current.pkg, collection: getCollectionById(view.current.pkg, newCollectionId), entry: loadedEntry }
             });
         });
+    }, []);
+
+    const prevPage = useCallback(() => {
+        window.pkg.stopLoadingCollectionEntries();
+        view.current.collection.entries = [];
+        window.pkg.prevPage(view.current.pkg, view.current.collection, lang);
+    }, []);
+
+    const nextPage = useCallback(() => {
+        window.pkg.stopLoadingCollectionEntries();
+        view.current.collection.entries = [];
+        window.pkg.nextPage(view.current.pkg, view.current.collection, lang);
     }, []);
 
     const navigateBack = useCallback(() =>
@@ -194,24 +214,20 @@ export function useViewModel(): BestiaryData {
         }
     }, []);
 
-    const view = views.at(-1) || {
-        pkg: { ns: "", name: "", path: "", icon: "", collections: [], langs: [] },
-        collection: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
-        displayMode: DISPLAY_MODE.collection
-    };
-
     return {
-        view,
+        view: view.current,
         canNavigateBack: views.length > 1,
-        selectPkg: (newPkg: IPackageMetadata) => selectPkg(view.pkg, newPkg),
-        selectCollection: (newCollection: ICollectionMetadata) => selectCollection(view.pkg, view.collection.ns, newCollection, lang),
-        selectEntry: (collectionId: string, entryId: string) => selectEntry(view.pkg, view.collection, view.entry, collectionId, entryId, lang),
+        selectPkg,
+        selectCollection: (newCollection: ICollectionMetadata) => selectCollection(view.current.pkg, newCollection, lang),
+        updateCollection: (sortBy?: ISorting, sortDescending?: boolean) => selectCollection(view.current.pkg, view.current.collection, lang, sortBy, sortDescending),
+        selectEntry: (collectionId: string, entryId: string) => selectEntry(collectionId, entryId, lang),
         selectLang: (lang: ISO639Code) => setLang(lang),
         addEntryToCollection,
         // collectEntry: (entryId: string, collectionConfigId: number) => collectEntry(entryId, collectionConfigId, {}, {}, pkgConfig),
         pkgConfig,
         updatePkgConfig: () => updatePkgConfig({}),
-        navigateBack
+        navigateBack,
+        prevPage, nextPage
     };
 }
 

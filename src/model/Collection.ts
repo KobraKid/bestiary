@@ -47,8 +47,8 @@ export interface IGrouping {
 
 export interface ISorting {
     /**
-             * Sorting name
-             */
+     * Sorting name
+     */
     name: string,
     /**
      * Attribute path to sort by

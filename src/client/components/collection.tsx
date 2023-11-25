@@ -7,19 +7,19 @@ import { IEntryMetadata } from "../../model/Entry";
 import "../styles/collection.scss";
 
 export interface ICollectionProps {
-    collection: ICollectionMetadata;
+    collection: ICollectionMetadata,
+    updateCollection: (sortBy?: ISortProps, sortDescending?: boolean) => void
 }
 
-export interface IPagingProps {
+interface IPageProps {
     currentPage: number,
     totalPages: number,
-    entriesPerPage: number,
     prevPage: () => void,
     nextPage: () => void
 }
 
-export const Collection: React.FC<ICollectionProps & IPagingProps> = (props: ICollectionProps & IPagingProps) => {
-    const { collection, currentPage, totalPages, entriesPerPage, prevPage, nextPage } = props;
+export const Collection: React.FC<ICollectionProps & IPageProps> = (props: ICollectionProps & IPageProps) => {
+    const { collection, updateCollection, currentPage, totalPages, prevPage, nextPage } = props;
 
     const { selectEntry } = useContext(PackageContext);
 
@@ -60,23 +60,17 @@ export const Collection: React.FC<ICollectionProps & IPagingProps> = (props: ICo
     }, [collection]);
 
     const [sorting, setSorting] = useState<ISorting | undefined>();
-    const [descending, setDescending] = useState<boolean>(false);
+    const [descending, setDescending] = useState<boolean>(true);
 
     const onSort = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
-        if (event.target.value.charAt(0) === "^") {
-            setSorting(collection.sortings.find(s => s.path === event.target.value.substring(1)));
-            setDescending(true);
-        }
-        else {
-            setSorting(collection.sortings.find(s => s.path === event.target.value));
-            setDescending(false);
-        }
+        setSorting(collection.sortings.find(s => s.path === event.target.value));
+        setDescending(event.target.value.charAt(0) !== "^");
     }, [collection]);
 
     useEffect(() => {
         setGrouping(undefined);
         setSorting((collection.sortings?.length ?? -1) > 0 ? collection.sortings[0] : undefined);
-        setDescending(false);
+        setDescending(true);
     }, [collection]);
 
     return (
@@ -107,9 +101,9 @@ export const Collection: React.FC<ICollectionProps & IPagingProps> = (props: ICo
                 <br />
                 {buckets
                     ? buckets.map(bucket =>
-                        <Group key={bucket.name} collection={collection}
+                        <Group key={bucket.name} collection={collection} updateCollection={updateCollection}
                             name={bucket.name} path={grouping?.path ?? ""} min={bucket.min} max={bucket.max} value={bucket.value} descending={descending} />)
-                    : [...collection.entries ?? []].sort((a, b) => compareEntry(a, b, sorting?.path, descending)).slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage).map(entry =>
+                    : [...collection.entries ?? []].map(entry =>
                         <Entry key={entry.bid} entry={entry} onClick={() => selectEntry(collection.ns, entry.bid)} />)
                 }
                 {collection.style && convertHtmlToReact(collection.style)}
