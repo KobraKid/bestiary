@@ -34,26 +34,24 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.send("pkg:stop-loading-collection"),
     loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
         ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
-    fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
+    // fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
 });
 
 contextBridge.exposeInMainWorld("config", {
     onShowOptions: (callback: () => void) => {
         ipcRenderer.on("options:show-options", () => callback());
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    loadPkgConfig: (pkg: any) => ipcRenderer.invoke("config:load-config", pkg),
+    loadPkgConfig: (pkg: IPackageMetadata) => ipcRenderer.invoke("config:load-config", pkg),
     savePkgConfig: (pkgPath: string, config: IPackageConfig) => ipcRenderer.invoke("config:save-config", pkgPath, config),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    loadConfig: (pkg: any, collectionName: string) => ipcRenderer.invoke("config:load-collection-config", pkg, collectionName),
+    loadConfig: (pkg: IPackageMetadata, collectionName: string) => ipcRenderer.invoke("config:load-collection-config", pkg, collectionName),
     saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => ipcRenderer.invoke("config:save-collection-config", pkgPath, collectionName, config)
 });
 
 contextBridge.exposeInMainWorld("menu", {
-    showCollectionMenu: (collection: string) => ipcRenderer.send("context-menu:show-collection-menu", collection),
-    manageCollection: (collectionManager: (collection: string) => void) => {
+    showCollectionMenu: (pkg: IPackageMetadata, collection: ICollectionMetadata) => ipcRenderer.send("context-menu:show-collection-menu", pkg, collection),
+    onConfigureCollection: (collectionManager: (pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => void) => {
         ipcRenderer.removeAllListeners("context-menu:manage-collection");
-        ipcRenderer.on("context-menu:manage-collection", (_event: IpcRendererEvent, collection: string) => collectionManager(collection));
+        ipcRenderer.on("context-menu:manage-collection", (_event: IpcRendererEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => collectionManager(pkg, collection, config));
     }
 });
 

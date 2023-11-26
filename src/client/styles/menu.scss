@@ -15,10 +15,26 @@ $menu-font-expanded-size: 1em;
   border-bottom: 2px solid colors.$medium;
   width: 100%;
   overflow-x: scroll;
-  z-index: 1000;
+  z-index: 10;
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  .arrow-container {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    align-content: flex-end;
+
+    img {
+      padding: 16px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+    }
   }
 }
 

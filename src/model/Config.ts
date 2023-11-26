@@ -1,14 +1,19 @@
 export interface IPackageConfig {
-    [key: string]: ICollectionConfig[]
+    collections?: ICollectionConfig[]
 }
 
 export interface ICollectionConfig {
+    collectionId: string,
+    groups: IGroupConfig[]
+}
+
+export interface IGroupConfig {
     id: number,
     name: string,
+    backgroundColor: string,
     color: string,
-    textColor: string,
-    categories: string[],
-    spoilers: string[],
-    collectedEntryIds: string[],
-    hideWhenCollected: boolean
+    entries: string[],
+    categories?: string[],
+    spoilers?: string[],
+    hideWhenCollected?: boolean
 }

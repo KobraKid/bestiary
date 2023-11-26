@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { IPackageMetadata } from "../../model/Package";
 import { ICollectionMetadata } from "../../model/Collection";
 import "../styles/menu.scss";
 import upArrow from "../../assets/icons/up.png";
 import downArrow from "../../assets/icons/down.png";
 import leftArrow from "../../assets/icons/left.png";
+import { PackageContext } from "../context";
 
 /**
  * Props for the package menu
@@ -44,7 +45,7 @@ export const PackageMenu = (props: IPackageMenuProps) => {
     }, []);
 
     return (
-        <div className='package-menu'>
+        <div className="package-menu">
             {packages.map((pkg: IPackageMetadata) =>
                 <PackageMenuItem
                     key={pkg.name}
@@ -53,8 +54,8 @@ export const PackageMenu = (props: IPackageMenuProps) => {
                     expanded={expanded}
                     onPkgClicked={() => onPkgClickedCallback(pkg)} />)
             }
-            <div style={{ flexGrow: "1", height: "100%" }}>
-                <img src={expanded ? upArrow : downArrow} style={{ float: "right", padding: 16, width: 32, height: 32, cursor: "pointer" }} onClick={() => setExpanded(!expanded)} />
+            <div className="arrow-container">
+                <img src={expanded ? upArrow : downArrow} onClick={() => setExpanded(!expanded)} />
             </div>
         </div>
     );
@@ -92,9 +93,9 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
 
     return (
         <button className={`package-menu-button-${expanded ? "expanded" : "collapsed"}`} onClick={onPkgClicked}>
-            <div className='package'>
-                <img className='package-icon' src={icon} alt={name} />
-                <div className='package-name'>
+            <div className="package">
+                <img className="package-icon" src={icon} alt={name} />
+                <div className="package-name">
                     <p>{name}</p>
                 </div>
             </div>
@@ -120,11 +121,12 @@ interface ICollectionMenuProps {
  */
 export const CollectionMenu = (props: ICollectionMenuProps) => {
     const { collections, onCollectionClicked, canNavigateBack, onBackArrowClicked, pkgMenuExpanded } = props;
+    const { pkg } = useContext(PackageContext);
 
     return (
         <div className={`collection-menu-${pkgMenuExpanded ? "expanded" : "collapsed"}`}>
             {canNavigateBack &&
-                <div className='collection-menu-button'>
+                <div className="collection-menu-button">
                     <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: "pointer" }} onClick={onBackArrowClicked} />
                 </div>
             }
@@ -133,7 +135,7 @@ export const CollectionMenu = (props: ICollectionMenuProps) => {
                     key={collection.ns}
                     name={collection.name}
                     onCollectionClicked={() => onCollectionClicked(collection)}
-                    onCollectionRightClicked={() => window.menu.showCollectionMenu(collection.ns)} />
+                    onCollectionRightClicked={() => window.menu.showCollectionMenu(pkg, collection)} />
             )}
         </div>
     );
@@ -157,7 +159,7 @@ const CollectionMenuItem = (props: ICollectionMenuItemProps) => {
     const { name, onCollectionClicked, onCollectionRightClicked } = props;
 
     return (
-        <button className='collection-menu-button' onClick={onCollectionClicked} onContextMenu={onCollectionRightClicked}>
+        <button className="collection-menu-button" onClick={onCollectionClicked} onContextMenu={onCollectionRightClicked}>
             <p>{name}</p>
         </button>
     );

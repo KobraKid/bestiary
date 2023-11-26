@@ -1,5 +1,4 @@
 import { useCallback, useReducer, useRef, useState } from "react";
-import { IPackageConfig } from "../../model/Config";
 import { IPackageMetadata, ISO639Code } from "../../model/Package";
 import { ICollectionMetadata, ISorting } from "../../model/Collection";
 import { IEntryMetadata } from "../../model/Entry";
@@ -14,9 +13,6 @@ interface BestiaryData {
     selectEntry: (collectionId: string, entryId: string) => void,
     selectLang: (lang: ISO639Code) => void,
     addEntryToCollection: (entry: IEntryMetadata) => void,
-    // collectEntry: (entryId: string, collectionConfigId: number) => void,
-    pkgConfig: IPackageConfig,
-    updatePkgConfig: () => void,
     navigateBack: () => void,
     prevPage: () => void,
     nextPage: () => void
@@ -62,8 +58,6 @@ interface IViewStackframeDispatchAction {
 }
 
 export function useViewModel(): BestiaryData {
-    const [pkgConfig, setPkgConfig] = useState<IPackageConfig>({});
-
     const [lang, setLang] = useState<ISO639Code>(ISO639Code.English);
 
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
@@ -140,7 +134,6 @@ export function useViewModel(): BestiaryData {
         if (newPkg.ns === view.current.pkg.ns) { return; }
         selectCollection(newPkg, getFirstVisibleCollection(newPkg), lang);
 
-        // window.config.loadPkgConfig(newPkg).then(setPkgConfig);
     }, []);
 
     const selectCollection = useCallback((pkg: IPackageMetadata, newCollection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => {
@@ -152,9 +145,7 @@ export function useViewModel(): BestiaryData {
                 type: ViewStackframeActionType.RESET,
                 targetView: { pkg, collection }
             });
-            // if ((collection.entries?.length ?? 0) === 0) {
             window.pkg.loadCollectionEntries(pkg, collection, lang, sortBy, sortDescending);
-            // }
         });
     }, []);
 
@@ -188,32 +179,6 @@ export function useViewModel(): BestiaryData {
     const navigateBack = useCallback(() =>
         viewStackDispatch({ type: ViewStackframeActionType.NAVIGATE_BACKWARDS }), []);
 
-    const updatePkgConfig = useCallback((pkg: unknown) => window.config.loadPkgConfig(pkg).then(setPkgConfig), []);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-    const collectEntry = useCallback((entryId: string, collectionConfigId: number, currentPkg: any, currentCollection: any, currentConfig: IPackageConfig) => {
-        // Clone current config
-        const newPkgConfig: IPackageConfig = JSON.parse(JSON.stringify(currentConfig));
-        if (currentPkg && newPkgConfig) {
-            // Get the collection configs for the current collection
-            const collectionConfigs = newPkgConfig[currentCollection.name];
-            if (collectionConfigs) {
-                // Get the specific config we're changing
-                const configToEdit = collectionConfigs.find(config => config.id === collectionConfigId);
-                if (configToEdit) {
-                    // Remove the ID if it already exists, otherwise add it
-                    const newEntries = configToEdit.collectedEntryIds.includes(entryId) ?
-                        configToEdit.collectedEntryIds.filter(entry => entry !== entryId)
-                        : configToEdit.collectedEntryIds.concat(entryId);
-                    // Save the change
-                    configToEdit.collectedEntryIds = newEntries;
-                    window.config.savePkgConfig(currentPkg.metadata.path, newPkgConfig);
-                    setPkgConfig(newPkgConfig);
-                }
-            }
-        }
-    }, []);
-
     return {
         view: view.current,
         canNavigateBack: views.length > 1,
@@ -223,9 +188,6 @@ export function useViewModel(): BestiaryData {
         selectEntry: (collectionId: string, entryId: string) => selectEntry(collectionId, entryId, lang),
         selectLang: (lang: ISO639Code) => setLang(lang),
         addEntryToCollection,
-        // collectEntry: (entryId: string, collectionConfigId: number) => collectEntry(entryId, collectionConfigId, {}, {}, pkgConfig),
-        pkgConfig,
-        updatePkgConfig: () => updatePkgConfig({}),
         navigateBack,
         prevPage, nextPage
     };

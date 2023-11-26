@@ -15,23 +15,20 @@ export interface IPkgAPI {
   nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
   stopLoadingCollectionEntries: () => void,
   loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
-  fileExists: (path: string) => Promise<boolean>
+  // fileExists: (path: string) => Promise<boolean>
 }
 
 export interface IConfigAPI {
   onShowOptions: (callback: () => void) => void,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  loadPkgConfig: (pkg: any) => Promise<IPackageConfig>,
+  loadPkgConfig: (pkg: IPackageMetadata) => Promise<IPackageConfig>,
   savePkgConfig: (pkgPath: string, config: IPackageConfig) => Promise<void>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  loadConfig: (pkg: any, collectionName: string) => Promise<ICollectionConfig[]>,
+  loadConfig: (pkg: IPackageMetadata, collectionName: string) => Promise<ICollectionConfig[]>,
   saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => Promise<void>
 }
 
 export interface IMenuAPI {
-  showCollectionMenu: (collection: string) => Promise<void>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  manageCollection: (collectionManager: (collection: string) => void) => any
+  showCollectionMenu: (pkg: IPackageMetadata, collection: ICollectionMetadata) => Promise<void>,
+  onConfigureCollection: (collectionManager: (pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => void) => Promise<void>
 }
 
 export interface IImporterAPI {
@@ -51,8 +48,7 @@ export interface ILoggingAPI {
 }
 
 export interface IFormulaAPI {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  eval: (expression: string, scope?: object) => Promise<any>
+  eval: (expression: string, scope?: object) => Promise<unknown>
 }
 
 declare global {

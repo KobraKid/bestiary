@@ -1,0 +1,31 @@
+.group-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    background-color: rgba(40, 40, 40, .8);
+
+    .group-config {
+        background-color: gray;
+        width: 80%;
+        height: 80%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: 60px auto;
+
+        h2 {
+            grid-column: 1 / span 3;
+            text-align: center;
+        }
+
+        .group-form {
+            padding: 8px;
+        }
+    }
+}

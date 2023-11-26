@@ -2,114 +2,81 @@
 @use "_colors";
 
 .collection-grid {
-  grid-column: collection-grid / span 1;
-  grid-row: collection-grid / span 1;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  overflow: auto;
-  align-content: flex-start;
+    grid-column: collection-grid / span 1;
+    grid-row: collection-grid / span 1;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: auto;
+    align-content: flex-start;
 }
 
 .collection-subsection {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  width: 100%;
-
-  &>.collection-subsection-header:first-child {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
     width: 100%;
 
-    &>div {
-      color: colors.$text-light;
-      font-size: 20px;
-      text-align: center;
-    }
+    &>.collection-subsection-header:first-child {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
 
-    &>div:first-child,
-    &>div:last-child {
-      height: 0px;
-      flex-grow: 1;
-      border-top: 1px solid colors.$text-light;
-      margin: 0px 5px;
+        &>div {
+            color: colors.$text-light;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        &>div:first-child,
+        &>div:last-child {
+            height: 0px;
+            flex-grow: 1;
+            border-top: 1px solid colors.$text-light;
+            margin: 0px 5px;
+        }
     }
-  }
 }
-
-.collection-tabs {
-  display: flex;
-  flex-direction: column;
-  width: 24px;
-  z-index: 999;
-
-  .collection-tab {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 4px;
-    padding: 2px;
-    width: 20px;
-    border-radius: 4px;
-    overflow: hidden;
-    text-overflow: clip;
-    transition: width .5s ease;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-  }
-
-  &:hover {
-    .collection-tab {
-      width: 100px;
-      overflow: auto;
-      text-overflow: ellipsis;
-    }
-  }
-}
-
 
 .preview-item {
-  display: flex;
-  flex-direction: row;
-  padding: 4px 0px 0px 4px;
+    display: flex;
+    flex-direction: row;
+    padding: 4px 0px 0px 4px;
 
-  &>div:last-child {
-    cursor: pointer;
-  }
+    &>div:last-child {
+        cursor: pointer;
+    }
 }
 
 .linkItem {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .grouping-selection {
-  width: 100%;
-  height: fit-content;
+    width: 100%;
+    height: fit-content;
 
-  select {
-    width: 100px;
-  }
+    select {
+        width: 100px;
+    }
 }
 
 .collection-page-select {
-  grid-column-start: collection-grid;
-  grid-column-end: span 1;
-  grid-row-start: page-select;
-  grid-row-end: span 1;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+    grid-column-start: collection-grid;
+    grid-column-end: span 1;
+    grid-row-start: page-select;
+    grid-row-end: span 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
 }
 
 .collection-bucket {
-  width: 100%;
-  background-color: lightgray;
-  text-align: center;
+    width: 100%;
+    background-color: lightgray;
+    text-align: center;
 }
