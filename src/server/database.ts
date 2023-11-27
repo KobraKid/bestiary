@@ -10,6 +10,7 @@ import { ICollectionMetadata, ISorting } from "../model/Collection";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { ILandmark, IMap } from "../model/Map";
 import Resource, { IResource } from "../model/Resource";
+import { createOrLoadCollectionConfig } from "./collection";
 
 type EntryLayoutContext = { entry: IEntrySchema, lang: ISO639Code };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
@@ -90,7 +91,9 @@ export async function getCollection(event: IpcMainInvokeEvent, pkg: IPackageMeta
     event.sender.send("pkg:update-page-number", page);
 
     const collectionStyle = getStyle(pkg.ns, collection.ns, ViewType.preview);
-    return { ...collection, style: collectionStyle };
+    const collectionConfig = await createOrLoadCollectionConfig(pkg, collection);
+
+    return { ...collection, style: collectionStyle, config: collectionConfig };
 }
 
 export async function prevPage(params: CollectionEntryParams) {

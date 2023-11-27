@@ -104,7 +104,7 @@ export const Collection: React.FC<ICollectionProps & IPageProps> = (props: IColl
                         <Group key={bucket.name} collection={collection} updateCollection={updateCollection}
                             name={bucket.name} path={grouping?.path ?? ""} min={bucket.min} max={bucket.max} value={bucket.value} descending={descending} />)
                     : [...collection.entries ?? []].map(entry =>
-                        <Entry key={entry.bid} entry={entry} fromCollection onClick={() => selectEntry(collection.ns, entry.bid)} />)
+                        <Entry key={entry.bid} entry={entry} collection={collection} onClick={() => selectEntry(collection.ns, entry.bid)} />)
                 }
                 {collection.style && convertHtmlToReact(collection.style)}
             </div>
@@ -143,7 +143,7 @@ const Group: React.FC<ICollectionProps & IBucketProps & ISortProps> = (props: IC
                 collection.entries
                     ?.filter(entry => filterEntry(entry, bucketPath, min, max, value))
                     ?.sort((a, b) => compareEntry(a, b, sortPath, descending))
-                    ?.map(entry => <Entry key={entry.bid} entry={entry} fromCollection onClick={() => selectEntry(collection.ns, entry.bid)} />)
+                    ?.map(entry => <Entry key={entry.bid} entry={entry} collection={collection} onClick={() => selectEntry(collection.ns, entry.bid)} />)
             }
         </>
     );

@@ -1,3 +1,4 @@
+import { ICollectionConfig } from "./Config";
 import { IEntryMetadata } from "./Entry";
 
 export interface IGrouping {
@@ -88,5 +89,9 @@ export interface ICollectionMetadata {
     /**
      * Style string
      */
-    style?: string
+    style?: string,
+    /**
+     * Collection configuration
+     */
+    config?: ICollectionConfig,
 }

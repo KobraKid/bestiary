@@ -8,6 +8,7 @@ import { ICollectionConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata } from "../model/Package";
 import { IpcMainEvent } from "electron";
 
+let pkgNamespace = "";
 let pkgConfig: IPackageConfig;
 let pkgConfigFile = "";
 
@@ -21,6 +22,7 @@ let pkgConfigFile = "";
 async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig> {
     const pkgConfigPath = path.join(paths.config, path.basename(pkg.ns));
     pkgConfigFile = path.join(pkgConfigPath, "config.json");
+    pkgNamespace = pkg.ns;
 
     try {
         await mkdir(pkgConfigPath, { recursive: true });
@@ -47,13 +49,11 @@ async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig
  * @param collection The collection to load the config for
  * @returns The configuration data for a collection
  */
-async function createOrLoadCollectionConfig(pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionConfig | undefined> {
-    await createOrLoadConfig(pkg);
-    let collectionConfig: ICollectionConfig | undefined;
-    if (pkgConfig?.collections) {
-        collectionConfig = pkgConfig.collections.find(c => c.collectionId === collection.ns) || { collectionId: collection.ns, groups: [] };
+export async function createOrLoadCollectionConfig(pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionConfig> {
+    if (pkgNamespace !== pkg.ns) {
+        await createOrLoadConfig(pkg);
     }
-    return collectionConfig;
+    return pkgConfig?.collections?.find(c => c.collectionId === collection.ns) ?? { collectionId: collection.ns, groups: [] };
 }
 
 /**

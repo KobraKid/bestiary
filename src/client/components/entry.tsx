@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
 import { IEntryMetadata } from "../../model/Entry";
 import { IGroupConfig } from "../../model/Config";
+import { ICollectionMetadata } from "../../model/Collection";
 import "../styles/details.scss";
 
 export interface IEntryProps {
@@ -9,10 +10,7 @@ export interface IEntryProps {
      * The entry to display
      */
     entry: IEntryMetadata,
-    /**
-     * Whether this entry is being displayed from a collection
-     */
-    fromCollection?: boolean,
+    collection?: ICollectionMetadata,
     /**
      * Callback for when this entry is clicked
      */
@@ -20,15 +18,13 @@ export interface IEntryProps {
 }
 
 export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
-    const { entry, fromCollection, onClick } = props;
+    const { entry, collection, onClick } = props;
 
     return (
-        <div className={fromCollection ? "preview" : "details"}>
-            {fromCollection &&
+        <div className={collection ? "preview" : "details"}>
+            {collection &&
                 <div className="group-tabs">
-                    <Group name="Recruited" backgroundColor="#0088FF" color="white" />
-                    <Group name="5💖" backgroundColor="#22CC22" color="white" />
-                    <Group name="Max Level" backgroundColor="#AACC00" color="black" />
+                    {collection.config?.groups.map(group => <Group key={group.id} {...group} />)}
                 </div>
             }
             <div onClick={onClick}>
