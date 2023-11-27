@@ -24,6 +24,29 @@
             text-align: center;
         }
 
+        .preview {
+            .group-tab {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                gap: 4px;
+                padding: 2px;
+                width: 100px;
+                border-radius: 4px;
+                overflow: auto;
+                text-overflow: ellipsis;
+
+                &::-webkit-scrollbar {
+                    display: none;
+                }
+
+                span {
+                    padding-right: 8px;
+                    white-space: nowrap;
+                }
+            }
+        }
+
         .group-form {
             padding: 8px;
         }

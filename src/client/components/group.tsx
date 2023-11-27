@@ -2,6 +2,7 @@ import React, { FormEvent, useCallback, useEffect, useState } from "react";
 import { IPackageMetadata } from "../../model/Package";
 import { ICollectionMetadata } from "../../model/Collection";
 import { ICollectionConfig, IGroupConfig } from "../../model/Config";
+import { Group } from "./entry";
 import "../styles/group.scss";
 
 export const GroupSettingsView: React.FC = () => {
@@ -68,20 +69,25 @@ export const GroupSettings: React.FC<IGroupSettingsProps> = (props: IGroupSettin
     };
 
     return (
-        <form onSubmit={handleSubmit} className="group-form">
-            <label>Name:&nbsp;
-                <input type="text" value={name} onChange={e => setName(e.target.value)} />
-            </label>
-            <br />
-            <label>Background Color:&nbsp;
-                <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} />
-            </label>
-            <br />
-            <label>Text Color:&nbsp;
-                <input type="color" value={color} onChange={e => setColor(e.target.value)} />
-            </label>
-            <br />
-            <input type="submit" value="Update" />
-        </form>
+        <div>
+            <div className="preview">
+                <Group name={name} backgroundColor={bgColor} color={color} />
+            </div>
+            <form onSubmit={handleSubmit} className="group-form">
+                <label>Name:&nbsp;
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} />
+                </label>
+                <br />
+                <label>Background Color:&nbsp;
+                    <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} />
+                </label>
+                <br />
+                <label>Text Color:&nbsp;
+                    <input type="color" value={color} onChange={e => setColor(e.target.value)} />
+                </label>
+                <br />
+                <input type="submit" value="Update" />
+            </form>
+        </div>
     );
 };

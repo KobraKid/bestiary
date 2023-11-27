@@ -133,7 +133,6 @@ export function useViewModel(): BestiaryData {
     const selectPkg = useCallback((newPkg: IPackageMetadata) => {
         if (newPkg.ns === view.current.pkg.ns) { return; }
         selectCollection(newPkg, getFirstVisibleCollection(newPkg), lang);
-
     }, []);
 
     const selectCollection = useCallback((pkg: IPackageMetadata, newCollection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => {

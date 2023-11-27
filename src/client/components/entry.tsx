@@ -39,7 +39,7 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     );
 };
 
-const Group: React.FC<Partial<IGroupConfig>> = (props: Partial<IGroupConfig>) => {
+export const Group: React.FC<Partial<IGroupConfig>> = (props: Partial<IGroupConfig>) => {
     const { name, backgroundColor, color } = props;
 
     const [checked, setChecked] = useState<boolean>(false);

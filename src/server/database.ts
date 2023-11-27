@@ -252,14 +252,14 @@ export async function getScript(pkgId: string, collectionNamespace: string): Pro
  * @param collectionNamespace The current collection's namespace.
  * @returns A <style></style> element.
  */
-export function getStyle(pkgId: string, collectionNamespace: string, viewType: ViewType): string | undefined {
+export function getStyle(pkgId: string, collectionNamespace: string, viewType: ViewType): string {
     try {
         return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${collectionNamespace}.scss`)).css}</style>`;
     }
     catch (err) {
         console.log((err as Error).message);
     }
-    return undefined;
+    return "";
 }
 
 async function getFile(pkgId: string, collectionNamespace: string, fileType: FileType, viewType?: ViewType): Promise<EntryLayoutFile> {

@@ -11,7 +11,7 @@ import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { ICollectionMetadata, ISorting } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
-import { loadCollectionConfig } from "./collection";
+import { loadCollectionConfig, saveConfig } from "./collection";
 
 /**
  * Setup and logging
@@ -51,35 +51,20 @@ function createWindow() {
             win.webContents.openDevTools({ mode: "undocked" });
         }
     });
+
+    win.on("close", () => {
+        saveConfig();
+    });
 }
-
-// function saveConfig(pkgPath: string, config: IPackageConfig): void {
-//     const pkgConfigFile = path.join(paths.config, path.basename(pkgPath), "config.json");
-//     try {
-//         writeFileSync(pkgConfigFile, JSON.stringify(config));
-//     } catch (err: unknown) {
-//         console.log(chalk.white.bgRed("❌ Error saving package config at \"" + pkgConfigFile + "\"", err));
-//     }
-// }
-
-// function saveCollectionConfig(pkgPath: string, collectionName: string, config: ICollectionConfig[]): void {
-//     const pkgConfigFile = path.join(paths.config, path.basename(pkgPath), "config.json");
-
-//     try {
-//         const pkgConfig: IPackageConfig = JSON.parse(readFileSync(pkgConfigFile, { encoding: "utf-8" }));
-//         pkgConfig[collectionName] = config;
-//         writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig));
-//     } catch (err: unknown) {
-//         console.log(chalk.white.bgRed("❌ Error saving package config at \"" + pkgConfigFile + "\"", err));
-//     }
-// }
 
 /**
  * Load all packages
  */
 ipcMain.handle("pkg:load-pkgs", (): Promise<IPackageMetadata[]> => getPackageList());
 
-ipcMain.handle("pkg:load-collection", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => getCollection(event, pkg, collection));
+ipcMain.handle("pkg:load-collection", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => {
+    return getCollection(event, pkg, collection);
+});
 
 ipcMain.on("pkg:load-collection-entries", (
     event: IpcMainInvokeEvent,
@@ -107,7 +92,9 @@ ipcMain.on("pkg:next-page", (
 
 ipcMain.on("pkg:stop-loading-collection", (): void => stopLoadingCollectionEntries());
 
-ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => getEntry(pkg, collectionId, entryId, lang));
+ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
+    return getEntry(pkg, collectionId, entryId, lang);
+});
 
 // ipcMain.handle("pkg:file-exists", (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
 
