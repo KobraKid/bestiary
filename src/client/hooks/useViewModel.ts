@@ -164,15 +164,21 @@ export function useViewModel(): BestiaryData {
     }, []);
 
     const prevPage = useCallback(() => {
-        window.pkg.stopLoadingCollectionEntries();
-        view.current.collection.entries = [];
-        window.pkg.prevPage(view.current.pkg, view.current.collection, lang);
+        window.pkg.stopLoadingCollectionEntries().then(stopped => {
+            if (stopped) {
+                view.current.collection.entries = [];
+                window.pkg.prevPage(view.current.pkg, view.current.collection, lang);
+            }
+        });
     }, []);
 
     const nextPage = useCallback(() => {
-        window.pkg.stopLoadingCollectionEntries();
-        view.current.collection.entries = [];
-        window.pkg.nextPage(view.current.pkg, view.current.collection, lang);
+        window.pkg.stopLoadingCollectionEntries().then(stopped => {
+            if (stopped) {
+                view.current.collection.entries = [];
+                window.pkg.nextPage(view.current.pkg, view.current.collection, lang);
+            }
+        });
     }, []);
 
     const navigateBack = useCallback(() =>

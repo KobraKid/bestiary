@@ -60,7 +60,7 @@ function createWindow() {
 /**
  * Load all packages
  */
-ipcMain.handle("pkg:load-pkgs", (): Promise<IPackageMetadata[]> => getPackageList());
+ipcMain.handle("pkg:load-pkgs", getPackageList);
 
 ipcMain.handle("pkg:load-collection", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => {
     return getCollection(event, pkg, collection);
@@ -90,7 +90,7 @@ ipcMain.on("pkg:next-page", (
     sortBy?: ISorting,
     sortDescending?: boolean) => nextPage({ event, pkg, collection, lang, sortBy, sortDescending }));
 
-ipcMain.on("pkg:stop-loading-collection", (): void => stopLoadingCollectionEntries());
+ipcMain.handle("pkg:stop-loading-collection", stopLoadingCollectionEntries);
 
 ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
     return getEntry(pkg, collectionId, entryId, lang);

@@ -98,6 +98,7 @@ export async function getCollection(event: IpcMainInvokeEvent, pkg: IPackageMeta
 
 export async function prevPage(params: CollectionEntryParams) {
     const { event } = params;
+    if (isLoading) { return; }
     page = Math.max(page - 1, 0);
     event.sender.send("pkg:update-page-number", page);
     getCollectionEntries(params);
@@ -106,6 +107,7 @@ export async function prevPage(params: CollectionEntryParams) {
 
 export async function nextPage(params: CollectionEntryParams) {
     const { event } = params;
+    if (isLoading) { return; }
     page = Math.min(page + 1, pages - 1);
     event.sender.send("pkg:update-page-number", page);
     getCollectionEntries(params);
@@ -136,7 +138,7 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
     const layout = await getLayout(pkg.ns, collection.ns, ViewType.preview);
 
     for (const entry of entries) {
-        if (!isLoading) { break; }
+        // if (!isLoading) { break; }
         const cache = {};
         const entryLayout = await layout({ entry, lang });
         const groupings = await Promise.all(
@@ -175,10 +177,15 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
             layout: entryLayout
         });
     }
+    isLoading = false;
 }
 
-export function stopLoadingCollectionEntries(): void {
-    isLoading = false;
+/**
+ * Whether we stopped loading entries.
+ * @returns True if we have stopped loading entries for a collection/page
+ */
+export function stopLoadingCollectionEntries(): boolean {
+    return !isLoading;
 }
 
 /**

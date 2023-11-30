@@ -13,7 +13,7 @@ export interface IPkgAPI {
   onUpdatePageNumber: (callback: (page: number) => void) => void,
   prevPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
   nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
-  stopLoadingCollectionEntries: () => void,
+  stopLoadingCollectionEntries: () => Promise<boolean>,
   loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
   // fileExists: (path: string) => Promise<boolean>
 }

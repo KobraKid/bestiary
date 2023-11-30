@@ -30,8 +30,8 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.send("pkg:prev-page", pkg, collection, lang, sortBy, sortDescending),
     nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
         ipcRenderer.send("pkg:next-page", pkg, collection, lang, sortBy, sortDescending),
-    stopLoadingCollectionEntries: () =>
-        ipcRenderer.send("pkg:stop-loading-collection"),
+    stopLoadingCollectionEntries: (): Promise<boolean> =>
+        ipcRenderer.invoke("pkg:stop-loading-collection"),
     loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
         ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
     // fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
