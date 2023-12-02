@@ -95,6 +95,9 @@ export function updateCollectionConfig(_event: IpcMainEvent, collection: ICollec
         if (index >= 0 && index < pkgConfig.collections?.length) {
             pkgConfig.collections[index]!.groups = config.groups;
         }
+        else {
+            pkgConfig.collections.push(config);
+        }
     }
 }
 

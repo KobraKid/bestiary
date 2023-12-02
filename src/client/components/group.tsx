@@ -187,10 +187,9 @@ export const GroupSettings: React.FC<IGroupSettingsProps> = (props: IGroupSettin
                 <button onClick={onRemoveGroup}>❌</button>
             </div>
             <label>Name:&nbsp;</label>
-            <input type="text" name="name" value={name} onChange={e => {
-                setName(e.target.value);
-                updateGroup(e.target.value, bgColor, color);
-            }} />
+            <input type="text" name="name" value={name}
+                onBlur={() => updateGroup(name, bgColor, color)}
+                onChange={e => setName(e.target.value)} />
             <label>Background Color:&nbsp;</label>
             <input type="color" name="bgColor" value={bgColor} onChange={e => {
                 setBgColor(e.target.value);
