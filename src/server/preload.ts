@@ -3,7 +3,7 @@ import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { ICollectionMetadata, ISorting } from "../model/Collection";
-import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { ICollectionConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 
@@ -34,17 +34,18 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.invoke("pkg:stop-loading-collection"),
     loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
         ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
-    // fileExists: (path: string): Promise<boolean> => ipcRenderer.invoke("pkg:file-exists", path)
 });
 
 contextBridge.exposeInMainWorld("config", {
     onShowOptions: (callback: () => void) => {
         ipcRenderer.on("options:show-options", () => callback());
     },
-    loadPkgConfig: (pkg: IPackageMetadata) => ipcRenderer.invoke("config:load-config", pkg),
-    savePkgConfig: (pkgPath: string, config: IPackageConfig) => ipcRenderer.invoke("config:save-config", pkgPath, config),
-    loadConfig: (pkg: IPackageMetadata, collectionName: string) => ipcRenderer.invoke("config:load-collection-config", pkg, collectionName),
-    saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => ipcRenderer.invoke("config:save-collection-config", pkgPath, collectionName, config)
+    savePkgConfig: () =>
+        ipcRenderer.send("config:save-config"),
+    updateCollectionConfig: (collection: ICollectionMetadata, config: ICollectionConfig) =>
+        ipcRenderer.send("config:update-collection-config", collection, config),
+    updateEntryCollectedStatus: (collection: ICollectionMetadata, groupId: number, entryId: string) =>
+        ipcRenderer.send("config:update-entry-collected-status", collection, groupId, entryId)
 });
 
 contextBridge.exposeInMainWorld("menu", {

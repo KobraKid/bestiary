@@ -9,7 +9,7 @@ import { IPackageMetadata } from "../model/Package";
 import { IpcMainEvent } from "electron";
 
 let pkgNamespace = "";
-let pkgConfig: IPackageConfig;
+let pkgConfig: IPackageConfig | null = null;
 let pkgConfigFile = "";
 
 /**
@@ -20,6 +20,11 @@ let pkgConfigFile = "";
  * @returns The configurtion data for a package
  */
 async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig> {
+    if (pkgConfig && pkgConfigFile) {
+        saveConfig();
+        pkgConfig = null;
+    }
+
     const pkgConfigPath = path.join(paths.config, path.basename(pkg.ns));
     pkgConfigFile = path.join(pkgConfigPath, "config.json");
     pkgNamespace = pkg.ns;
@@ -35,10 +40,9 @@ async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig
         pkgConfig = JSON.parse(readFileSync(pkgConfigFile, { encoding: "utf-8" }));
     } catch (err: unknown) {
         console.log(chalk.white.bgRed("❌ Error loading package config at \"" + pkgConfigFile + "\"", err));
-        pkgConfig = {};
     }
 
-    return pkgConfig;
+    return pkgConfig || {};
 }
 
 /**
@@ -85,11 +89,36 @@ export function saveConfig(): void {
  * @param collection The collection to update
  * @param config The updated configuration data
  */
-export function updateCollectionConfig(collection: ICollectionMetadata, config: ICollectionConfig): void {
+export function updateCollectionConfig(_event: IpcMainEvent, collection: ICollectionMetadata, config: ICollectionConfig): void {
     if (pkgConfig?.collections) {
         const index = pkgConfig.collections.findIndex(c => c.collectionId === collection.ns);
         if (index >= 0 && index < pkgConfig.collections?.length) {
             pkgConfig.collections[index]!.groups = config.groups;
+        }
+    }
+}
+
+/**
+ * Updates the collected status for an entry in a particular group.
+ * If the entry is already marked as collected, it is removed.
+ * If the entry is not already marked as collected, it is added.
+ * 
+ * @param _event The event that triggered this update
+ * @param collection The collection to update
+ * @param groupId The group within the collection to update
+ * @param entryId The entry to add or remove
+ */
+export function updateCollectedStatusForEntry(_event: IpcMainEvent, collection: ICollectionMetadata, groupId: number, entryId: string): void {
+    if (pkgConfig?.collections) {
+        const config = pkgConfig.collections.find(c => c.collectionId === collection.ns);
+        if (config) {
+            const group = config.groups.find(g => g.id === groupId);
+            if (group?.entries.includes(entryId)) {
+                group.entries.splice(group.entries.indexOf(entryId), 1);
+            }
+            else {
+                group?.entries.push(entryId);
+            }
         }
     }
 }

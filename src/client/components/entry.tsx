@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { convertHtmlToReact } from "@hedgedoc/html-to-react";
 import { IEntryMetadata } from "../../model/Entry";
 import { IGroupConfig } from "../../model/Config";
@@ -27,7 +27,9 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
         <div className={collection ? "preview" : "details"}>
             {collection &&
                 <div className="group-tabs">
-                    {collection.config?.groups.map(group => <Group key={group.id} {...group} />)}
+                    {collection.config?.groups.map(group =>
+                        <Group key={group.id} {...group} entry={entry} collection={collection} />
+                    )}
                 </div>
             }
             <div onClick={onClick}>
@@ -38,10 +40,16 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     );
 };
 
-export const Group: React.FC<Partial<IGroupConfig>> = (props: Partial<IGroupConfig>) => {
-    const { name, backgroundColor, color } = props;
+export const Group: React.FC<Partial<IGroupConfig & IEntryProps>> = (props: Partial<IGroupConfig & IEntryProps>) => {
+    const { id, name, backgroundColor, color, entries, entry, collection } = props;
 
-    const [checked, setChecked] = useState<boolean>(false);
+    const [checked, setChecked] = useState<boolean>(entries?.includes(entry?.bid ?? "") ?? false);
+
+    const onUpdateCollectedStatus = useCallback(() => {
+        if (collection && (id !== undefined) && entry) {
+            window.config.updateEntryCollectedStatus(collection, id, entry.bid);
+        }
+    }, []);
 
     const style: Partial<React.CSSProperties> = checked
         ? {
@@ -55,7 +63,10 @@ export const Group: React.FC<Partial<IGroupConfig>> = (props: Partial<IGroupConf
 
     return (
         <div className="group-tab" style={style}>
-            <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} />
+            <input type="checkbox" checked={checked} onChange={e => {
+                setChecked(e.target.checked);
+                onUpdateCollectedStatus();
+            }} />
             <span>{name}</span>
         </div>
     );

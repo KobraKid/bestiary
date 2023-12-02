@@ -1,4 +1,4 @@
-import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { ICollectionConfig } from "../model/Config";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { ICollectionMetadata, ISorting } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
@@ -15,15 +15,13 @@ export interface IPkgAPI {
   nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => void,
   stopLoadingCollectionEntries: () => Promise<boolean>,
   loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
-  // fileExists: (path: string) => Promise<boolean>
 }
 
 export interface IConfigAPI {
   onShowOptions: (callback: () => void) => void,
-  loadPkgConfig: (pkg: IPackageMetadata) => Promise<IPackageConfig>,
-  savePkgConfig: (pkgPath: string, config: IPackageConfig) => Promise<void>,
-  loadConfig: (pkg: IPackageMetadata, collectionName: string) => Promise<ICollectionConfig[]>,
-  saveConfig: (pkgPath: string, collectionName: string, config: ICollectionConfig[]) => Promise<void>
+  savePkgConfig: () => Promise<void>,
+  updateCollectionConfig: (collection: ICollectionMetadata, config: ICollectionConfig) => Promise<void>,
+  updateEntryCollectedStatus: (collection: ICollectionMetadata, groupId: number, entryId: string) => Promise<void>
 }
 
 export interface IMenuAPI {

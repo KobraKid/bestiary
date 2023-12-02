@@ -11,11 +11,9 @@ import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { ICollectionMetadata, ISorting } from "../model/Collection";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
-import { loadCollectionConfig, saveConfig } from "./collection";
+import { loadCollectionConfig, saveConfig, updateCollectedStatusForEntry, updateCollectionConfig } from "./collection";
 
-/**
- * Setup and logging
- */
+//#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
 export const hb = registerHelpers(Handlebars);
 export const isDev = !app.isPackaged;
@@ -26,40 +24,11 @@ ${isDev ? "⚡ " : ""}Electron: ${process.versions.electron}
 ${isDev ? "📦 " : ""}Package directory: ${paths.data}
 ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 `));
+//#endregion
 
-/**
- * Creates the main app window
- */
-function createWindow() {
-    const win = new BrowserWindow({
-        width: 1280,
-        height: 720,
-        title: isDev ? `Bestiary | DEVELOPMENT | ${process.env.npm_package_version}` : "Bestiary",
-        darkTheme: true,
-        autoHideMenuBar: !isDev,
-        // frame: isDev,
-        webPreferences: {
-            sandbox: false,
-            preload: path.join(__dirname, "preload.js")
-        }
-    });
+//#region Message handling
 
-    win.loadFile(path.join(__dirname, "index.html"));
-
-    win.on("ready-to-show", () => {
-        if (isDev) {
-            win.webContents.openDevTools({ mode: "undocked" });
-        }
-    });
-
-    win.on("close", () => {
-        saveConfig();
-    });
-}
-
-/**
- * Load all packages
- */
+//#region Package API
 ipcMain.handle("pkg:load-pkgs", getPackageList);
 
 ipcMain.handle("pkg:load-collection", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => {
@@ -95,17 +64,17 @@ ipcMain.handle("pkg:stop-loading-collection", stopLoadingCollectionEntries);
 ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
     return getEntry(pkg, collectionId, entryId, lang);
 });
+//#endregion
 
-// ipcMain.handle("pkg:file-exists", (_event: IpcMainInvokeEvent, filePath: string): boolean => existsSync(filePath));
+//#region Config API
+ipcMain.on("config:save-config", saveConfig);
 
-// ipcMain.handle("config:load-config", async (_event: IpcMainInvokeEvent, pkg: unknown) => createOrLoadConfig(pkg));
+ipcMain.on("config:update-collection-config", updateCollectionConfig);
 
-// ipcMain.handle("config:save-config", async (_event: IpcMainInvokeEvent, pkgPath: string, config: IPackageConfig) => saveConfig(pkgPath, config));
+ipcMain.on("config:update-entry-collected-status", updateCollectedStatusForEntry);
+//#endregion
 
-// ipcMain.handle("config:load-collection-config", async (_event: IpcMainInvokeEvent, pkg: unknown, collection: string) => createOrLoadCollectionConfig(pkg, collection));
-
-// ipcMain.handle("config:save-collection-config", async (_event: IpcMainInvokeEvent, pkgPath: string, collection: string, config: ICollectionConfig[]) => saveCollectionConfig(pkgPath, collection, config));
-
+//#region Context Menu API
 ipcMain.on("context-menu:show-collection-menu", (event: IpcMainEvent, pkg: IPackageMetadata, collection: ICollectionMetadata) => {
     const menu = Menu.buildFromTemplate([
         {
@@ -122,14 +91,51 @@ ipcMain.on("context-menu:show-collection-menu", (event: IpcMainEvent, pkg: IPack
         menu.popup({ window: sender });
     }
 });
+//#endregion
 
+//#region Logging API
 ipcMain.handle("write", (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
 
 ipcMain.handle("write-error", (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
+//#endregion
 
+//#region Misc. API
 ipcMain.handle("eval-formula", (_event: IpcMainInvokeEvent, expression: string, scope?: object): unknown => {
     return new Formula(expression).evaluate(scope || {});
 });
+//#endregion
+
+//#endregion
+
+/**
+ * Creates the main app window
+ */
+function createWindow(): void {
+    const win = new BrowserWindow({
+        width: 1280,
+        height: 720,
+        title: isDev ? `Bestiary | DEVELOPMENT | ${process.env.npm_package_version}` : "Bestiary",
+        darkTheme: true,
+        autoHideMenuBar: !isDev,
+        // frame: isDev,
+        webPreferences: {
+            sandbox: false,
+            preload: path.join(__dirname, "preload.js")
+        }
+    });
+
+    win.loadFile(path.join(__dirname, "index.html"));
+
+    win.on("ready-to-show", () => {
+        if (isDev) {
+            win.webContents.openDevTools({ mode: "undocked" });
+        }
+    });
+
+    win.on("close", () => {
+        saveConfig();
+    });
+}
 
 /**
  * Create the main window

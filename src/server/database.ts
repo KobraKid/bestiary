@@ -138,7 +138,6 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
     const layout = await getLayout(pkg.ns, collection.ns, ViewType.preview);
 
     for (const entry of entries) {
-        // if (!isLoading) { break; }
         const cache = {};
         const entryLayout = await layout({ entry, lang });
         const groupings = await Promise.all(
