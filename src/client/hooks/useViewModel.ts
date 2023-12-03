@@ -204,7 +204,7 @@ function getFirstVisibleCollection(pkg: IPackageMetadata): ICollectionMetadata {
         ?? { name: "", ns: "", entries: [], groupings: [], sortings: [] };
 }
 
-function getCollectionById(pkg: IPackageMetadata, collectionId: string | null): ICollectionMetadata {
+function getCollectionById(pkg: IPackageMetadata, collectionId: string): ICollectionMetadata {
     return pkg.collections.find(c => c.ns === collectionId)
-        ?? { name: "", ns: "", entries: [], groupings: [], sortings: [] };
+        ?? { name: "???", ns: collectionId, entries: [], groupings: [], sortings: [] };
 }

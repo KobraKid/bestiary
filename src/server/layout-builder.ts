@@ -5,7 +5,7 @@ import { hb, paths } from "./electron";
 import Entry, { IEntrySchema } from "../model/Entry";
 import { ISO639Code } from "../model/Package";
 import Resource from "../model/Resource";
-import { ViewType, getAttribute, getLayout, getStyle } from "./database";
+import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
 
 function getDataFromOptions<T>(options: HelperOptions, data: string): T {
     return options.data.root[data];
@@ -123,7 +123,8 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
             if (linkedEntry) {
                 const layout = await (await getLayout(linkedEntry.packageId, linkedCollectionId, ViewType.preview))({ entry: linkedEntry, lang });
                 const style = await getStyle(linkedEntry.packageId, linkedCollectionId, ViewType.preview, { entry: linkedEntry, lang });
-                return new hb.SafeString(layout + style);
+                const script = await (await getScript(linkedEntry.packageId, linkedCollectionId))({ entry: linkedEntry, lang });
+                return new hb.SafeString(layout + style + `<script>${script}</script>`);
             }
         } catch (err) {
             console.log(err);
