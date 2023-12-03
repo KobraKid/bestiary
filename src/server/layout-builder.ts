@@ -122,7 +122,7 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
             const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: linkedCollectionId, bid: linkedBid }).lean().exec();
             if (linkedEntry) {
                 const layout = await (await getLayout(linkedEntry.packageId, linkedCollectionId, ViewType.preview))({ entry: linkedEntry, lang });
-                const style = getStyle(linkedEntry.packageId, linkedCollectionId, ViewType.preview);
+                const style = await getStyle(linkedEntry.packageId, linkedCollectionId, ViewType.preview, { entry: linkedEntry, lang });
                 return new hb.SafeString(layout + style);
             }
         } catch (err) {

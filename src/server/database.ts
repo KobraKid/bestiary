@@ -11,8 +11,9 @@ import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { ILandmark, IMap } from "../model/Map";
 import Resource, { IResource } from "../model/Resource";
 import { createOrLoadCollectionConfig } from "./collection";
+import { pathToFileURL } from "url";
 
-type EntryLayoutContext = { entry: IEntrySchema, lang: ISO639Code };
+type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
 
 const dbUrl = "mongodb://127.0.0.1:27017/bestiary";
@@ -30,7 +31,8 @@ let isLoading = false;
 
 export enum ViewType {
     view = "view",
-    preview = "preview"
+    preview = "preview",
+    any = ""
 }
 
 enum FileType {
@@ -90,7 +92,7 @@ export async function getCollection(event: IpcMainInvokeEvent, pkg: IPackageMeta
     page = 0;
     event.sender.send("pkg:update-page-number", page);
 
-    const collectionStyle = getStyle(pkg.ns, collection.ns, ViewType.preview);
+    const collectionStyle = await getStyle(pkg.ns, collection.ns, ViewType.preview);
     const collectionConfig = await createOrLoadCollectionConfig(pkg, collection);
 
     return { ...collection, style: collectionStyle, config: collectionConfig };
@@ -205,7 +207,7 @@ export async function getEntry(pkg: IPackageMetadata, collectionId: string, entr
 
     const entryLayout = await (await getLayout(pkg.ns, collectionId, ViewType.view))({ entry: loadedEntry, lang });
     const entryScript = await (await getScript(pkg.ns, collectionId))({ entry: loadedEntry, lang });
-    const entryStyle = getStyle(pkg.ns, collectionId, ViewType.view);
+    const entryStyle = await getStyle(pkg.ns, collectionId, ViewType.view, { entry: loadedEntry, lang });
 
     return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
 }
@@ -242,7 +244,8 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
  * @returns An HTML string populated with attributes from the current entry.
  */
 export async function getLayout(pkgId: string, collectionNamespace: string, viewType: ViewType): Promise<EntryLayoutFile> {
-    return getFile(pkgId, collectionNamespace, FileType.layout, viewType);
+    const filePath = getFilePath(pkgId, collectionNamespace, FileType.layout, viewType);
+    return getFile(pkgId, collectionNamespace, filePath, viewType);
 }
 
 /**
@@ -252,7 +255,8 @@ export async function getLayout(pkgId: string, collectionNamespace: string, view
  * @returns JavaScript code.
  */
 export async function getScript(pkgId: string, collectionNamespace: string): Promise<EntryLayoutFile> {
-    return getFile(pkgId, collectionNamespace, FileType.script);
+    const filePath = getFilePath(pkgId, collectionNamespace, FileType.script, ViewType.any);
+    return getFile(pkgId, collectionNamespace, filePath, ViewType.any);
 }
 
 /**
@@ -261,9 +265,34 @@ export async function getScript(pkgId: string, collectionNamespace: string): Pro
  * @param collectionNamespace The current collection's namespace.
  * @returns A <style></style> element.
  */
-export function getStyle(pkgId: string, collectionNamespace: string, viewType: ViewType): string {
+export async function getStyle(pkgId: string, collectionNamespace: string, viewType: ViewType, context?: EntryLayoutContext): Promise<string> {
+    const filePath = getFilePath(pkgId, collectionNamespace, FileType.style, viewType);
+
+    if (context) {
+        const file = await getFile(pkgId, collectionNamespace, filePath, viewType);
+        const parsedFile = await file(context);
+        return compileStyle(parsedFile, filePath);
+    } else {
+        try {
+            return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${collectionNamespace}.scss`)).css}</style>`;
+        }
+        catch (err) {
+            console.log((err as Error).message);
+        }
+        return "";
+    }
+}
+
+function compileStyle(style: string, filePath: string): string {
     try {
-        return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${collectionNamespace}.scss`)).css}</style>`;
+        return `<style>${sass.compileString(style, {
+            importers: [{
+                findFileUrl(url) {
+                    if (!url.startsWith("..")) { return null; }
+                    return new URL(url, pathToFileURL(filePath).toString());
+                }
+            }]
+        }).css}</style>`;
     }
     catch (err) {
         console.log((err as Error).message);
@@ -271,11 +300,11 @@ export function getStyle(pkgId: string, collectionNamespace: string, viewType: V
     return "";
 }
 
-async function getFile(pkgId: string, collectionNamespace: string, fileType: FileType, viewType?: ViewType): Promise<EntryLayoutFile> {
-    const key = `${pkgId}${collectionNamespace}${viewType}`;
+async function getFile(pkgId: string, collectionNamespace: string, filePath: string, viewType: ViewType): Promise<EntryLayoutFile> {
+    const key = `${pkgId}-${collectionNamespace}-${viewType}`;
     if (!layoutCache[key] || isDev) {
         try {
-            const file = await readFile(path.join(paths.data, pkgId, fileType, viewType ?? "", `${collectionNamespace}.${fileType === FileType.script ? "js" : "hbs"}`), { encoding: "utf-8" });
+            const file = await readFile(filePath, { encoding: "utf-8" });
             layoutCache[key] = hb.compile(file.toString(), { noEscape: true });
         }
         catch (err) {
@@ -284,6 +313,11 @@ async function getFile(pkgId: string, collectionNamespace: string, fileType: Fil
         }
     }
     return layoutCache[key]!; // we guarantee that the cache holds a value even when an error is thrown
+}
+
+function getFilePath(pkgId: string, collectionNamespace: string, fileType: FileType, viewType: ViewType): string {
+    const ext = (fileType === FileType.script) ? "js" : (fileType === FileType.style) ? "scss" : "hbs";
+    return path.join(paths.data, pkgId, fileType, viewType, `${collectionNamespace}.${ext}`);
 }
 
 /**
