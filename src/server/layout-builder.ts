@@ -12,7 +12,10 @@ function getDataFromOptions<T>(options: HelperOptions, data: string): T {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseDelegateParams(context?: any, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, options?: any): { context: any, arg1: any, arg2: any, arg3: any, arg4: any, arg5: any, options: HelperOptions } {
+interface IParams { context: any, arg1: any, arg2: any, arg3: any, arg4: any, arg5: any, options: HelperOptions }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseDelegateParams(context?: any, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any, options?: any): IParams {
     // All args are defined
     if (typeof options !== "undefined" && "data" in options && "hash" in options) {
         return { context, arg1, arg2, arg3, arg4, arg5, options };
@@ -52,6 +55,11 @@ export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars 
     hb.registerHelper("view", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
         const { context, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
         return await __viewHelper(hb, context, options);
+    });
+
+    hb.registerHelper("link", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
+        const { context, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
+        return await __linkHelper(context, options);
     });
 
     hb.registerHelper("image", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
@@ -110,12 +118,26 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
     if (entry) {
         const attrPath = (typeof context === "string") ? context : options.hash["path"];
         const [linkedCollectionId, linkedBid]: [string, string] = (await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as string).split(".") as [string, string];
-        const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: linkedCollectionId, bid: linkedBid }).lean().exec();
-        if (linkedEntry) {
-            const layout = await (await getLayout(linkedEntry.packageId, linkedCollectionId, ViewType.preview))({ entry: linkedEntry, lang });
-            const style = getStyle(linkedEntry.packageId, linkedCollectionId, ViewType.preview);
-            return new hb.SafeString(layout + style);
+        try {
+            const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: linkedCollectionId, bid: linkedBid }).lean().exec();
+            if (linkedEntry) {
+                const layout = await (await getLayout(linkedEntry.packageId, linkedCollectionId, ViewType.preview))({ entry: linkedEntry, lang });
+                const style = getStyle(linkedEntry.packageId, linkedCollectionId, ViewType.preview);
+                return new hb.SafeString(layout + style);
+            }
+        } catch (err) {
+            console.log(err);
         }
+    }
+    return "";
+}
+
+async function __linkHelper(context: unknown, options: HelperOptions): Promise<string | SafeString> {
+    const entry = getDataFromOptions<IEntrySchema>(options, "entry");
+    if (entry) {
+        const attrPath = (typeof context === "string") ? context : options.hash["path"];
+        const [linkedCollectionId, linkedBid]: [string, string] = (await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as string).split(".") as [string, string];
+        return `data-linked-collection="${linkedCollectionId}" data-linked-entry="${linkedBid}"`;
     }
     return "";
 }

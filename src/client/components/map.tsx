@@ -1,6 +1,6 @@
 import React, { WheelEvent, useCallback, useEffect, useRef, useState } from "react";
 import ScrollContainer from "react-indiana-drag-scroll";
-import { convertHtmlToReact } from "@hedgedoc/html-to-react";
+import parse from "html-react-parser";
 import { ILandmark, IMap } from "../../model/Map";
 import "../styles/map.scss";
 
@@ -84,7 +84,7 @@ const Landmark: React.FC<ILandmarkProps> = (props: ILandmarkProps) => {
                     height: `${landmark.h * mapScale}px`,
                 }}>
                 <div className="landmark-preview" style={{ position: "relative", top: `${landmark.h * mapScale}px`, width: "fit-content" }}>
-                    {landmark.preview && convertHtmlToReact(landmark.preview)}
+                    {landmark.preview && parse(landmark.preview)}
                 </div>
             </div>
         </div>

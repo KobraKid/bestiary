@@ -1,8 +1,9 @@
-import React, { useCallback, useState } from "react";
-import { convertHtmlToReact } from "@hedgedoc/html-to-react";
+import React, { useCallback, useContext, useState } from "react";
+import parse, { DOMNode, domToReact } from "html-react-parser";
 import { IEntryMetadata } from "../../model/Entry";
 import { IGroupConfig } from "../../model/Config";
 import { ICollectionMetadata } from "../../model/Collection";
+import { PackageContext } from "../context";
 import "../styles/details.scss";
 
 export interface IEntryProps {
@@ -23,6 +24,27 @@ export interface IEntryProps {
 export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     const { entry, collection, onClick } = props;
 
+    const { selectEntry } = useContext(PackageContext);
+
+    const layout = parse(entry.layout, {
+        replace: (domNode) => {
+            if (domNode.type === "tag" && domNode.name === "a") {
+                const linkedCollection = domNode.attribs["data-linked-collection"];
+                const linkedEntry = domNode.attribs["data-linked-entry"];
+                if (linkedCollection !== undefined && linkedEntry !== undefined) {
+                    return (
+                        <div {...domNode.attribs}
+                            style={{ width: "fit-content", cursor: "pointer" }}
+                            onClick={() => selectEntry(linkedCollection, linkedEntry)} >
+                            {domToReact(domNode.children as DOMNode[])}
+                        </div>
+                    );
+                }
+            }
+            return; // no replacement
+        }
+    });
+
     return (
         <div className={collection ? "preview" : "details"}>
             {collection &&
@@ -32,10 +54,8 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
                     )}
                 </div>
             }
-            <div onClick={onClick}>
-                {convertHtmlToReact(entry.layout)}
-            </div>
-            {entry.style && convertHtmlToReact(entry.style)}
+            <div onClick={onClick}>{layout}</div>
+            {entry.style && parse(entry.style)}
         </div>
     );
 };

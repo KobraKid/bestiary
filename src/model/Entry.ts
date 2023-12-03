@@ -53,7 +53,4 @@ const EntrySchema = new Schema<IEntrySchema>({
 }, { collection: "entries", strict: false });
 EntrySchema.index({ packageId: 1, collectionId: 1, bid: 1 }, { name: "entry_link" });
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-EntrySchema.plugin(require("mongoose-lean-id"));
-
 export default mongoose.model<IEntrySchema>("Entry", EntrySchema);

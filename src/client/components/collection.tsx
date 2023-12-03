@@ -1,6 +1,6 @@
 import React, { ChangeEvent, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import parse from "html-react-parser";
 import { ICollectionMetadata, IGrouping, ISorting } from "../../model/Collection";
-import { convertHtmlToReact } from "@hedgedoc/html-to-react";
 import { PackageContext } from "../context";
 import { Entry } from "./entry";
 import { IEntryMetadata } from "../../model/Entry";
@@ -106,7 +106,7 @@ export const Collection: React.FC<ICollectionProps & IPageProps> = (props: IColl
                     : [...collection.entries ?? []].map(entry =>
                         <Entry key={entry.bid} entry={entry} collection={collection} onClick={() => selectEntry(collection.ns, entry.bid)} />)
                 }
-                {collection.style && convertHtmlToReact(collection.style)}
+                {collection.style && parse(collection.style)}
             </div>
             <div className="collection-page-select">
                 <button onClick={prevPage} disabled={currentPage === 1}>◀</button>

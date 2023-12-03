@@ -276,7 +276,7 @@ async function getFile(pkgId: string, collectionNamespace: string, fileType: Fil
     if (!layoutCache[key] || isDev) {
         try {
             const file = await readFile(path.join(paths.data, pkgId, fileType, viewType ?? "", `${collectionNamespace}.${fileType === FileType.script ? "js" : "hbs"}`), { encoding: "utf-8" });
-            layoutCache[key] = hb.compile(file.toString());
+            layoutCache[key] = hb.compile(file.toString(), { noEscape: true });
         }
         catch (err) {
             console.log((err as Error).message);
@@ -306,7 +306,7 @@ export async function getAttribute(packageId: string, attribute: string, obj: ob
         if (attr) {
             // We're jumping to a new entry's attributes
             if (attr.includes("->")) {
-                const jump = attr.split("->",);
+                const jump = attr.split("->");
                 if (jump.length >= 2) {
                     const prevAttr: string = jump[0] ?? "";
                     const attrLink: string = attrValue[prevAttr];

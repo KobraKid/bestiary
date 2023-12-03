@@ -80,7 +80,4 @@ const PkgSchema = new Schema<IPackageSchema>({
     langs: { type: [String], required: true }
 }, { collection: "packages" });
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-PkgSchema.plugin(require("mongoose-lean-id"));
-
 export default mongoose.model<IPackageSchema>("PackageMetadata", PkgSchema);

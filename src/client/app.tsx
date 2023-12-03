@@ -85,7 +85,8 @@ const App: React.FC = () => {
                             <Page
                                 collection={view.collection}
                                 updateCollection={updateCollection}
-                                prevPage={prevPage} nextPage={nextPage}
+                                prevPage={prevPage}
+                                nextPage={nextPage}
                                 entry={view.entry}
                                 displayMode={view.displayMode} />
                         </>
