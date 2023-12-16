@@ -42,8 +42,8 @@ contextBridge.exposeInMainWorld("config", {
     },
     savePkgConfig: () =>
         ipcRenderer.send("config:save-config"),
-    updateCollectionConfig: (collection: ICollectionMetadata, config: ICollectionConfig) =>
-        ipcRenderer.send("config:update-collection-config", collection, config),
+    updateCollectionConfig: (pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) =>
+        ipcRenderer.send("config:update-collection-config", pkg, collection, config),
     updateEntryCollectedStatus: (collection: ICollectionMetadata, groupId: number, entryId: string) =>
         ipcRenderer.send("config:update-entry-collected-status", collection, groupId, entryId)
 });

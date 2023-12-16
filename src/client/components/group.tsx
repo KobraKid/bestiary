@@ -15,8 +15,8 @@ export const GroupSettingsView: React.FC = () => {
         setCollection(undefined);
     }, []);
 
-    const onUpdateConfig = useCallback((collection: ICollectionMetadata, config: ICollectionConfig) => {
-        window.config.updateCollectionConfig(collection, config);
+    const onUpdateConfig = useCallback((pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => {
+        window.config.updateCollectionConfig(pkg, collection, config);
         onCancel();
     }, []);
 
@@ -150,7 +150,7 @@ export const GroupSettingsView: React.FC = () => {
                     </div>
                 </div>
                 <div className="group-buttons">
-                    <button onClick={() => onUpdateConfig(collection, config)}>✔️ Accept</button>
+                    <button onClick={() => onUpdateConfig(pkg, collection, config)}>✔️ Accept</button>
                     <button onClick={onCancel}>❌ Cancel</button>
                 </div>
             </div>

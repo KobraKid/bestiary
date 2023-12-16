@@ -20,7 +20,7 @@ export interface IPkgAPI {
 export interface IConfigAPI {
   onShowOptions: (callback: () => void) => void,
   savePkgConfig: () => Promise<void>,
-  updateCollectionConfig: (collection: ICollectionMetadata, config: ICollectionConfig) => Promise<void>,
+  updateCollectionConfig: (pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => Promise<void>,
   updateEntryCollectedStatus: (collection: ICollectionMetadata, groupId: number, entryId: string) => Promise<void>
 }
 

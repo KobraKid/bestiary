@@ -25,9 +25,9 @@ async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig
         pkgConfig = null;
     }
 
-    const pkgConfigPath = path.join(paths.config, path.basename(pkg.ns));
-    pkgConfigFile = path.join(pkgConfigPath, "config.json");
     pkgNamespace = pkg.ns;
+    const pkgConfigPath = path.join(paths.config, path.basename(pkgNamespace));
+    pkgConfigFile = path.join(pkgConfigPath, "config.json");
 
     try {
         await mkdir(pkgConfigPath, { recursive: true });
@@ -42,7 +42,7 @@ async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig
         console.log(chalk.white.bgRed("❌ Error loading package config at \"" + pkgConfigFile + "\"", err));
     }
 
-    return pkgConfig || {};
+    return pkgConfig || { "collections": [] };
 }
 
 /**
@@ -89,8 +89,17 @@ export function saveConfig(): void {
  * @param collection The collection to update
  * @param config The updated configuration data
  */
-export function updateCollectionConfig(_event: IpcMainEvent, collection: ICollectionMetadata, config: ICollectionConfig): void {
-    if (pkgConfig?.collections) {
+export async function updateCollectionConfig(_event: IpcMainEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig): Promise<void> {
+    if (!pkgConfig) {
+        await createOrLoadConfig(pkg);
+    }
+
+    if (pkgConfig) {
+
+        if (!pkgConfig.collections) {
+            pkgConfig.collections = [];
+        }
+
         const index = pkgConfig.collections.findIndex(c => c.collectionId === collection.ns);
         if (index >= 0 && index < pkgConfig.collections?.length) {
             pkgConfig.collections[index]!.groups = config.groups;
