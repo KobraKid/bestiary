@@ -27,18 +27,18 @@ button {
   height: 100%;
   width: 100%;
   display: grid;
-  grid-template-columns: [collection-menu] 64px [collection-grid] auto;
+  grid-template-columns: [group-menu] 64px [group-grid] auto;
   transition: grid-template-rows .5s ease;
 }
 
 .app-pkg-menu-collapsed {
   @include app;
-  grid-template-rows: [package-menu] 64px [collection-grid] auto [page-select] 24px;
+  grid-template-rows: [package-menu] 64px [group-grid] auto [page-select] 24px;
 }
 
 .app-pkg-menu-expanded {
   @include app;
-  grid-template-rows: [package-menu] 128px [collection-grid] auto [page-select] 24px;
+  grid-template-rows: [package-menu] 128px [group-grid] auto [page-select] 24px;
 }
 
 :not(input):not(textarea),

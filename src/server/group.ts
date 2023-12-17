@@ -3,8 +3,8 @@ import path from "path";
 import { mkdir } from "fs/promises";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { paths } from "./electron";
-import { ICollectionMetadata } from "../model/Collection";
-import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { IGroupMetadata } from "../model/Group";
+import { IGroupConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata } from "../model/Package";
 import { IpcMainEvent } from "electron";
 
@@ -42,34 +42,34 @@ async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig
         console.log(chalk.white.bgRed("❌ Error loading package config at \"" + pkgConfigFile + "\"", err));
     }
 
-    return pkgConfig || { "collections": [] };
+    return pkgConfig || { "groups": [] };
 }
 
 /**
- * Loads the configuration data for a collection from a package's configuration file.
+ * Loads the configuration data for a group from a package's configuration file.
  * If the package doesn't have a configuration file, one is created.
  * 
  * @param pkg The package to load the config file for
- * @param collection The collection to load the config for
- * @returns The configuration data for a collection
+ * @param group The group to load the config for
+ * @returns The configuration data for a group
  */
-export async function createOrLoadCollectionConfig(pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionConfig> {
+export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupConfig> {
     if (pkgNamespace !== pkg.ns) {
         await createOrLoadConfig(pkg);
     }
-    return pkgConfig?.collections?.find(c => c.collectionId === collection.ns) ?? { collectionId: collection.ns, groups: [] };
+    return pkgConfig?.groups?.find(c => c.groupId === group.ns) ?? { groupId: group.ns, collections: [] };
 }
 
 /**
- * Loads the configuration data for a collection, and sends it back to the client.
+ * Loads the configuration data for a group, and sends it back to the client.
  * 
  * @param event The event that triggered this load. The sender receives the resulting configuration data.
  * @param pkg The package to load the config for
- * @param collection The collection to load the config for
+ * @param group The group to load the config for
  */
-export async function loadCollectionConfig(event: IpcMainEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<void> {
-    const config = await createOrLoadCollectionConfig(pkg, collection);
-    event.sender.send("context-menu:manage-collection", pkg, collection, config);
+export async function loadGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<void> {
+    const config = await createOrLoadGroupConfig(pkg, group);
+    event.sender.send("context-menu:manage-group", pkg, group, config);
 }
 
 /**
@@ -86,26 +86,26 @@ export function saveConfig(): void {
 /**
  * Updates a colleciton's configuration data.
  * 
- * @param collection The collection to update
+ * @param group The group to update
  * @param config The updated configuration data
  */
-export async function updateCollectionConfig(_event: IpcMainEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig): Promise<void> {
+export async function updateGroupConfig(_event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig): Promise<void> {
     if (!pkgConfig) {
         await createOrLoadConfig(pkg);
     }
 
     if (pkgConfig) {
 
-        if (!pkgConfig.collections) {
-            pkgConfig.collections = [];
+        if (!pkgConfig.groups) {
+            pkgConfig.groups = [];
         }
 
-        const index = pkgConfig.collections.findIndex(c => c.collectionId === collection.ns);
-        if (index >= 0 && index < pkgConfig.collections?.length) {
-            pkgConfig.collections[index]!.groups = config.groups;
+        const index = pkgConfig.groups.findIndex(c => c.groupId === group.ns);
+        if (index >= 0 && index < pkgConfig.groups?.length) {
+            pkgConfig.groups[index]!.collections = config.collections;
         }
         else {
-            pkgConfig.collections.push(config);
+            pkgConfig.groups.push(config);
         }
     }
 }
@@ -116,15 +116,15 @@ export async function updateCollectionConfig(_event: IpcMainEvent, pkg: IPackage
  * If the entry is not already marked as collected, it is added.
  * 
  * @param _event The event that triggered this update
- * @param collection The collection to update
- * @param groupId The group within the collection to update
+ * @param group The group to update
+ * @param groupId The group within the group to update
  * @param entryId The entry to add or remove
  */
-export function updateCollectedStatusForEntry(_event: IpcMainEvent, collection: ICollectionMetadata, groupId: number, entryId: string): void {
-    if (pkgConfig?.collections) {
-        const config = pkgConfig.collections.find(c => c.collectionId === collection.ns);
+export function updateCollectedStatusForEntry(_event: IpcMainEvent, group: IGroupMetadata, groupId: number, entryId: string): void {
+    if (pkgConfig?.groups) {
+        const config = pkgConfig.groups.find(c => c.groupId === group.ns);
         if (config) {
-            const group = config.groups.find(g => g.id === groupId);
+            const group = config.collections.find(g => g.id === groupId);
             if (group?.entries.includes(entryId)) {
                 group.entries.splice(group.entries.indexOf(entryId), 1);
             }

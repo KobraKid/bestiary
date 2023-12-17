@@ -6,15 +6,15 @@ A flexible bestiary and video game collection manager.
 
 ### Packages
 
-Packages contain the set of collections available within a particular game.
+Packages contain the set of groups available within a particular game.
 
-A package consists of a `package.json` file and a collection of assets, such as sprites and icons.
+A package consists of a `package.json` file and a group of assets, such as sprites and icons.
 
-### Collections
+### Groups
 
-Collections represent each "type" of collectible group within a game.
+Group represent each "type" of collectible group within a game.
 
-A collection can be pretty much anything plural in a game, such as monsters, items, or abilities.
+A group can be pretty much anything plural in a game, such as monsters, items, or abilities.
 
 ### Entries
 

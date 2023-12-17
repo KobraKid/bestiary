@@ -4,14 +4,14 @@ import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
-import { disconnect, getCollection, getCollectionEntries, getEntry, getPackageList, nextPage, prevPage, setup as setupDB, stopLoadingCollectionEntries } from "./database";
+import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, setup as setupDB, stopLoadingGroupEntries } from "./database";
 import { onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionMetadata, ISorting } from "../model/Collection";
+import { IGroupMetadata, ISorting } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
-import { loadCollectionConfig, saveConfig, updateCollectedStatusForEntry, updateCollectionConfig } from "./collection";
+import { loadGroupConfig, saveConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
 
 //#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
@@ -31,59 +31,59 @@ ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 //#region Package API
 ipcMain.handle("pkg:load-pkgs", getPackageList);
 
-ipcMain.handle("pkg:load-collection", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> => {
-    return getCollection(event, pkg, collection);
+ipcMain.handle("pkg:load-group", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> => {
+    return getGroup(event, pkg, group);
 });
 
-ipcMain.on("pkg:load-collection-entries", (
+ipcMain.on("pkg:load-group-entries", (
     event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
-    collection: ICollectionMetadata,
+    group: IGroupMetadata,
     lang: ISO639Code,
     sortBy?: ISorting,
     sortDescending?: boolean): Promise<void> =>
-    getCollectionEntries({ event, pkg, collection, lang, sortBy, sortDescending }));
+    getGroupEntries({ event, pkg, group, lang, sortBy, sortDescending }));
 
 ipcMain.on("pkg:prev-page", (
     event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
-    collection: ICollectionMetadata,
+    group: IGroupMetadata,
     lang: ISO639Code,
     sortBy?: ISorting,
-    sortDescending?: boolean) => prevPage({ event, pkg, collection, lang, sortBy, sortDescending }));
+    sortDescending?: boolean) => prevPage({ event, pkg, group, lang, sortBy, sortDescending }));
 ipcMain.on("pkg:next-page", (
     event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
-    collection: ICollectionMetadata,
+    group: IGroupMetadata,
     lang: ISO639Code,
     sortBy?: ISorting,
-    sortDescending?: boolean) => nextPage({ event, pkg, collection, lang, sortBy, sortDescending }));
+    sortDescending?: boolean) => nextPage({ event, pkg, group, lang, sortBy, sortDescending }));
 
-ipcMain.handle("pkg:stop-loading-collection", stopLoadingCollectionEntries);
+ipcMain.handle("pkg:stop-loading-group", stopLoadingGroupEntries);
 
-ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
-    return getEntry(pkg, collectionId, entryId, lang);
+ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
+    return getEntry(pkg, groupId, entryId, lang);
 });
 //#endregion
 
 //#region Config API
 ipcMain.on("config:save-config", saveConfig);
 
-ipcMain.on("config:update-collection-config", updateCollectionConfig);
+ipcMain.on("config:update-group-config", updateGroupConfig);
 
 ipcMain.on("config:update-entry-collected-status", updateCollectedStatusForEntry);
 //#endregion
 
 //#region Context Menu API
-ipcMain.on("context-menu:show-collection-menu", (event: IpcMainEvent, pkg: IPackageMetadata, collection: ICollectionMetadata) => {
+ipcMain.on("context-menu:show-group-menu", (event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata) => {
     const menu = Menu.buildFromTemplate([
         {
-            label: collection.name,
+            label: group.name,
             enabled: false
         },
         {
-            label: "Manage collection",
-            click: () => loadCollectionConfig(event, pkg, collection)
+            label: `Manage ${group.name}`,
+            click: () => loadGroupConfig(event, pkg, group)
         }
     ]);
     const sender = BrowserWindow.fromWebContents(event.sender);

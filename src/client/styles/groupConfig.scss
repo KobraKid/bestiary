@@ -1,0 +1,113 @@
+.group-config-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    background-color: rgba(40, 40, 40, .8);
+
+    .group-config {
+        background-color: gray;
+        width: 80%;
+        height: 80%;
+        display: flex;
+        flex-direction: column;
+
+        h2 {
+            align-self: center;
+        }
+
+        button {
+            padding: 4px 8px;
+        }
+
+        .collection-grid-container {
+            height: calc(100% - (31px + (0.83em * 2) + 29px + 8px));
+            overflow: auto;
+
+            .collection-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: 142px auto;
+                gap: 8px;
+                margin: 8px;
+
+                .collection-settings {
+                    display: grid;
+                    grid-template-columns: [start] 100px [preview] 50px [lbl] auto [end];
+                    grid-template-rows: repeat(4, 28px);
+                    align-content: stretch;
+
+                    .preview {
+                        width: 100px;
+                        height: fit-content;
+                        grid-column: start / preview;
+
+                        .collection-tab {
+                            display: flex;
+                            flex-direction: row;
+                            flex-wrap: nowrap;
+                            gap: 4px;
+                            padding: 2px;
+                            width: 100px;
+                            border-radius: 4px;
+                            overflow: auto;
+                            text-overflow: ellipsis;
+
+                            &::-webkit-scrollbar {
+                                display: none;
+                            }
+
+                            span {
+                                padding-right: 8px;
+                                white-space: nowrap;
+                            }
+                        }
+                    }
+
+                    .toolbar {
+                        display: flex;
+                        flex-direction: row;
+                        grid-column: lbl / end;
+                        justify-self: end;
+
+                        button {
+                            padding: 0;
+                            width: 28px;
+                            height: 28px;
+                        }
+                    }
+
+                    label {
+                        grid-column: start / lbl;
+                    }
+
+                    input {
+                        grid-column: lbl / end;
+                        width: auto;
+                    }
+                }
+
+                .collection-insert {
+                    justify-self: center;
+                    align-self: center;
+
+                    button {
+                        height: 80px;
+                        width: 120px;
+                    }
+                }
+            }
+        }
+
+        .collection-buttons {
+            align-self: flex-end;
+            padding: 4px;
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import { ICollectionConfig } from "./Config";
+import { IGroupConfig } from "./Config";
 import { IEntryMetadata } from "./Entry";
 
 export interface IGrouping {
@@ -57,21 +57,21 @@ export interface ISorting {
     path: string
 }
 
-export interface ICollectionMetadata {
+export interface IGroupMetadata {
     /**
-     * Collection name
+     * Group name
      */
     name: string,
     /**
-     * Collection namespace
+     * Group namespace
      */
     ns: string,
     /**
-     * Collection is hidden
+     * Group is hidden
      */
     hidden?: boolean,
     /**
-     * Collection is a map
+     * Group is a map
      */
     isMap?: boolean,
     /**
@@ -91,7 +91,7 @@ export interface ICollectionMetadata {
      */
     style?: string,
     /**
-     * Collection configuration
+     * Group configuration
      */
-    config?: ICollectionConfig,
+    config?: IGroupConfig,
 }

@@ -1,6 +1,6 @@
 import { useCallback, useReducer, useRef, useState } from "react";
 import { IPackageMetadata, ISO639Code } from "../../model/Package";
-import { ICollectionMetadata, ISorting } from "../../model/Collection";
+import { IGroupMetadata, ISorting } from "../../model/Group";
 import { IEntryMetadata } from "../../model/Entry";
 import { IMap } from "../../model/Map";
 
@@ -8,11 +8,11 @@ interface BestiaryData {
     readonly view: ViewStackframe,
     canNavigateBack: boolean,
     selectPkg: (pkg: IPackageMetadata) => void,
-    selectCollection: (collection: ICollectionMetadata) => void,
-    updateCollection: (sortBy?: ISorting, sortDescending?: boolean) => void,
-    selectEntry: (collectionId: string, entryId: string) => void,
+    selectGroup: (group: IGroupMetadata) => void,
+    updateGroup: (sortBy?: ISorting, sortDescending?: boolean) => void,
+    selectEntry: (groupId: string, entryId: string) => void,
     selectLang: (lang: ISO639Code) => void,
-    addEntryToCollection: (entry: IEntryMetadata) => void,
+    addEntryToGroup: (entry: IEntryMetadata) => void,
     navigateBack: () => void,
     prevPage: () => void,
     nextPage: () => void
@@ -22,8 +22,8 @@ interface BestiaryData {
  * Display mode
  */
 export const enum DISPLAY_MODE {
-    /** Collection */
-    collection,
+    /** Group */
+    group,
     /** Detailed entry */
     entry,
     /** Map view */
@@ -36,8 +36,8 @@ export const enum DISPLAY_MODE {
 export interface ViewStackframe {
     /** The view's package */
     pkg: IPackageMetadata,
-    /** The view's collection */
-    collection: ICollectionMetadata,
+    /** The view's group */
+    group: IGroupMetadata,
     /** The view's entry */
     entry?: IEntryMetadata | IMap,
     /** The view's dispaly mode */
@@ -67,23 +67,23 @@ export function useViewModel(): BestiaryData {
                     window.log.write("• navigation reset");
 
                     const resetPkg = action.targetView.pkg;
-                    const resetCollection = action.targetView.collection;
+                    const resetGroup = action.targetView.group;
                     let resetEntry = action.targetView.entry;
-                    let displayMode = DISPLAY_MODE.collection;
+                    let displayMode = DISPLAY_MODE.group;
 
-                    if (resetCollection.isMap && resetCollection.entries.length > 0) {
+                    if (resetGroup.isMap && resetGroup.entries.length > 0) {
                         displayMode = DISPLAY_MODE.map;
-                        resetEntry = resetCollection.entries.at(0);
+                        resetEntry = resetGroup.entries.at(0);
                     }
 
-                    return [{ pkg: resetPkg, collection: resetCollection, entry: resetEntry, displayMode }];
+                    return [{ pkg: resetPkg, group: resetGroup, entry: resetEntry, displayMode }];
                 }
                 else { return state; }
             case ViewStackframeActionType.NAVIGATE_FORWARDS:
                 if (action.targetView && action.targetView.entry) {
-                    window.log.write(`→ navigating to [${action.targetView.collection.name} ${action.targetView.entry.bid}]`);
+                    window.log.write(`→ navigating to [${action.targetView.group.name} ${action.targetView.entry.bid}]`);
 
-                    const displayMode = (action.targetView.collection.isMap) ? DISPLAY_MODE.map : DISPLAY_MODE.entry;
+                    const displayMode = (action.targetView.group.isMap) ? DISPLAY_MODE.map : DISPLAY_MODE.entry;
 
                     return state.concat({ ...action.targetView, displayMode });
                 }
@@ -92,19 +92,19 @@ export function useViewModel(): BestiaryData {
                 if (state.length >= 2) {
                     const targetView = state.at(-2)!;
 
-                    window.log.write(`← returning to [${targetView.collection.name} ${targetView.entry?.bid ?? "collection"}]`);
+                    window.log.write(`← returning to [${targetView.group.name} ${targetView.entry?.bid ?? "group"}]`);
                     return state.slice(0, -1);
                 }
                 else { return state; }
             case ViewStackframeActionType.COLLECT_ENTRY:
-                if (action.newEntry && state.length >= 1 && action.newEntry.collectionId === state.at(-1)!.collection.ns) {
+                if (action.newEntry && state.length >= 1 && action.newEntry.groupId === state.at(-1)!.group.ns) {
                     const currentView = state.at(-1)!;
                     const view = {
                         ...currentView!,
-                        collection: {
-                            ...currentView.collection,
+                        group: {
+                            ...currentView.group,
                             entries: [
-                                ...currentView.collection.entries,
+                                ...currentView.group.entries,
                                 action.newEntry
                             ]
                         }
@@ -117,66 +117,66 @@ export function useViewModel(): BestiaryData {
         }
     }, []);
     const [views, viewStackDispatch] = useReducer<(state: ViewStackframe[], action: IViewStackframeDispatchAction) => ViewStackframe[]>(viewStackReducer, [{
-        pkg: { ns: "", name: "", path: "", icon: "", collections: [], langs: [] },
-        collection: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
-        displayMode: DISPLAY_MODE.collection
+        pkg: { ns: "", name: "", path: "", icon: "", groups: [], langs: [] },
+        group: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
+        displayMode: DISPLAY_MODE.group
     }]);
 
     const view = useRef<ViewStackframe>({
-        pkg: { ns: "", name: "", path: "", icon: "", collections: [], langs: [] },
-        collection: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
-        displayMode: DISPLAY_MODE.collection
+        pkg: { ns: "", name: "", path: "", icon: "", groups: [], langs: [] },
+        group: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
+        displayMode: DISPLAY_MODE.group
     });
 
     view.current = views.at(-1)!;
 
     const selectPkg = useCallback((newPkg: IPackageMetadata) => {
         if (newPkg.ns === view.current.pkg.ns) { return; }
-        selectCollection(newPkg, getFirstVisibleCollection(newPkg), lang);
+        selectGroup(newPkg, getFirstVisibleGroup(newPkg), lang);
     }, []);
 
-    const selectCollection = useCallback((pkg: IPackageMetadata, newCollection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => {
-        window.pkg.stopLoadingCollectionEntries();
-        newCollection.entries = [];
+    const selectGroup = useCallback((pkg: IPackageMetadata, newGroup: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => {
+        window.pkg.stopLoadingGroupEntries();
+        newGroup.entries = [];
 
-        window.pkg.loadCollection(pkg, newCollection).then(collection => {
+        window.pkg.loadGroup(pkg, newGroup).then(group => {
             viewStackDispatch({
                 type: ViewStackframeActionType.RESET,
-                targetView: { pkg, collection }
+                targetView: { pkg, group }
             });
-            window.pkg.loadCollectionEntries(pkg, collection, lang, sortBy, sortDescending);
+            window.pkg.loadGroupEntries(pkg, group, lang, sortBy, sortDescending);
         });
     }, []);
 
-    const addEntryToCollection = useCallback((entry: IEntryMetadata) =>
+    const addEntryToGroup = useCallback((entry: IEntryMetadata) =>
         viewStackDispatch({ type: ViewStackframeActionType.COLLECT_ENTRY, newEntry: entry }), []);
 
-    const selectEntry = useCallback((newCollectionId: string, newEntryId: string, lang: ISO639Code) => {
-        if (newCollectionId === view.current.collection.ns && newEntryId === view.current.entry?.bid) { return; }
+    const selectEntry = useCallback((newGroupId: string, newEntryId: string, lang: ISO639Code) => {
+        if (newGroupId === view.current.group.ns && newEntryId === view.current.entry?.bid) { return; }
 
-        window.pkg.loadEntry(view.current.pkg, newCollectionId, newEntryId, lang).then(loadedEntry => {
+        window.pkg.loadEntry(view.current.pkg, newGroupId, newEntryId, lang).then(loadedEntry => {
             if (!loadedEntry) { return; }
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
-                targetView: { pkg: view.current.pkg, collection: getCollectionById(view.current.pkg, newCollectionId), entry: loadedEntry }
+                targetView: { pkg: view.current.pkg, group: getGroupById(view.current.pkg, newGroupId), entry: loadedEntry }
             });
         });
     }, []);
 
     const prevPage = useCallback(() => {
-        window.pkg.stopLoadingCollectionEntries().then(stopped => {
+        window.pkg.stopLoadingGroupEntries().then(stopped => {
             if (stopped) {
-                view.current.collection.entries = [];
-                window.pkg.prevPage(view.current.pkg, view.current.collection, lang);
+                view.current.group.entries = [];
+                window.pkg.prevPage(view.current.pkg, view.current.group, lang);
             }
         });
     }, []);
 
     const nextPage = useCallback(() => {
-        window.pkg.stopLoadingCollectionEntries().then(stopped => {
+        window.pkg.stopLoadingGroupEntries().then(stopped => {
             if (stopped) {
-                view.current.collection.entries = [];
-                window.pkg.nextPage(view.current.pkg, view.current.collection, lang);
+                view.current.group.entries = [];
+                window.pkg.nextPage(view.current.pkg, view.current.group, lang);
             }
         });
     }, []);
@@ -188,23 +188,23 @@ export function useViewModel(): BestiaryData {
         view: view.current,
         canNavigateBack: views.length > 1,
         selectPkg,
-        selectCollection: (newCollection: ICollectionMetadata) => selectCollection(view.current.pkg, newCollection, lang),
-        updateCollection: (sortBy?: ISorting, sortDescending?: boolean) => selectCollection(view.current.pkg, view.current.collection, lang, sortBy, sortDescending),
-        selectEntry: (collectionId: string, entryId: string) => selectEntry(collectionId, entryId, lang),
+        selectGroup: (newGroup: IGroupMetadata) => selectGroup(view.current.pkg, newGroup, lang),
+        updateGroup: (sortBy?: ISorting, sortDescending?: boolean) => selectGroup(view.current.pkg, view.current.group, lang, sortBy, sortDescending),
+        selectEntry: (groupId: string, entryId: string) => selectEntry(groupId, entryId, lang),
         selectLang: (lang: ISO639Code) => setLang(lang),
-        addEntryToCollection,
+        addEntryToGroup: addEntryToGroup,
         navigateBack,
         prevPage, nextPage
     };
 }
 
-function getFirstVisibleCollection(pkg: IPackageMetadata): ICollectionMetadata {
-    return pkg.collections.find(c => !c.hidden)
-        ?? pkg.collections.at(0)
+function getFirstVisibleGroup(pkg: IPackageMetadata): IGroupMetadata {
+    return pkg.groups.find(c => !c.hidden)
+        ?? pkg.groups.at(0)
         ?? { name: "", ns: "", entries: [], groupings: [], sortings: [] };
 }
 
-function getCollectionById(pkg: IPackageMetadata, collectionId: string): ICollectionMetadata {
-    return pkg.collections.find(c => c.ns === collectionId)
-        ?? { name: "???", ns: collectionId, entries: [], groupings: [], sortings: [] };
+function getGroupById(pkg: IPackageMetadata, groupId: string): IGroupMetadata {
+    return pkg.groups.find(c => c.ns === groupId)
+        ?? { name: "???", ns: groupId, entries: [], groupings: [], sortings: [] };
 }

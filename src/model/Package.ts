@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { ICollectionMetadata } from "./Collection";
+import { IGroupMetadata } from "./Group";
 
 export enum ISO639Code {
     Chinese = "zh",
@@ -42,9 +42,9 @@ export interface IPackageMetadata {
      */
     icon: string,
     /**
-     * List of collections contained in this package
+     * List of groups contained in this package
      */
-    collections: ICollectionMetadata[],
+    groups: IGroupMetadata[],
     /**
      * List of supported languages, as ISO 639-1 codes
      */
@@ -58,7 +58,7 @@ const PkgSchema = new Schema<IPackageSchema>({
     ns: { type: String, required: true },
     path: { type: String, required: false },
     icon: { type: String, required: true },
-    collections: [{
+    groups: [{
         ns: { type: String, required: true },
         name: { type: String, required: true },
         hidden: { type: Boolean, required: false },

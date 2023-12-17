@@ -7,7 +7,7 @@ import fs, { mkdir } from "fs/promises";
 import chalk from "chalk";
 import Resource, { IResource } from "../model/Resource";
 import { paths } from "./electron";
-import { ICollectionMetadata } from "../model/Collection";
+import { IGroupMetadata } from "../model/Group";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
@@ -25,49 +25,49 @@ export async function onImport(window: BrowserWindow, files: Electron.OpenDialog
 }
 
 async function importJson(
-    pkgJson: { metadata: IPackageMetadata, collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[], resources: IResource[] },
+    pkgJson: { metadata: IPackageMetadata, groups: (IGroupMetadata & { images: { name: string, url: string }[] })[], resources: IResource[] },
     updateClient: (update: string, pctCompletion: number, totalPctCompletion: number) => void) {
     const metadata = pkgJson.metadata;
-    const collections: (ICollectionMetadata & { images: { name: string, url: string }[] })[] = pkgJson.collections;
+    const groups: (IGroupMetadata & { images: { name: string, url: string }[] })[] = pkgJson.groups;
     const resources: IResource[] = pkgJson.resources ?? [];
     const resourceCount = Math.max(resources.length, 1);
-    const images: { url: string, collection: string, name: string }[] = [];
+    const images: { url: string, group: string, name: string }[] = [];
     const imageCount = Math.max(images.length, 1);
 
     updateClient(`Importing package <${metadata.name}>`, 0, 0);
     let currentCompletion = 1;
-    const totalCompletion = collections.length + 3; // Package + Resources + Images
+    const totalCompletion = groups.length + 3; // Package + Resources + Images
     updateClient("Importing package", 0, currentCompletion / totalCompletion);
     const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
 
-    for (const collection of collections) {
-        const collectionId = collection.ns;
-        const collectionEntries = collection.entries ?? [];
-        const collectionImages = collection.images ?? [];
+    for (const group of groups) {
+        const groupId = group.ns;
+        const groupEntries = group.entries ?? [];
+        const groupImages = group.images ?? [];
 
         //#region One at a time
-        const entryCount = Math.max(collectionEntries.length, 1);
+        const entryCount = Math.max(groupEntries.length, 1);
         let currentEntry = 0;
         currentCompletion++;
 
-        for (const entry of collectionEntries) {
+        for (const entry of groupEntries) {
             if (entry.bid === null || entry.bid === undefined) { continue; }
-            updateClient(`Importing entry <${entry.bid}> from collection <${collectionId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
-            await Entry.findOneAndUpdate({ packageId: pkg.ns, collectionId: collectionId, bid: entry.bid }, {
+            updateClient(`Importing entry <${entry.bid}> from group <${groupId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
+            await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
                 ...entry,
                 packageId: pkg.ns,
-                collectionId: collectionId
+                groupId: groupId
             }, { upsert: true, new: true });
         }
         //#endregion
 
         //#region Bulk
-        // updateClient(`Importing collection <${collectionId}>`, 0, ++currentCompletion / totalCompletion);
-        // await Entry.bulkWrite(collectionEntries.map(entry => {
+        // updateClient(`Importing group <${groupId}>`, 0, ++currentCompletion / totalCompletion);
+        // await Entry.bulkWrite(groupEntries.map(entry => {
         //     return {
         //         updateOne: {
-        //             filter: { packageId: pkg.ns, collectionId: collectionId, bid: entry.bid },
-        //             update: { ...entry, packageId: pkg.ns, collectionId: collectionId },
+        //             filter: { packageId: pkg.ns, groupId: groupId, bid: entry.bid },
+        //             update: { ...entry, packageId: pkg.ns, groupId: groupId },
         //             upsert: true,
         //             new: true
         //         }
@@ -75,8 +75,8 @@ async function importJson(
         // }));
         //#endregion
 
-        for (const img of collectionImages) {
-            images.push({ url: img.url, collection: collectionId, name: img.name });
+        for (const img of groupImages) {
+            images.push({ url: img.url, group: groupId, name: img.name });
         }
     }
 
@@ -112,13 +112,13 @@ async function importJson(
     currentCompletion++;
     for (const img of images) {
         try {
-            await mkdir(path.join(paths.data, pkg.ns, "images", img.collection), { recursive: true });
+            await mkdir(path.join(paths.data, pkg.ns, "images", img.group), { recursive: true });
         } catch (err) {
             if (!(err as Error).message.startsWith("EEXIST")) { console.log((err as Error).message); }
         } finally {
             // check if the file exists
             try {
-                await fs.stat(path.join(paths.data, pkg.ns, "images", img.collection, img.name));
+                await fs.stat(path.join(paths.data, pkg.ns, "images", img.group, img.name));
                 updateClient(`Image <${img.name}> already imported`, (++currentImage) / imageCount, currentCompletion / totalCompletion);
                 // file exists, no need to re-download
             }
@@ -132,10 +132,10 @@ async function importJson(
                     // convert to a buffer
                     const imgArrayBuffer = await imgBlob.arrayBuffer();
                     // write to disk
-                    await fs.writeFile(path.join(paths.data, pkg.ns, "images", img.collection, img.name), Buffer.from(imgArrayBuffer));
+                    await fs.writeFile(path.join(paths.data, pkg.ns, "images", img.group, img.name), Buffer.from(imgArrayBuffer));
                 }
                 catch (err) {
-                    console.log(chalk.red("Failed to download"), chalk.red.bgGreen(img.url), chalk.red(`to ${img.collection}/${img.name}`), err.message);
+                    console.log(chalk.red("Failed to download"), chalk.red.bgGreen(img.url), chalk.red(`to ${img.group}/${img.name}`), err.message);
                 }
             }
         }

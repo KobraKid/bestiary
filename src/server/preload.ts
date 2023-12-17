@@ -2,19 +2,19 @@ import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron";
 import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { ICollectionMetadata, ISorting } from "../model/Collection";
-import { ICollectionConfig } from "../model/Config";
+import { IGroupMetadata, ISorting } from "../model/Group";
+import { IGroupConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 
 contextBridge.exposeInMainWorld("pkg", {
     loadPackages: (): Promise<IPackageMetadata[]> =>
         ipcRenderer.invoke("pkg:load-pkgs"),
-    loadCollection: (pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> =>
-        ipcRenderer.invoke("pkg:load-collection", pkg, collection),
-    loadCollectionEntries: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean): void =>
-        ipcRenderer.send("pkg:load-collection-entries", pkg, collection, lang, sortBy, sortDescending),
-    onLoadCollectionEntry: (callback: (entry: IEntryMetadata) => void) => {
+    loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> =>
+        ipcRenderer.invoke("pkg:load-group", pkg, group),
+    loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean): void =>
+        ipcRenderer.send("pkg:load-group-entries", pkg, group, lang, sortBy, sortDescending),
+    onLoadGroupEntry: (callback: (entry: IEntryMetadata) => void) => {
         ipcRenderer.removeAllListeners("pkg:on-entry-loaded");
         ipcRenderer.on("pkg:on-entry-loaded", (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
     },
@@ -26,14 +26,14 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.removeAllListeners("pkg:update-page-number");
         ipcRenderer.on("pkg:update-page-number", (_event: IpcRendererEvent, page: number) => callback(page));
     },
-    prevPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
-        ipcRenderer.send("pkg:prev-page", pkg, collection, lang, sortBy, sortDescending),
-    nextPage: (pkg: IPackageMetadata, collection: ICollectionMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
-        ipcRenderer.send("pkg:next-page", pkg, collection, lang, sortBy, sortDescending),
-    stopLoadingCollectionEntries: (): Promise<boolean> =>
-        ipcRenderer.invoke("pkg:stop-loading-collection"),
-    loadEntry: (pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
-        ipcRenderer.invoke("pkg:load-entry", pkg, collectionId, entryId, lang),
+    prevPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
+        ipcRenderer.send("pkg:prev-page", pkg, group, lang, sortBy, sortDescending),
+    nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
+        ipcRenderer.send("pkg:next-page", pkg, group, lang, sortBy, sortDescending),
+    stopLoadingGroupEntries: (): Promise<boolean> =>
+        ipcRenderer.invoke("pkg:stop-loading-group"),
+    loadEntry: (pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
+        ipcRenderer.invoke("pkg:load-entry", pkg, groupId, entryId, lang),
 });
 
 contextBridge.exposeInMainWorld("config", {
@@ -42,17 +42,17 @@ contextBridge.exposeInMainWorld("config", {
     },
     savePkgConfig: () =>
         ipcRenderer.send("config:save-config"),
-    updateCollectionConfig: (pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) =>
-        ipcRenderer.send("config:update-collection-config", pkg, collection, config),
-    updateEntryCollectedStatus: (collection: ICollectionMetadata, groupId: number, entryId: string) =>
-        ipcRenderer.send("config:update-entry-collected-status", collection, groupId, entryId)
+    updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) =>
+        ipcRenderer.send("config:update-group-config", pkg, group, config),
+    updateEntryCollectedStatus: (group: IGroupMetadata, groupId: number, entryId: string) =>
+        ipcRenderer.send("config:update-entry-collected-status", group, groupId, entryId)
 });
 
 contextBridge.exposeInMainWorld("menu", {
-    showCollectionMenu: (pkg: IPackageMetadata, collection: ICollectionMetadata) => ipcRenderer.send("context-menu:show-collection-menu", pkg, collection),
-    onConfigureCollection: (collectionManager: (pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => void) => {
-        ipcRenderer.removeAllListeners("context-menu:manage-collection");
-        ipcRenderer.on("context-menu:manage-collection", (_event: IpcRendererEvent, pkg: IPackageMetadata, collection: ICollectionMetadata, config: ICollectionConfig) => collectionManager(pkg, collection, config));
+    showGroupMenu: (pkg: IPackageMetadata, group: IGroupMetadata) => ipcRenderer.send("context-menu:show-group-menu", pkg, group),
+    onConfigureGroup: (groupManager: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => void) => {
+        ipcRenderer.removeAllListeners("context-menu:manage-group");
+        ipcRenderer.on("context-menu:manage-group", (_event: IpcRendererEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => groupManager(pkg, group, config));
     }
 });
 

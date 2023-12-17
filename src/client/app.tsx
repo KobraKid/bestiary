@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { CollectionMenu, PackageMenu } from "./components/menu";
+import { GroupMenu, PackageMenu } from "./components/menu";
 import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
 import useScript from "./hooks/useScript";
 import { Options } from "./components/options";
 import { PackageContext } from "./context";
-import { ICollectionMetadata, ISorting } from "../model/Collection";
+import { IGroupMetadata, ISorting } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
-import { Collection } from "./components/collection";
+import { Group } from "./components/group";
 import { Entry } from "./components/entry";
 import { Map } from "./components/map";
-import { GroupSettingsView } from "./components/group";
+import { GroupConfigView } from "./components/groupConfig";
 import { ImportView } from "./components/importview";
 import "./styles/app.scss";
 import "./styles/transitions.scss";
@@ -21,9 +21,9 @@ import "./styles/importer.scss";
  * Represents a view frame for backwards navigation
  */
 export interface ViewStackframe {
-    /** The view's collection */
-    collection: ICollectionMetadata,
-    /** The view's entry - null or undefined if the previous frame was in collection mode */
+    /** The view's group */
+    group: IGroupMetadata,
+    /** The view's entry - null or undefined if the previous frame was in group mode */
     entry?: IEntryMetadata,
 }
 
@@ -38,10 +38,10 @@ const App: React.FC = () => {
         view,
         canNavigateBack,
         selectPkg,
-        selectCollection,
-        updateCollection,
+        selectGroup,
+        updateGroup,
         selectEntry,
-        addEntryToCollection,
+        addEntryToGroup,
         navigateBack,
         prevPage, nextPage
     } = useViewModel();
@@ -55,7 +55,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         window.config.onShowOptions(() => setOptionsVisible(true));
-        window.pkg.onLoadCollectionEntry(addEntryToCollection);
+        window.pkg.onLoadGroupEntry(addEntryToGroup);
     }, []);
 
     useEffect(() => {
@@ -68,23 +68,23 @@ const App: React.FC = () => {
             <Options show={optionsVisible} />
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}>
                 <ImportView />
-                <GroupSettingsView />
-                <PackageContext.Provider value={{ pkg: view.pkg, selectCollection, selectEntry }}>
+                <GroupConfigView />
+                <PackageContext.Provider value={{ pkg: view.pkg, selectGroup: selectGroup, selectEntry }}>
                     <PackageMenu
                         expanded={pkgMenuExpanded}
                         setExpanded={setPkgMenuExpanded}
                         onPackageClicked={selectPkg} />
                     {view.pkg &&
                         <>
-                            <CollectionMenu
-                                collections={view.pkg.collections}
+                            <GroupMenu
+                                groups={view.pkg.groups}
                                 pkgMenuExpanded={pkgMenuExpanded}
                                 canNavigateBack={canNavigateBack}
                                 onBackArrowClicked={navigateBack}
-                                onCollectionClicked={selectCollection} />
+                                onGroupClicked={selectGroup} />
                             <Page
-                                collection={view.collection}
-                                updateCollection={updateCollection}
+                                group={view.group}
+                                updateGroup={updateGroup}
                                 prevPage={prevPage}
                                 nextPage={nextPage}
                                 entry={view.entry}
@@ -98,8 +98,8 @@ const App: React.FC = () => {
 };
 
 interface IPageProps {
-    collection: ICollectionMetadata,
-    updateCollection: (sortBy?: ISorting, sortDescending?: boolean) => void,
+    group: IGroupMetadata,
+    updateGroup: (sortBy?: ISorting, sortDescending?: boolean) => void,
     entry: IEntryMetadata | undefined,
     displayMode: DISPLAY_MODE,
     prevPage: () => void,
@@ -107,7 +107,7 @@ interface IPageProps {
 }
 
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
-    const { collection, updateCollection, entry, displayMode, prevPage, nextPage } = props;
+    const { group, updateGroup, entry, displayMode, prevPage, nextPage } = props;
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
@@ -122,11 +122,11 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
     useScript(entry?.script);
 
     switch (displayMode) {
-        case DISPLAY_MODE.collection:
-            return (collection && collection.ns.length > 0)
-                ? <Collection
-                    collection={collection}
-                    updateCollection={updateCollection}
+        case DISPLAY_MODE.group:
+            return (group && group.ns.length > 0)
+                ? <Group
+                    group={group}
+                    updateGroup={updateGroup}
                     currentPage={currentPage} totalPages={totalPages}
                     prevPage={prevPage} nextPage={nextPage} />
                 : null;

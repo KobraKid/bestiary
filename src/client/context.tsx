@@ -1,12 +1,12 @@
 import { createContext } from "react";
 import { IPackageMetadata } from "../model/Package";
-import { ICollectionMetadata } from "../model/Collection";
-import { ICollectionConfig, IPackageConfig } from "../model/Config";
+import { IGroupMetadata } from "../model/Group";
+import { IGroupConfig, IPackageConfig } from "../model/Config";
 
 interface IPackageContext {
     pkg: IPackageMetadata,
-    selectCollection: (collection: ICollectionMetadata) => void,
-    selectEntry: (collectionId: string, entryId: string) => void
+    selectGroup: (group: IGroupMetadata) => void,
+    selectEntry: (groupId: string, entryId: string) => void
 }
 
 export const PackageContext = createContext<IPackageContext>({
@@ -15,10 +15,10 @@ export const PackageContext = createContext<IPackageContext>({
         ns: "",
         path: "",
         icon: "",
-        collections: [],
+        groups: [],
         langs: []
     },
-    selectCollection: () => { },
+    selectGroup: () => { },
     selectEntry: () => { }
 });
 
@@ -30,10 +30,10 @@ export const PackageConfigContext = createContext<IPackageConfigContext>({
     pkgConfig: {}
 });
 
-interface ICollectionConfigContext {
-    collectionConfig: ICollectionConfig[]
+interface IGroupConfigContext {
+    groupConfig: IGroupConfig[]
 }
 
-export const CollectionConfigContext = createContext<ICollectionConfigContext>({
-    collectionConfig: []
+export const GroupConfigContext = createContext<IGroupConfigContext>({
+    groupConfig: []
 });

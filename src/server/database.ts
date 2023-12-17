@@ -6,11 +6,11 @@ import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
 import { hb, isDev, paths } from "./electron";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
-import { ICollectionMetadata, ISorting } from "../model/Collection";
+import { IGroupMetadata, ISorting } from "../model/Group";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { ILandmark, IMap } from "../model/Map";
 import Resource, { IResource } from "../model/Resource";
-import { createOrLoadCollectionConfig } from "./collection";
+import { createOrLoadGroupConfig } from "./group";
 import { pathToFileURL } from "url";
 
 type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code };
@@ -24,7 +24,7 @@ const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema,
 const entriesPerPage = 50;
 /** Page number from 0 to page-1 */
 let page = 0;
-/** Number of pages for this collection */
+/** Number of pages for this group */
 let pages = 0;
 
 let isLoading = false;
@@ -41,10 +41,10 @@ enum FileType {
     style = "style"
 }
 
-interface CollectionEntryParams {
+interface GroupEntryParams {
     event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
-    collection: ICollectionMetadata,
+    group: IGroupMetadata,
     lang: ISO639Code,
     sortBy?: ISorting,
     sortDescending?: boolean
@@ -78,72 +78,72 @@ export function getPackageList(): Promise<IPackageSchema[]> {
 }
 
 /**
- * Gets a collection.
+ * Gets a group.
  * @param event The event that triggered this action.
  * @param pkg The current package.
- * @param collection The collection to retrieve.
+ * @param group The group to retrieve.
  * @param _lang The language to display in.
- * @returns A collection.
+ * @returns A group.
  */
-export async function getCollection(event: IpcMainInvokeEvent, pkg: IPackageMetadata, collection: ICollectionMetadata): Promise<ICollectionMetadata> {
+export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> {
     // Send page count
-    pages = Math.max(Math.ceil(await Entry.countDocuments({ packageId: pkg.ns, collectionId: collection.ns }).exec() / entriesPerPage), 1);
+    pages = Math.max(Math.ceil(await Entry.countDocuments({ packageId: pkg.ns, groupId: group.ns }).exec() / entriesPerPage), 1);
     event.sender.send("pkg:update-page-count", pages);
     page = 0;
     event.sender.send("pkg:update-page-number", page);
 
-    const collectionStyle = await getStyle(pkg.ns, collection.ns, ViewType.preview);
-    const collectionConfig = await createOrLoadCollectionConfig(pkg, collection);
+    const groupStyle = await getStyle(pkg.ns, group.ns, ViewType.preview);
+    const groupConfig = await createOrLoadGroupConfig(pkg, group);
 
-    return { ...collection, style: collectionStyle, config: collectionConfig };
+    return { ...group, style: groupStyle, config: groupConfig };
 }
 
-export async function prevPage(params: CollectionEntryParams) {
+export async function prevPage(params: GroupEntryParams) {
     const { event } = params;
     if (isLoading) { return; }
     page = Math.max(page - 1, 0);
     event.sender.send("pkg:update-page-number", page);
-    getCollectionEntries(params);
+    getGroupEntries(params);
 
 }
 
-export async function nextPage(params: CollectionEntryParams) {
+export async function nextPage(params: GroupEntryParams) {
     const { event } = params;
     if (isLoading) { return; }
     page = Math.min(page + 1, pages - 1);
     event.sender.send("pkg:update-page-number", page);
-    getCollectionEntries(params);
+    getGroupEntries(params);
 
 }
 
 /**
- * Loads each entry in a collection and sends the results back to the event's original sender.
+ * Loads each entry in a group and sends the results back to the event's original sender.
  * @param event The event that triggered this action.
  * @param pkg The current package.
- * @param collection The current collection.
+ * @param group The current group.
  * @param lang The language to display in.
  */
-export async function getCollectionEntries(params: CollectionEntryParams): Promise<void> {
-    const { event, pkg, collection, lang, sortBy, sortDescending } = params;
+export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
+    const { event, pkg, group, lang, sortBy, sortDescending } = params;
 
     isLoading = true;
     const sortArg: [string, SortOrder][] | undefined = sortBy ? [[sortBy.path, sortDescending ? -1 : 1]] : [["bid", 1]];
 
 
-    const entries = await Entry.find({ packageId: pkg.ns, collectionId: collection.ns })
+    const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
         .sort(sortArg)
         .collation({ locale: "en_US", numericOrdering: true })
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()
         .exec();
-    const layout = await getLayout(pkg.ns, collection.ns, ViewType.preview);
+    const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
     for (const entry of entries) {
         const cache = {};
         const entryLayout = await layout({ entry, lang });
         const groupings = await Promise.all(
-            collection.groupings?.map(async grouping => {
+            group.groupings?.map(async grouping => {
                 return {
                     name: grouping.name,
                     path: grouping.path,
@@ -152,7 +152,7 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
             }) ?? []
         );
         const sortings = [...await Promise.all(
-            collection.sortings?.map(async sorting => {
+            group.sortings?.map(async sorting => {
                 return {
                     name: sorting.name + "(Ascending)",
                     path: "^" + sorting.path,
@@ -161,7 +161,7 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
             }) ?? []
         ),
         ...await Promise.all(
-            collection.sortings?.map(async sorting => {
+            group.sortings?.map(async sorting => {
                 return {
                     name: sorting.name + "(Descending)",
                     path: sorting.path,
@@ -171,7 +171,7 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
         )];
         event.sender.send("pkg:on-entry-loaded", {
             packageId: pkg.ns,
-            collectionId: collection.ns,
+            groupId: group.ns,
             bid: entry.bid,
             groupings: groupings,
             sortings: sortings,
@@ -183,33 +183,33 @@ export async function getCollectionEntries(params: CollectionEntryParams): Promi
 
 /**
  * Whether we stopped loading entries.
- * @returns True if we have stopped loading entries for a collection/page
+ * @returns True if we have stopped loading entries for a group/page
  */
-export function stopLoadingCollectionEntries(): boolean {
+export function stopLoadingGroupEntries(): boolean {
     return !isLoading;
 }
 
 /**
  * Gets a single entry.
  * @param pkg The current package.
- * @param collectionId The current collection.
+ * @param groupId The current group.
  * @param entryId The entry to retrieve.
  * @param lang The language to display in.
  * @returns An entry.
  */
-export async function getEntry(pkg: IPackageMetadata, collectionId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> {
-    const loadedEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: collectionId, bid: entryId }).lean().exec();
+export async function getEntry(pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> {
+    const loadedEntry = await Entry.findOne({ packageId: pkg.ns, groupId, bid: entryId }).lean().exec();
     if (!loadedEntry) return null;
 
-    if (pkg.collections.find(c => c.ns === collectionId)?.isMap) {
+    if (pkg.groups.find(c => c.ns === groupId)?.isMap) {
         return getMap(pkg, loadedEntry, lang);
     }
 
-    const entryLayout = await (await getLayout(pkg.ns, collectionId, ViewType.view))({ entry: loadedEntry, lang });
-    const entryScript = await (await getScript(pkg.ns, collectionId))({ entry: loadedEntry, lang });
-    const entryStyle = await getStyle(pkg.ns, collectionId, ViewType.view, { entry: loadedEntry, lang });
+    const entryLayout = await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry: loadedEntry, lang });
+    const entryScript = await (await getScript(pkg.ns, groupId))({ entry: loadedEntry, lang });
+    const entryStyle = await getStyle(pkg.ns, groupId, ViewType.view, { entry: loadedEntry, lang });
 
-    return { packageId: loadedEntry.packageId, collectionId: loadedEntry.collectionId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
+    return { packageId: loadedEntry.packageId, groupId: loadedEntry.groupId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
 }
 
 async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Code): Promise<IMap> {
@@ -219,7 +219,7 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
     for (const landmark of map.landmarks) {
         const link = landmark.link?.split(".");
         if (link && link.length === 2) {
-            const landmarkEntry = await Entry.findOne({ packageId: pkg.ns, collectionId: link[0], bid: link[1] }).lean().exec();
+            const landmarkEntry = await Entry.findOne({ packageId: pkg.ns, groupId: link[0], bid: link[1] }).lean().exec();
             if (landmarkEntry) {
                 const layout = await getLayout(pkg.ns, link[0]!, ViewType.preview);
                 const preview = await layout({ entry: landmarkEntry, lang });
@@ -239,42 +239,42 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
 /**
  * Gets the layout for an entry.
  * @param pkg The current package.
- * @param collectionNamespace The current collection's namespace.
+ * @param groupNamespace The current group's namespace.
  * @param viewType The type of view we are loading.
  * @returns An HTML string populated with attributes from the current entry.
  */
-export async function getLayout(pkgId: string, collectionNamespace: string, viewType: ViewType): Promise<EntryLayoutFile> {
-    const filePath = getFilePath(pkgId, collectionNamespace, FileType.layout, viewType);
-    return getFile(pkgId, collectionNamespace, filePath, viewType);
+export async function getLayout(pkgId: string, groupNamespace: string, viewType: ViewType): Promise<EntryLayoutFile> {
+    const filePath = getFilePath(pkgId, groupNamespace, FileType.layout, viewType);
+    return getFile(pkgId, groupNamespace, filePath, viewType);
 }
 
 /**
  * Gets the script for an entry.
  * @param pkg The current package.
- * @param collectionNamespace The current collection's namespace.
+ * @param groupNamespace The current group's namespace.
  * @returns JavaScript code.
  */
-export async function getScript(pkgId: string, collectionNamespace: string): Promise<EntryLayoutFile> {
-    const filePath = getFilePath(pkgId, collectionNamespace, FileType.script, ViewType.any);
-    return getFile(pkgId, collectionNamespace, filePath, ViewType.any);
+export async function getScript(pkgId: string, groupNamespace: string): Promise<EntryLayoutFile> {
+    const filePath = getFilePath(pkgId, groupNamespace, FileType.script, ViewType.any);
+    return getFile(pkgId, groupNamespace, filePath, ViewType.any);
 }
 
 /**
  * Gets the style for an entry.
  * @param pkg The current package.
- * @param collectionNamespace The current collection's namespace.
+ * @param groupNamespace The current group's namespace.
  * @returns A <style></style> element.
  */
-export async function getStyle(pkgId: string, collectionNamespace: string, viewType: ViewType, context?: EntryLayoutContext): Promise<string> {
-    const filePath = getFilePath(pkgId, collectionNamespace, FileType.style, viewType);
+export async function getStyle(pkgId: string, groupNamespace: string, viewType: ViewType, context?: EntryLayoutContext): Promise<string> {
+    const filePath = getFilePath(pkgId, groupNamespace, FileType.style, viewType);
 
     if (context) {
-        const file = await getFile(pkgId, collectionNamespace, filePath, viewType);
+        const file = await getFile(pkgId, groupNamespace, filePath, viewType);
         const parsedFile = await file(context);
         return compileStyle(parsedFile, filePath);
     } else {
         try {
-            return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${collectionNamespace}.scss`)).css}</style>`;
+            return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${groupNamespace}.scss`)).css}</style>`;
         }
         catch (err) {
             console.log((err as Error).message);
@@ -300,8 +300,8 @@ function compileStyle(style: string, filePath: string): string {
     return "";
 }
 
-async function getFile(pkgId: string, collectionNamespace: string, filePath: string, viewType: ViewType): Promise<EntryLayoutFile> {
-    const key = `${pkgId}-${collectionNamespace}-${viewType}`;
+async function getFile(pkgId: string, groupNamespace: string, filePath: string, viewType: ViewType): Promise<EntryLayoutFile> {
+    const key = `${pkgId}-${groupNamespace}-${viewType}`;
     if (!layoutCache[key] || isDev) {
         try {
             const file = await readFile(filePath, { encoding: "utf-8" });
@@ -315,9 +315,9 @@ async function getFile(pkgId: string, collectionNamespace: string, filePath: str
     return layoutCache[key]!; // we guarantee that the cache holds a value even when an error is thrown
 }
 
-function getFilePath(pkgId: string, collectionNamespace: string, fileType: FileType, viewType: ViewType): string {
+function getFilePath(pkgId: string, groupNamespace: string, fileType: FileType, viewType: ViewType): string {
     const ext = (fileType === FileType.script) ? "js" : (fileType === FileType.style) ? "scss" : "hbs";
-    return path.join(paths.data, pkgId, fileType, viewType, `${collectionNamespace}.${ext}`);
+    return path.join(paths.data, pkgId, fileType, viewType, `${groupNamespace}.${ext}`);
 }
 
 /**
@@ -390,7 +390,7 @@ export async function getAttribute(packageId: string, attribute: string, context
 async function findOneEntry(packageId: string, link: string): Promise<object | null> {
     const linkArray: string[] = link.split(".");
     if (linkArray.length === 2) {
-        return await Entry.findOne({ packageId, collectionId: linkArray[0], bid: linkArray[1] }).lean().exec();
+        return await Entry.findOne({ packageId, groupId: linkArray[0], bid: linkArray[1] }).lean().exec();
     }
     return null;
 }

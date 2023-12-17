@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 /**
- * Represents an entry in a collection
+ * Represents an entry in a group
  */
 export interface IEntryMetadata {
     /**
@@ -9,9 +9,9 @@ export interface IEntryMetadata {
      */
     packageId: string,
     /**
-     * Collection ID
+     * Group ID
      */
-    collectionId: string,
+    groupId: string,
     /**
      * Bestiary ID
      */
@@ -43,14 +43,14 @@ export interface IEntryMetadata {
     script?: string
 }
 
-export interface IEntrySchema extends Pick<IEntryMetadata, "packageId" | "collectionId" | "bid">, Document { }
+export interface IEntrySchema extends Pick<IEntryMetadata, "packageId" | "groupId" | "bid">, Document { }
 
 const EntrySchema = new Schema<IEntrySchema>({
     packageId: { type: String, required: true, ref: "Package" },
-    collectionId: { type: String, required: true },
+    groupId: { type: String, required: true },
     bid: { type: String, required: true }
     /* ...attributes: any */
 }, { collection: "entries", strict: false });
-EntrySchema.index({ packageId: 1, collectionId: 1, bid: 1 }, { name: "entry_link" });
+EntrySchema.index({ packageId: 1, groupId: 1, bid: 1 }, { name: "entry_link" });
 
 export default mongoose.model<IEntrySchema>("Entry", EntrySchema);

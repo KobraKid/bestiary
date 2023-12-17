@@ -118,11 +118,27 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
     if (entry) {
         const attrPath = options.hash["path"] ?? "";
         try {
-            const linkedEntry: IEntrySchema = await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as unknown as IEntrySchema;
+            let linkedGroup = "";
+            let linkedBid = "";
+            let linkedEntry: IEntrySchema | null = null;
+
+            const attr = await getAttribute(entry.packageId, attrPath, context ?? entry, {});
+            if (typeof attr === "string") {
+                const link = attr.split(".");
+                if (link.length === 2) {
+                    linkedGroup = link[0]!;
+                    linkedBid = link[1]!;
+
+                    linkedEntry = await Entry.findOne({ packageId: entry.packageId, groupId: linkedGroup, bid: linkedBid }).lean().exec();
+                }
+            } else {
+                linkedEntry = attr as IEntrySchema;
+            }
+
             if (linkedEntry) {
-                const layout = await (await getLayout(linkedEntry.packageId, linkedEntry.collectionId, ViewType.preview))({ entry: linkedEntry, lang });
-                const style = await getStyle(linkedEntry.packageId, linkedEntry.collectionId, ViewType.preview, { entry: linkedEntry, lang });
-                const script = await (await getScript(linkedEntry.packageId, linkedEntry.collectionId))({ entry: linkedEntry, lang });
+                const layout = await (await getLayout(linkedEntry.packageId, linkedEntry.groupId, ViewType.preview))({ entry: linkedEntry, lang });
+                const style = await getStyle(linkedEntry.packageId, linkedEntry.groupId, ViewType.preview, { entry: linkedEntry, lang });
+                const script = await (await getScript(linkedEntry.packageId, linkedEntry.groupId))({ entry: linkedEntry, lang });
                 return new hb.SafeString(layout + style + `<script>${script}</script>`);
             }
         } catch (err) {
@@ -136,8 +152,22 @@ async function __linkHelper(context: unknown, options: HelperOptions): Promise<s
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     if (entry) {
         const attrPath = options.hash["path"] ?? "";
-        const linkedEntry: IEntrySchema = await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as unknown as IEntrySchema;
-        return `data-linked-collection="${linkedEntry.collectionId}" data-linked-entry="${linkedEntry.bid}"`;
+        let linkedGroup = "";
+        let linkedBid = "";
+
+        const attr = await getAttribute(entry.packageId, attrPath, context ?? entry, {});
+        if (typeof attr === "string") {
+            const link = attr.split(".");
+            if (link.length === 2) {
+                linkedGroup = link[0]!;
+                linkedBid = link[1]!;
+            }
+        } else {
+            linkedGroup = (attr as IEntrySchema).groupId;
+            linkedBid = (attr as IEntrySchema).bid;
+        }
+
+        return `data-linked-group="${linkedGroup}" data-linked-entry="${linkedBid}"`;
     }
     return "";
 }
@@ -178,7 +208,7 @@ async function __imageHelper(hb: AsyncHandlebars, context: unknown, options: Hel
     if (src === "") {
         if (typeof context === "string") {
             const link = context.split(".");
-            const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: link[0], bid: link[1] }).lean().exec();
+            const linkedEntry = await Entry.findOne({ packageId: entry.packageId, groupId: link[0], bid: link[1] }).lean().exec();
             if (linkedEntry) {
                 src = prefix + await getAttribute(entry.packageId, attributePath, linkedEntry, {}) + suffix;
             }

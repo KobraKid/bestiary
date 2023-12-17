@@ -110,26 +110,26 @@ $menu-font-expanded-size: 1em;
   font-size: $menu-font-expanded-size;
 }
 
-@mixin collection-menu {
-  grid-column: collection-menu / span 1;
-  grid-row: collection-grid / span 1;
+@mixin group-menu {
+  grid-column: group-menu / span 1;
+  grid-row: group-grid / span 1;
   display: flex;
   flex-direction: column;
   transition: top .5s ease;
   overflow: auto;
 }
 
-.collection-menu-expanded {
-  @include collection-menu;
+.group-menu-expanded {
+  @include group-menu;
   top: $menu-button-expanded-size;
 }
 
-.collection-menu-collapsed {
-  @include collection-menu;
+.group-menu-collapsed {
+  @include group-menu;
   top: $menu-button-collapsed-size;
 }
 
-.collection-menu-button {
+.group-menu-button {
   background-color: colors.$text-dark;
   border: none;
   color: colors.$text-light;
@@ -146,6 +146,6 @@ $menu-font-expanded-size: 1em;
 }
 
 .package,
-.collection-menu-button {
+.group-menu-button {
   cursor: pointer;
 }

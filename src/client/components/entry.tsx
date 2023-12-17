@@ -1,8 +1,8 @@
 import React, { useCallback, useContext, useState } from "react";
 import parse, { DOMNode, domToReact } from "html-react-parser";
 import { IEntryMetadata } from "../../model/Entry";
-import { IGroupConfig } from "../../model/Config";
-import { ICollectionMetadata } from "../../model/Collection";
+import { ICollection } from "../../model/Config";
+import { IGroupMetadata } from "../../model/Group";
 import { PackageContext } from "../context";
 import "../styles/details.scss";
 
@@ -12,9 +12,9 @@ export interface IEntryProps {
      */
     entry: IEntryMetadata,
     /**
-     * The collection this entry is part of
+     * The group this entry is part of
      */
-    collection?: ICollectionMetadata,
+    group?: IGroupMetadata,
     /**
      * Callback for when this entry is clicked
      */
@@ -22,20 +22,20 @@ export interface IEntryProps {
 }
 
 export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
-    const { entry, collection, onClick } = props;
+    const { entry, group, onClick } = props;
 
     const { selectEntry } = useContext(PackageContext);
 
     const layout = parse(entry.layout, {
         replace: (domNode) => {
             if (domNode.type === "tag" && domNode.name === "a") {
-                const linkedCollection = domNode.attribs["data-linked-collection"];
+                const linkedGroup = domNode.attribs["data-linked-group"];
                 const linkedEntry = domNode.attribs["data-linked-entry"];
-                if (linkedCollection !== undefined && linkedEntry !== undefined) {
+                if (linkedGroup !== undefined && linkedEntry !== undefined) {
                     return (
                         <div {...domNode.attribs}
                             style={{ width: "fit-content", cursor: "pointer" }}
-                            onClick={() => selectEntry(linkedCollection, linkedEntry)} >
+                            onClick={() => selectEntry(linkedGroup, linkedEntry)} >
                             {domToReact(domNode.children as DOMNode[])}
                         </div>
                     );
@@ -46,11 +46,11 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     });
 
     return (
-        <div className={collection ? "preview" : "details"}>
-            {collection &&
-                <div className="group-tabs">
-                    {collection.config?.groups.map(group =>
-                        <Group key={group.id} {...group} entry={entry} collection={collection} />
+        <div className={group ? "preview" : "details"}>
+            {group &&
+                <div className="collection-tabs">
+                    {group.config?.collections.map(collection =>
+                        <Collection key={collection.id} {...collection} entry={entry} group={group} />
                     )}
                 </div>
             }
@@ -60,14 +60,14 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     );
 };
 
-export const Group: React.FC<Partial<IGroupConfig & IEntryProps>> = (props: Partial<IGroupConfig & IEntryProps>) => {
-    const { id, name, backgroundColor, color, entries, entry, collection } = props;
+export const Collection: React.FC<Partial<ICollection & IEntryProps>> = (props: Partial<ICollection & IEntryProps>) => {
+    const { id, name, backgroundColor, color, entries, entry, group } = props;
 
     const [checked, setChecked] = useState<boolean>(entries?.includes(entry?.bid ?? "") ?? false);
 
     const onUpdateCollectedStatus = useCallback(() => {
-        if (collection && (id !== undefined) && entry) {
-            window.config.updateEntryCollectedStatus(collection, id, entry.bid);
+        if (group && (id !== undefined) && entry) {
+            window.config.updateEntryCollectedStatus(group, id, entry.bid);
         }
     }, []);
 
@@ -82,7 +82,7 @@ export const Group: React.FC<Partial<IGroupConfig & IEntryProps>> = (props: Part
         };
 
     return (
-        <div className="group-tab" style={style}>
+        <div className="collection-tab" style={style}>
             <input type="checkbox" checked={checked} onChange={e => {
                 setChecked(e.target.checked);
                 onUpdateCollectedStatus();

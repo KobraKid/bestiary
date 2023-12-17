@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { IPackageMetadata } from "../../model/Package";
-import { ICollectionMetadata } from "../../model/Collection";
+import { IGroupMetadata } from "../../model/Group";
 import "../styles/menu.scss";
 import upArrow from "../../assets/icons/up.png";
 import downArrow from "../../assets/icons/down.png";
@@ -104,62 +104,62 @@ const PackageMenuItem = (props: IPackageMenuItemProps) => {
 };
 
 /**
- * Props for the collection menu
+ * Props for the group menu
  */
-interface ICollectionMenuProps {
-    collections: ICollectionMetadata[],
-    onCollectionClicked: (collection: ICollectionMetadata) => void,
+interface IGroupMenuProps {
+    groups: IGroupMetadata[],
+    onGroupClicked: (group: IGroupMetadata) => void,
     canNavigateBack: boolean,
     onBackArrowClicked: () => void,
     pkgMenuExpanded: boolean,
 }
 
 /**
- * The collection menu
+ * The Group menu
  * @param props The props
  * @returns A menu
  */
-export const CollectionMenu = (props: ICollectionMenuProps) => {
-    const { collections, onCollectionClicked, canNavigateBack, onBackArrowClicked, pkgMenuExpanded } = props;
+export const GroupMenu = (props: IGroupMenuProps) => {
+    const { groups, onGroupClicked, canNavigateBack, onBackArrowClicked, pkgMenuExpanded } = props;
     const { pkg } = useContext(PackageContext);
 
     return (
-        <div className={`collection-menu-${pkgMenuExpanded ? "expanded" : "collapsed"}`}>
+        <div className={`group-menu-${pkgMenuExpanded ? "expanded" : "collapsed"}`}>
             {canNavigateBack &&
-                <div className="collection-menu-button">
+                <div className="group-menu-button">
                     <img src={leftArrow} style={{ padding: 16, width: 32, height: 32, cursor: "pointer" }} onClick={onBackArrowClicked} />
                 </div>
             }
-            {collections.filter(collection => !collection.hidden).map(collection =>
-                <CollectionMenuItem
-                    key={collection.ns}
-                    name={collection.name}
-                    onCollectionClicked={() => onCollectionClicked(collection)}
-                    onCollectionRightClicked={() => window.menu.showCollectionMenu(pkg, collection)} />
+            {groups.filter(group => !group.hidden).map(group =>
+                <GroupMenuItem
+                    key={group.ns}
+                    name={group.name}
+                    onGroupClicked={() => onGroupClicked(group)}
+                    onGroupRightClicked={() => window.menu.showGroupMenu(pkg, group)} />
             )}
         </div>
     );
 };
 
 /**
- * Props for the collection menu item
+ * Props for the group menu item
  */
-interface ICollectionMenuItemProps {
+interface IGroupMenuItemProps {
     name: string,
-    onCollectionClicked: () => void;
-    onCollectionRightClicked: () => void;
+    onGroupClicked: () => void;
+    onGroupRightClicked: () => void;
 }
 
 /**
- * A collection for display in the menu
+ * A group for display in the menu
  * @param props The props
- * @returns A collection
+ * @returns A group
  */
-const CollectionMenuItem = (props: ICollectionMenuItemProps) => {
-    const { name, onCollectionClicked, onCollectionRightClicked } = props;
+const GroupMenuItem = (props: IGroupMenuItemProps) => {
+    const { name, onGroupClicked, onGroupRightClicked } = props;
 
     return (
-        <button className="collection-menu-button" onClick={onCollectionClicked} onContextMenu={onCollectionRightClicked}>
+        <button className="group-menu-button" onClick={onGroupClicked} onContextMenu={onGroupRightClicked}>
             <p>{name}</p>
         </button>
     );
