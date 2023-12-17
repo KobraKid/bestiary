@@ -116,14 +116,13 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const lang = getDataFromOptions<ISO639Code>(options, "lang");
     if (entry) {
-        const attrPath = (typeof context === "string") ? context : options.hash["path"];
-        const [linkedCollectionId, linkedBid]: [string, string] = (await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as string).split(".") as [string, string];
+        const attrPath = options.hash["path"] ?? "";
         try {
-            const linkedEntry = await Entry.findOne({ packageId: entry.packageId, collectionId: linkedCollectionId, bid: linkedBid }).lean().exec();
+            const linkedEntry: IEntrySchema = await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as unknown as IEntrySchema;
             if (linkedEntry) {
-                const layout = await (await getLayout(linkedEntry.packageId, linkedCollectionId, ViewType.preview))({ entry: linkedEntry, lang });
-                const style = await getStyle(linkedEntry.packageId, linkedCollectionId, ViewType.preview, { entry: linkedEntry, lang });
-                const script = await (await getScript(linkedEntry.packageId, linkedCollectionId))({ entry: linkedEntry, lang });
+                const layout = await (await getLayout(linkedEntry.packageId, linkedEntry.collectionId, ViewType.preview))({ entry: linkedEntry, lang });
+                const style = await getStyle(linkedEntry.packageId, linkedEntry.collectionId, ViewType.preview, { entry: linkedEntry, lang });
+                const script = await (await getScript(linkedEntry.packageId, linkedEntry.collectionId))({ entry: linkedEntry, lang });
                 return new hb.SafeString(layout + style + `<script>${script}</script>`);
             }
         } catch (err) {
@@ -136,9 +135,9 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
 async function __linkHelper(context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     if (entry) {
-        const attrPath = (typeof context === "string") ? context : options.hash["path"];
-        const [linkedCollectionId, linkedBid]: [string, string] = (await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as string).split(".") as [string, string];
-        return `data-linked-collection="${linkedCollectionId}" data-linked-entry="${linkedBid}"`;
+        const attrPath = options.hash["path"] ?? "";
+        const linkedEntry: IEntrySchema = await getAttribute(entry.packageId, attrPath, context ?? entry, {}) as unknown as IEntrySchema;
+        return `data-linked-collection="${linkedEntry.collectionId}" data-linked-entry="${linkedEntry.bid}"`;
     }
     return "";
 }
@@ -243,7 +242,7 @@ async function __eqHelper(context: unknown, arg1: unknown, options: HelperOption
     if (rPath !== "") {
         rCompare = await getAttribute(entry.packageId, rPath, arg1 ?? entry, {});
     }
-    return lCompare == rCompare ? (await options.fn(this)) : (await options.inverse(this));
+    return lCompare == rCompare ? (await options.fn(this, { data: options.data })) : (await options.inverse(this));
 }
 
 function escapeString(str: string): string {

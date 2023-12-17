@@ -325,13 +325,25 @@ function getFilePath(pkgId: string, collectionNamespace: string, fileType: FileT
  * can retrieve top-level and sub properties.
  * 
  * @param attribute The attribute to retrieve, can be period- or arrow-delimited.
- * @param obj The object to retrieve attributes from.
+ * @param context The context object to retrieve attributes from.
  * @param cache A cache of linked entries.
  * @returns The value of the attribute.
  */
-export async function getAttribute(packageId: string, attribute: string, obj: object, cache: { [link: string]: object | null }): Promise<unknown> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let attrValue: any = obj;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getAttribute(packageId: string, attribute: string, context: any, cache: { [link: string]: object | null }): Promise<unknown> {
+    if (typeof context === "string") {
+        const entry = await findOneEntry(packageId, context);
+        if (entry) {
+            if (attribute.length > 0) {
+                return getAttribute(packageId, attribute, entry, cache);
+            }
+            else {
+                return entry;
+            }
+        }
+    }
+
+    let attrValue = context;
     if (attribute == null) { return ""; }
     const attrPath = attribute.split(".").reverse();
 
@@ -346,9 +358,9 @@ export async function getAttribute(packageId: string, attribute: string, obj: ob
                     const attrLink: string = attrValue[prevAttr];
                     // Cache links
                     if (attrLink && !cache[attrLink]) {
-                        const link: string[] = attrLink.split(".");
-                        if (link.length === 2) {
-                            cache[attrLink] = await Entry.findOne({ packageId, collectionId: link[0], bid: link[1] }).lean().exec();
+                        const entry = await findOneEntry(packageId, attrLink);
+                        if (entry) {
+                            cache[attrLink] = entry;
                         }
                         else {
                             return ""; // bad link
@@ -373,4 +385,12 @@ export async function getAttribute(packageId: string, attribute: string, obj: ob
         }
     }
     return attrValue ?? "";
+}
+
+async function findOneEntry(packageId: string, link: string): Promise<object | null> {
+    const linkArray: string[] = link.split(".");
+    if (linkArray.length === 2) {
+        return await Entry.findOne({ packageId, collectionId: linkArray[0], bid: linkArray[1] }).lean().exec();
+    }
+    return null;
 }

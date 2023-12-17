@@ -24,7 +24,7 @@
             "type": "npm",
             "script": "watch",
             "group": "build",
-            "problemMatcher": "$tsc-watch",
+            // "problemMatcher": "$tsc-watch",
             "label": "npm: watch",
             "detail": "webpack --config ./webpack.config.js --watch",
             "isBackground": true,
