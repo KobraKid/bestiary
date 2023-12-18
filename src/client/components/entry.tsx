@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState } from "react";
 import parse, { DOMNode, domToReact } from "html-react-parser";
 import { IEntryMetadata } from "../../model/Entry";
 import { ICollection } from "../../model/Config";
@@ -26,6 +26,12 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
 
     const { selectEntry } = useContext(PackageContext);
 
+    const entryRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        entryRef.current?.scrollTo(0, 0);
+    }, [entry]);
+
     const layout = parse(entry.layout, {
         replace: (domNode) => {
             if (domNode.type === "tag" && domNode.name === "a") {
@@ -46,7 +52,7 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     });
 
     return (
-        <div className={group ? "preview" : "details"}>
+        <div className={group ? "preview" : "details"} ref={entryRef}>
             {group &&
                 <div className="collection-tabs">
                     {group.config?.collections.map(collection =>
