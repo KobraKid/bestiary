@@ -63,7 +63,7 @@ const PkgSchema = new Schema<IPackageSchema>({
         name: { type: String, required: true },
         hidden: { type: Boolean, required: false },
         isMap: { type: Boolean, required: false },
-        groupings: {
+        groupSettings: {
             type: [{
                 name: { type: String, required: true },
                 path: { type: String, required: true },
@@ -73,6 +73,14 @@ const PkgSchema = new Schema<IPackageSchema>({
                         value: { type: Schema.Types.Mixed, required: true }
                     }], required: true
                 }
+            }],
+            required: false
+        },
+        sortSettings: {
+            type: [{
+                name: { type: String, required: true },
+                path: { type: String, required: true },
+                sortType: { type: String, required: true }
             }],
             required: false
         }

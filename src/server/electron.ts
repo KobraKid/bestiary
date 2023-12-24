@@ -8,7 +8,7 @@ import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPa
 import { onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { IGroupMetadata, ISorting } from "../model/Group";
+import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 import { loadGroupConfig, saveConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
@@ -40,24 +40,24 @@ ipcMain.on("pkg:load-group-entries", (
     pkg: IPackageMetadata,
     group: IGroupMetadata,
     lang: ISO639Code,
-    sortBy?: ISorting,
-    sortDescending?: boolean): Promise<void> =>
-    getGroupEntries({ event, pkg, group, lang, sortBy, sortDescending }));
+    sortBy?: ISortSettings,
+    groupBy?: IGroupSettings): Promise<void> =>
+    getGroupEntries({ event, pkg, group, lang, sortBy, groupBy }));
 
 ipcMain.on("pkg:prev-page", (
     event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
     group: IGroupMetadata,
     lang: ISO639Code,
-    sortBy?: ISorting,
-    sortDescending?: boolean) => prevPage({ event, pkg, group, lang, sortBy, sortDescending }));
+    sortBy?: ISortSettings,
+    groupBy?: IGroupSettings) => prevPage({ event, pkg, group, lang, sortBy, groupBy }));
 ipcMain.on("pkg:next-page", (
     event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
     group: IGroupMetadata,
     lang: ISO639Code,
-    sortBy?: ISorting,
-    sortDescending?: boolean) => nextPage({ event, pkg, group, lang, sortBy, sortDescending }));
+    sortBy?: ISortSettings,
+    groupBy?: IGroupSettings) => nextPage({ event, pkg, group, lang, sortBy, groupBy }));
 
 ipcMain.handle("pkg:stop-loading-group", stopLoadingGroupEntries);
 

@@ -1,4 +1,4 @@
-import mongoose, { SortOrder } from "mongoose";
+import mongoose from "mongoose";
 import path from "path";
 import sass from "sass";
 import { IpcMainInvokeEvent } from "electron";
@@ -6,7 +6,7 @@ import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
 import { hb, isDev, paths } from "./electron";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
-import { IGroupMetadata, ISorting } from "../model/Group";
+import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { ILandmark, IMap } from "../model/Map";
 import Resource, { IResource } from "../model/Resource";
@@ -27,6 +27,14 @@ let page = 0;
 /** Number of pages for this group */
 let pages = 0;
 
+const defaultSortOption: ISortSettings = { "name": "None", "path": "bid", "sortType": "string", "direction": 1 };
+let sortOption: ISortSettings = defaultSortOption;
+
+const defaultGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [] };
+// TODO: figure out how to apply groupings
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let groupOption: IGroupSettings = defaultGroupOption;
+
 let isLoading = false;
 
 export enum ViewType {
@@ -46,8 +54,8 @@ interface GroupEntryParams {
     pkg: IPackageMetadata,
     group: IGroupMetadata,
     lang: ISO639Code,
-    sortBy?: ISorting,
-    sortDescending?: boolean
+    sortBy?: ISortSettings,
+    groupBy?: IGroupSettings
 }
 
 /**
@@ -92,10 +100,27 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
     page = 0;
     event.sender.send("pkg:update-page-number", page);
 
+    sortOption = defaultSortOption;
+    groupOption = defaultGroupOption;
+
+    const groupMetadata = pkg.groups.find(g => g.ns === group.ns);
     const groupStyle = await getStyle(pkg.ns, group.ns, ViewType.preview);
     const groupConfig = await createOrLoadGroupConfig(pkg, group);
 
-    return { ...group, style: groupStyle, config: groupConfig };
+    return {
+        ...group,
+        entries: group.entries || [],
+        groupSettings: [
+            { "name": "None", "path": "", "buckets": [] },
+            ...groupMetadata?.groupSettings || []
+        ],
+        sortSettings: [
+            { "name": "None", "path": "", "sortType": "string", "direction": 1 },
+            ...groupMetadata?.sortSettings || []
+        ],
+        style: groupStyle,
+        config: groupConfig
+    };
 }
 
 export async function prevPage(params: GroupEntryParams) {
@@ -124,14 +149,15 @@ export async function nextPage(params: GroupEntryParams) {
  * @param lang The language to display in.
  */
 export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
-    const { event, pkg, group, lang, sortBy, sortDescending } = params;
+    const { event, pkg, group, lang, sortBy, groupBy } = params;
 
     isLoading = true;
-    const sortArg: [string, SortOrder][] | undefined = sortBy ? [[sortBy.path, sortDescending ? -1 : 1]] : [["bid", 1]];
 
+    if (sortBy) { sortOption = sortBy; }
+    if (groupBy) { groupOption = groupBy; }
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-        .sort(sortArg)
+        .sort([[sortOption.path, sortOption.direction]])
         .collation({ locale: "en_US", numericOrdering: true })
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
@@ -140,41 +166,32 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
     const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
     for (const entry of entries) {
-        const cache = {};
+        // const cache = {};
         const entryLayout = await layout({ entry, lang });
-        const groupings = await Promise.all(
-            group.groupings?.map(async grouping => {
+        const groupSettings = await Promise.all(
+            group.groupSettings?.map(async setting => {
                 return {
-                    name: grouping.name,
-                    path: grouping.path,
-                    bucketValue: await getAttribute(entry.packageId, grouping.path, entry, cache)
+                    name: setting.name,
+                    path: setting.path,
+                    bucketValue: 0// await getAttribute(entry.packageId, setting.path, entry, cache)
                 };
             }) ?? []
         );
-        const sortings = [...await Promise.all(
-            group.sortings?.map(async sorting => {
+        const sortSettings = await Promise.all(
+            group.sortSettings?.map(async setting => {
                 return {
-                    name: sorting.name + "(Ascending)",
-                    path: "^" + sorting.path,
-                    value: await getAttribute(entry.packageId, sorting.path, entry, cache)
+                    name: setting.name,
+                    path: setting.path,
+                    value: 0// await getAttribute(entry.packageId, setting.path, entry, cache)
                 };
             }) ?? []
-        ),
-        ...await Promise.all(
-            group.sortings?.map(async sorting => {
-                return {
-                    name: sorting.name + "(Descending)",
-                    path: sorting.path,
-                    value: await getAttribute(entry.packageId, sorting.path, entry, cache)
-                };
-            }) ?? []
-        )];
+        );
         event.sender.send("pkg:on-entry-loaded", {
             packageId: pkg.ns,
             groupId: group.ns,
             bid: entry.bid,
-            groupings: groupings,
-            sortings: sortings,
+            groupSettings: groupSettings,
+            sortSettings: sortSettings,
             layout: entryLayout
         });
     }
@@ -209,11 +226,18 @@ export async function getEntry(pkg: IPackageMetadata, groupId: string, entryId: 
     const entryScript = await (await getScript(pkg.ns, groupId))({ entry: loadedEntry, lang });
     const entryStyle = await getStyle(pkg.ns, groupId, ViewType.view, { entry: loadedEntry, lang });
 
-    return { packageId: loadedEntry.packageId, groupId: loadedEntry.groupId, bid: loadedEntry.bid, layout: entryLayout, style: entryStyle, script: entryScript };
+    return {
+        packageId: loadedEntry.packageId,
+        groupId: loadedEntry.groupId,
+        bid: loadedEntry.bid,
+        layout: entryLayout,
+        style: entryStyle,
+        script: entryScript
+    } as IEntryMetadata;
 }
 
 async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Code): Promise<IMap> {
-    const map = entry as Omit<IEntryMetadata, "layout" | "style" | "script"> as IMap;
+    const map = entry as Omit<IEntryMetadata, "layout" | "style" | "script" | "groupSettings" | "sortSettings"> as IMap;
     const name = await Resource.findOne({ packageId: pkg.ns, resId: map.name }).lean().exec() as IResource;
     const landmarks: ILandmark[] = [];
     for (const landmark of map.landmarks) {
@@ -321,76 +345,35 @@ function getFilePath(pkgId: string, groupNamespace: string, fileType: FileType, 
 }
 
 /**
- * Gets an attribute from an Entry (or generic object),
- * can retrieve top-level and sub properties.
- * 
- * @param attribute The attribute to retrieve, can be period- or arrow-delimited.
- * @param context The context object to retrieve attributes from.
- * @param cache A cache of linked entries.
- * @returns The value of the attribute.
+ * Gets an attribute from an entry.
+ * @param entry The entry containing the attribute
+ * @param attribute The attribute path to search for
+ * @returns An attribute value if one is found, otherwise the entry
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function getAttribute(packageId: string, attribute: string, context: any, cache: { [link: string]: object | null }): Promise<unknown> {
-    if (typeof context === "string") {
-        const entry = await findOneEntry(packageId, context);
-        if (entry) {
-            if (attribute.length > 0) {
-                return getAttribute(packageId, attribute, entry, cache);
+export async function getAttribute(entry: any, attribute: string): Promise<unknown> {
+    const attributePath = attribute.split(".");
+    let attributeValue = entry;
+
+    for (let i = 0; i < attributePath.length; i++) {
+        const node = attributePath[i]!;
+
+        if (attributeValue != null && attributeValue instanceof mongoose.Types.ObjectId) {
+            attributeValue = await Entry.findById(attributeValue).lean().exec();
+        }
+
+        if (attributeValue != null && typeof attributeValue === "object" && node in attributeValue) {
+            if (attributeValue[node] instanceof mongoose.Types.ObjectId) {
+                attributeValue[node] = await Entry.findById(attributeValue[node]).lean().exec();
             }
-            else {
-                return entry;
-            }
+            attributeValue = attributeValue[node];
+        } else {
+            break;
         }
     }
 
-    let attrValue = context;
-    if (attribute == null) { return ""; }
-    const attrPath = attribute.split(".").reverse();
-
-    while (attrPath.length > 0 && typeof attrValue === "object") {
-        const attr = attrPath.pop();
-        if (attr) {
-            // We're jumping to a new entry's attributes
-            if (attr.includes("->")) {
-                const jump = attr.split("->");
-                if (jump.length >= 2) {
-                    const prevAttr: string = jump[0] ?? "";
-                    const attrLink: string = attrValue[prevAttr];
-                    // Cache links
-                    if (attrLink && !cache[attrLink]) {
-                        const entry = await findOneEntry(packageId, attrLink);
-                        if (entry) {
-                            cache[attrLink] = entry;
-                        }
-                        else {
-                            return ""; // bad link
-                        }
-                    }
-                    attrValue = cache[attrLink];
-                    if (!attrValue) {
-                        return ""; // link not found
-                    }
-                    // queue remaining attributes
-                    attrPath.push(jump.slice(1).join("->"));
-                }
-                else {
-
-                    return ""; // bad jump
-                }
-            }
-            // We're just getting a normal attribute
-            else {
-                attrValue = attrValue[attr];
-            }
-        }
+    if (attributeValue instanceof mongoose.Types.ObjectId) {
+        attributeValue = await Entry.findById(attributeValue).lean().exec();
     }
-    return attrValue ?? "";
-}
-
-async function findOneEntry(packageId: string, link: string): Promise<object | null> {
-    const linkArray: string[] = link.split(".");
-    if (linkArray.length === 2) {
-        return await Entry.findOne({ packageId, groupId: linkArray[0], bid: linkArray[1] }).lean().exec();
-    }
-    return null;
+    return attributeValue;
 }

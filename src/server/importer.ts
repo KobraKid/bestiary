@@ -2,7 +2,7 @@ import { BrowserWindow } from "electron";
 import path from "path";
 import { readFileSync } from "fs";
 import Package, { IPackageMetadata } from "../model/Package";
-import Entry from "../model/Entry";
+import Entry, { IEntrySchema } from "../model/Entry";
 import fs, { mkdir } from "fs/promises";
 import chalk from "chalk";
 import Resource, { IResource } from "../model/Resource";
@@ -20,7 +20,7 @@ export async function onImport(window: BrowserWindow, files: Electron.OpenDialog
     }
     catch (e) {
         window.webContents.send("importer:import-failed");
-        console.log(chalk.red.bgWhite(e));
+        console.log(chalk.red.bgWhite(e), e);
     }
 }
 
@@ -45,42 +45,27 @@ async function importJson(
         const groupEntries = group.entries ?? [];
         const groupImages = group.images ?? [];
 
-        //#region One at a time
         const entryCount = Math.max(groupEntries.length, 1);
         let currentEntry = 0;
         currentCompletion++;
 
-        for (const entry of groupEntries) {
+        for (let entry of groupEntries) {
             if (entry.bid === null || entry.bid === undefined) { continue; }
             updateClient(`Importing entry <${entry.bid}> from group <${groupId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
+
+            entry = await buildLinks(pkg, entry);
             await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
                 ...entry,
                 packageId: pkg.ns,
                 groupId: groupId
             }, { upsert: true, new: true });
         }
-        //#endregion
-
-        //#region Bulk
-        // updateClient(`Importing group <${groupId}>`, 0, ++currentCompletion / totalCompletion);
-        // await Entry.bulkWrite(groupEntries.map(entry => {
-        //     return {
-        //         updateOne: {
-        //             filter: { packageId: pkg.ns, groupId: groupId, bid: entry.bid },
-        //             update: { ...entry, packageId: pkg.ns, groupId: groupId },
-        //             upsert: true,
-        //             new: true
-        //         }
-        //     };
-        // }));
-        //#endregion
 
         for (const img of groupImages) {
             images.push({ url: img.url, group: groupId, name: img.name });
         }
     }
 
-    //#region One at a time
     let currentResource = 0;
     currentCompletion++;
     for (const resource of resources) {
@@ -91,22 +76,6 @@ async function importJson(
             packageId: pkg.ns
         }, { upsert: true, new: true });
     }
-    //#endregion
-
-    /* ~26 minutes */
-    //#region Bulk
-    // updateClient("Importing resources", 0, ++currentCompletion / totalCompletion);
-    // await Resource.bulkWrite(resources.map(resource => {
-    //     return {
-    //         updateOne: {
-    //             filter: { packageId: pkg.ns, resId: resource.resId },
-    //             update: { ...resource, packageId: pkg.ns },
-    //             upsert: true,
-    //             new: true
-    //         }
-    //     };
-    // }));
-    //#endregion
 
     let currentImage = 0;
     currentCompletion++;
@@ -140,4 +109,48 @@ async function importJson(
             }
         }
     }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function buildLinks(pkg: IPackageMetadata, o: any): Promise<any> {
+    if (o != null) {
+        if (isLink(o)) {
+            const link = await getLink(pkg, o);
+            if (link?._id) {
+                return link._id;
+            }
+        }
+        else if (typeof o === "object") {
+            for (const key of Object.keys(o)) {
+                const attribute = o[key as keyof typeof o];
+
+                if (attribute != null) {
+                    if (isLink(attribute)) {
+                        const link = await getLink(pkg, attribute);
+                        if (link?._id) {
+                            o[key as keyof typeof o] = link._id;
+                        }
+                    }
+                    else if (Array.isArray(attribute)) {
+                        for (let i = 0; i < attribute.length; i++) {
+                            attribute[i] = await buildLinks(pkg, attribute[i]);
+                        }
+                    }
+                    else if (typeof attribute === "object") {
+                        o[key] = await buildLinks(pkg, o[key]);
+                    }
+                }
+            }
+        }
+    }
+    return o;
+}
+
+function isLink(property: object): boolean {
+    return typeof property === "object" && "type" in property && property["type"] === "link" && "group" in property && "id" in property;
+}
+
+async function getLink(pkg: IPackageMetadata, attribute: object): Promise<IEntrySchema | null> {
+    const property = attribute as { "group": string, "id": string };
+    return await Entry.findOne({ packageId: pkg.ns, groupId: property["group"], bid: property["id"] }).exec();
 }

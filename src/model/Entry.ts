@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { IGroupSettings, ISortSettings } from "./Group";
 
 /**
  * Represents an entry in a group
@@ -19,16 +20,11 @@ export interface IEntryMetadata {
     /**
      * The values to use when grouping this entry
      */
-    groupings?: {
-        name: string,
-        path: string,
-        bucketValue: unknown
-    }[],
-    sortings?: {
-        name: string,
-        path: string,
-        value: unknown
-    }[],
+    groupSettings: IGroupSettings[],
+    /**
+     * The values to use when sorting this entry
+     */
+    sortSettings: ISortSettings[],
     /**
      * Layout string
      */

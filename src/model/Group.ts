@@ -1,7 +1,7 @@
 import { IGroupConfig } from "./Config";
 import { IEntryMetadata } from "./Entry";
 
-export interface IGrouping {
+export interface IGroupSettings {
     /**
      * Grouping name
      */
@@ -46,7 +46,7 @@ export interface IGrouping {
     }[]
 }
 
-export interface ISorting {
+export interface ISortSettings {
     /**
      * Sorting name
      */
@@ -54,7 +54,15 @@ export interface ISorting {
     /**
      * Attribute path to sort by
      */
-    path: string
+    path: string,
+    /**
+     * Sorting method
+     */
+    sortType: "string" | "number",
+    /**
+     * Sort direction
+     */
+    direction: -1 | 1
 }
 
 export interface IGroupMetadata {
@@ -81,11 +89,11 @@ export interface IGroupMetadata {
     /**
      * Groupings for entries
      */
-    groupings: IGrouping[],
+    groupSettings: IGroupSettings[],
     /** 
      * Sorting options for entries
      */
-    sortings: ISorting[],
+    sortSettings: ISortSettings[],
     /**
      * Style string
      */

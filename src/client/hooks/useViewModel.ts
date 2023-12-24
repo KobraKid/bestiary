@@ -1,6 +1,6 @@
 import { useCallback, useReducer, useRef, useState } from "react";
 import { IPackageMetadata, ISO639Code } from "../../model/Package";
-import { IGroupMetadata, ISorting } from "../../model/Group";
+import { IGroupMetadata, IGroupSettings, ISortSettings } from "../../model/Group";
 import { IEntryMetadata } from "../../model/Entry";
 import { IMap } from "../../model/Map";
 
@@ -9,7 +9,7 @@ interface BestiaryData {
     canNavigateBack: boolean,
     selectPkg: (pkg: IPackageMetadata) => void,
     selectGroup: (group: IGroupMetadata) => void,
-    updateGroup: (sortBy?: ISorting, sortDescending?: boolean) => void,
+    updateGroup: (sortBy?: ISortSettings, groupBy?: IGroupSettings) => void,
     selectEntry: (groupId: string, entryId: string) => void,
     selectLang: (lang: ISO639Code) => void,
     addEntryToGroup: (entry: IEntryMetadata) => void,
@@ -118,13 +118,13 @@ export function useViewModel(): BestiaryData {
     }, []);
     const [views, viewStackDispatch] = useReducer<(state: ViewStackframe[], action: IViewStackframeDispatchAction) => ViewStackframe[]>(viewStackReducer, [{
         pkg: { ns: "", name: "", path: "", icon: "", groups: [], langs: [] },
-        group: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
+        group: { ns: "", name: "", entries: [], groupSettings: [], sortSettings: [] },
         displayMode: DISPLAY_MODE.group
     }]);
 
     const view = useRef<ViewStackframe>({
         pkg: { ns: "", name: "", path: "", icon: "", groups: [], langs: [] },
-        group: { ns: "", name: "", entries: [], groupings: [], sortings: [] },
+        group: { ns: "", name: "", entries: [], groupSettings: [], sortSettings: [] },
         displayMode: DISPLAY_MODE.group
     });
 
@@ -135,7 +135,7 @@ export function useViewModel(): BestiaryData {
         selectGroup(newPkg, getFirstVisibleGroup(newPkg), lang);
     }, []);
 
-    const selectGroup = useCallback((pkg: IPackageMetadata, newGroup: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) => {
+    const selectGroup = useCallback((pkg: IPackageMetadata, newGroup: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) => {
         window.pkg.stopLoadingGroupEntries();
         newGroup.entries = [];
 
@@ -144,7 +144,7 @@ export function useViewModel(): BestiaryData {
                 type: ViewStackframeActionType.RESET,
                 targetView: { pkg, group }
             });
-            window.pkg.loadGroupEntries(pkg, group, lang, sortBy, sortDescending);
+            window.pkg.loadGroupEntries(pkg, group, lang, sortBy, groupBy);
         });
     }, []);
 
@@ -189,7 +189,7 @@ export function useViewModel(): BestiaryData {
         canNavigateBack: views.length > 1,
         selectPkg,
         selectGroup: (newGroup: IGroupMetadata) => selectGroup(view.current.pkg, newGroup, lang),
-        updateGroup: (sortBy?: ISorting, sortDescending?: boolean) => selectGroup(view.current.pkg, view.current.group, lang, sortBy, sortDescending),
+        updateGroup: (sortBy?: ISortSettings, groupBy?: IGroupSettings) => selectGroup(view.current.pkg, view.current.group, lang, sortBy, groupBy),
         selectEntry: (groupId: string, entryId: string) => selectEntry(groupId, entryId, lang),
         selectLang: (lang: ISO639Code) => setLang(lang),
         addEntryToGroup: addEntryToGroup,
@@ -201,10 +201,10 @@ export function useViewModel(): BestiaryData {
 function getFirstVisibleGroup(pkg: IPackageMetadata): IGroupMetadata {
     return pkg.groups.find(c => !c.hidden)
         ?? pkg.groups.at(0)
-        ?? { name: "", ns: "", entries: [], groupings: [], sortings: [] };
+        ?? { name: "", ns: "", entries: [], groupSettings: [], sortSettings: [] };
 }
 
 function getGroupById(pkg: IPackageMetadata, groupId: string): IGroupMetadata {
     return pkg.groups.find(c => c.ns === groupId)
-        ?? { name: "???", ns: groupId, entries: [], groupings: [], sortings: [] };
+        ?? { name: "???", ns: groupId, entries: [], groupSettings: [], sortSettings: [] };
 }

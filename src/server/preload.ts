@@ -2,7 +2,7 @@ import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron";
 import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { IGroupMetadata, ISorting } from "../model/Group";
+import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IGroupConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
@@ -12,8 +12,8 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.invoke("pkg:load-pkgs"),
     loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> =>
         ipcRenderer.invoke("pkg:load-group", pkg, group),
-    loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean): void =>
-        ipcRenderer.send("pkg:load-group-entries", pkg, group, lang, sortBy, sortDescending),
+    loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings): void =>
+        ipcRenderer.send("pkg:load-group-entries", pkg, group, lang, sortBy, groupBy),
     onLoadGroupEntry: (callback: (entry: IEntryMetadata) => void) => {
         ipcRenderer.removeAllListeners("pkg:on-entry-loaded");
         ipcRenderer.on("pkg:on-entry-loaded", (_event: IpcRendererEvent, entry: IEntryMetadata) => callback(entry));
@@ -26,9 +26,9 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.removeAllListeners("pkg:update-page-number");
         ipcRenderer.on("pkg:update-page-number", (_event: IpcRendererEvent, page: number) => callback(page));
     },
-    prevPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
+    prevPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) =>
         ipcRenderer.send("pkg:prev-page", pkg, group, lang, sortBy, sortDescending),
-    nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISorting, sortDescending?: boolean) =>
+    nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) =>
         ipcRenderer.send("pkg:next-page", pkg, group, lang, sortBy, sortDescending),
     stopLoadingGroupEntries: (): Promise<boolean> =>
         ipcRenderer.invoke("pkg:stop-loading-group"),

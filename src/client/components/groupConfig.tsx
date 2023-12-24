@@ -20,15 +20,15 @@ export const GroupConfigView: React.FC = () => {
         onCancel();
     }, []);
 
-    const onUpdateGroup = useCallback((id: number, name: string, bgColor: string, color: string) => {
+    const onUpdateCollection = useCallback((id: number, name: string, bgColor: string, color: string) => {
         setConfig(prevConfig => {
             if (prevConfig) {
                 const newConfig = structuredClone(prevConfig);
-                for (const group of newConfig.collections) {
-                    if (group.id === id) {
-                        group.name = name;
-                        group.backgroundColor = bgColor;
-                        group.color = color;
+                for (const collection of newConfig.collections) {
+                    if (collection.id === id) {
+                        collection.name = name;
+                        collection.backgroundColor = bgColor;
+                        collection.color = color;
                         break;
                     }
                 }
@@ -61,22 +61,22 @@ export const GroupConfigView: React.FC = () => {
         });
     }, []);
 
-    const onRemoveGroup = useCallback((id: number) => {
+    const onRemoveCollection = useCallback((id: number) => {
         setConfig(prevConfig => {
             if (prevConfig) {
                 const newConfig = structuredClone(prevConfig);
-                newConfig.collections = newConfig.collections.filter(group => group.id !== id);
+                newConfig.collections = newConfig.collections.filter(collection => collection.id !== id);
                 return newConfig;
             }
             return prevConfig;
         });
     }, []);
 
-    const onMoveGroupUp = useCallback((id: number) => {
+    const onMoveCollectionUp = useCallback((id: number) => {
         setConfig(prevConfig => {
             if (prevConfig) {
                 const newConfig = structuredClone(prevConfig);
-                const index = newConfig.collections.findIndex(group => group.id === id);
+                const index = newConfig.collections.findIndex(collection => collection.id === id);
                 if (index > 0 && index < newConfig.collections.length) {
                     const group = newConfig.collections[index];
                     newConfig.collections[index] = newConfig.collections[index - 1]!;
@@ -90,11 +90,11 @@ export const GroupConfigView: React.FC = () => {
         });
     }, []);
 
-    const onMoveGroupDown = useCallback((id: number) => {
+    const onMoveCollectionDown = useCallback((id: number) => {
         setConfig(prevConfig => {
             if (prevConfig) {
                 const newConfig = structuredClone(prevConfig);
-                const index = newConfig.collections.findIndex(group => group.id === id);
+                const index = newConfig.collections.findIndex(collection => collection.id === id);
                 if (index >= 0 && index < newConfig.collections.length - 1) {
                     const group = newConfig.collections[index];
                     newConfig.collections[index] = newConfig.collections[index + 1]!;
@@ -136,13 +136,13 @@ export const GroupConfigView: React.FC = () => {
                 <h2>{pkg.name} - {group.name}</h2>
                 <div className="collection-grid-container">
                     <div className="collection-grid">
-                        {config.collections.map(group =>
-                            <CollectionSettings {...group} key={group.id + group.name}
+                        {config.collections.map(collection =>
+                            <CollectionSettings {...collection} key={collection.id + collection.name}
                                 onUpdateCollection={(name, bgColor, color) =>
-                                    onUpdateGroup(group.id, name, bgColor, color)}
-                                onRemoveCollection={() => onRemoveGroup(group.id)}
-                                onMoveCollectionUp={() => onMoveGroupUp(group.id)}
-                                onMoveCollectionDown={() => onMoveGroupDown(group.id)} />
+                                    onUpdateCollection(collection.id, name, bgColor, color)}
+                                onRemoveCollection={() => onRemoveCollection(collection.id)}
+                                onMoveCollectionUp={() => onMoveCollectionUp(collection.id)}
+                                onMoveCollectionDown={() => onMoveCollectionDown(collection.id)} />
                         )}
                         <div className="collection-insert">
                             <button onClick={onAddCollection}>➕ Insert</button>

@@ -5,7 +5,7 @@ import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
 import useScript from "./hooks/useScript";
 import { Options } from "./components/options";
 import { PackageContext } from "./context";
-import { IGroupMetadata, ISorting } from "../model/Group";
+import { IGroupMetadata } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 import { Group } from "./components/group";
@@ -69,7 +69,7 @@ const App: React.FC = () => {
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}>
                 <ImportView />
                 <GroupConfigView />
-                <PackageContext.Provider value={{ pkg: view.pkg, selectGroup: selectGroup, selectEntry }}>
+                <PackageContext.Provider value={{ pkg: view.pkg, selectGroup, selectEntry, updateGroup }}>
                     <PackageMenu
                         expanded={pkgMenuExpanded}
                         setExpanded={setPkgMenuExpanded}
@@ -84,7 +84,6 @@ const App: React.FC = () => {
                                 onGroupClicked={selectGroup} />
                             <Page
                                 group={view.group}
-                                updateGroup={updateGroup}
                                 prevPage={prevPage}
                                 nextPage={nextPage}
                                 entry={view.entry}
@@ -99,7 +98,6 @@ const App: React.FC = () => {
 
 interface IPageProps {
     group: IGroupMetadata,
-    updateGroup: (sortBy?: ISorting, sortDescending?: boolean) => void,
     entry: IEntryMetadata | undefined,
     displayMode: DISPLAY_MODE,
     prevPage: () => void,
@@ -107,7 +105,7 @@ interface IPageProps {
 }
 
 const Page: React.FC<IPageProps> = (props: IPageProps) => {
-    const { group, updateGroup, entry, displayMode, prevPage, nextPage } = props;
+    const { group, entry, displayMode, prevPage, nextPage } = props;
 
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(1);
@@ -126,7 +124,6 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
             return (group && group.ns.length > 0)
                 ? <Group
                     group={group}
-                    updateGroup={updateGroup}
                     currentPage={currentPage} totalPages={totalPages}
                     prevPage={prevPage} nextPage={nextPage} />
                 : null;

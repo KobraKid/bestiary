@@ -112,7 +112,7 @@ $menu-font-expanded-size: 1em;
 
 @mixin group-menu {
   grid-column: group-menu / span 1;
-  grid-row: group-grid / span 1;
+  grid-row: group-options / span 2;
   display: flex;
   flex-direction: column;
   transition: top .5s ease;
