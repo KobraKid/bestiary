@@ -1,3 +1,4 @@
+import { SortOrder } from "mongoose";
 import { IGroupConfig } from "./Config";
 import { IEntryMetadata } from "./Entry";
 
@@ -62,7 +63,7 @@ export interface ISortSettings {
     /**
      * Sort direction
      */
-    direction: -1 | 1
+    direction: SortOrder;
 }
 
 export interface IGroupMetadata {

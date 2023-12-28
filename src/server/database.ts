@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { SortOrder } from "mongoose";
 import path from "path";
 import sass from "sass";
 import { IpcMainInvokeEvent } from "electron";
@@ -115,8 +115,8 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
             ...groupMetadata?.groupSettings || []
         ],
         sortSettings: [
-            { "name": "None", "path": "", "sortType": "string", "direction": 1 },
-            ...groupMetadata?.sortSettings || []
+            { "name": "None", "path": "", "sortType": "string", "direction": -1 },
+            ...groupMetadata?.sortSettings?.map(option => { return { ...option, direction: 1 as SortOrder }; }) || []
         ],
         style: groupStyle,
         config: groupConfig
@@ -157,7 +157,7 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
     if (groupBy) { groupOption = groupBy; }
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-        .sort([[sortOption.path, sortOption.direction]])
+        .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
         .collation({ locale: "en_US", numericOrdering: true })
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
