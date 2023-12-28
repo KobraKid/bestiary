@@ -3,6 +3,7 @@ import { IPackageMetadata, ISO639Code } from "../../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../../model/Group";
 import { IEntryMetadata } from "../../model/Entry";
 import { IMap } from "../../model/Map";
+import { IGroupConfig } from "../../model/Config";
 
 interface BestiaryData {
     readonly view: ViewStackframe,
@@ -13,6 +14,7 @@ interface BestiaryData {
     selectEntry: (groupId: string, entryId: string) => void,
     selectLang: (lang: ISO639Code) => void,
     addEntryToGroup: (entry: IEntryMetadata) => void,
+    updateConfig: (config: IGroupConfig) => void,
     navigateBack: () => void,
     prevPage: () => void,
     nextPage: () => void
@@ -48,13 +50,15 @@ enum ViewStackframeActionType {
     RESET,
     NAVIGATE_FORWARDS,
     NAVIGATE_BACKWARDS,
+    UPDATE_CONFIG,
     COLLECT_ENTRY,
 }
 
 interface IViewStackframeDispatchAction {
     type: ViewStackframeActionType,
     targetView?: Omit<ViewStackframe, "displayMode">,
-    newEntry?: IEntryMetadata
+    newEntry?: IEntryMetadata,
+    updatedConfig?: IGroupConfig
 }
 
 export function useViewModel(): BestiaryData {
@@ -94,6 +98,19 @@ export function useViewModel(): BestiaryData {
 
                     window.log.write(`← returning to [${targetView.group.name} ${targetView.entry?.bid ?? "group"}]`);
                     return state.slice(0, -1);
+                }
+                else { return state; }
+            case ViewStackframeActionType.UPDATE_CONFIG:
+                if (action.updatedConfig && state.length >= 1) {
+                    const currentView = state.at(-1)!;
+                    const view: ViewStackframe = {
+                        ...currentView!,
+                        group: {
+                            ...currentView.group,
+                            config: action.updatedConfig
+                        }
+                    };
+                    return [...state.slice(0, -1), view];
                 }
                 else { return state; }
             case ViewStackframeActionType.COLLECT_ENTRY:
@@ -151,6 +168,10 @@ export function useViewModel(): BestiaryData {
     const addEntryToGroup = useCallback((entry: IEntryMetadata) =>
         viewStackDispatch({ type: ViewStackframeActionType.COLLECT_ENTRY, newEntry: entry }), []);
 
+    const updateConfig = useCallback((config: IGroupConfig) => {
+        viewStackDispatch({ type: ViewStackframeActionType.UPDATE_CONFIG, updatedConfig: config });
+    }, []);
+
     const selectEntry = useCallback((newGroupId: string, newEntryId: string, lang: ISO639Code) => {
         if (newGroupId === view.current.group.ns && newEntryId === view.current.entry?.bid) { return; }
 
@@ -192,7 +213,8 @@ export function useViewModel(): BestiaryData {
         updateGroup: (sortBy?: ISortSettings, groupBy?: IGroupSettings) => selectGroup(view.current.pkg, view.current.group, lang, sortBy, groupBy),
         selectEntry: (groupId: string, entryId: string) => selectEntry(groupId, entryId, lang),
         selectLang: (lang: ISO639Code) => setLang(lang),
-        addEntryToGroup: addEntryToGroup,
+        addEntryToGroup,
+        updateConfig,
         navigateBack,
         prevPage, nextPage
     };

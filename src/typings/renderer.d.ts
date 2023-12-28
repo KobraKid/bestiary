@@ -21,6 +21,7 @@ export interface IConfigAPI {
   onShowOptions: (callback: () => void) => void,
   savePkgConfig: () => Promise<void>,
   updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => Promise<void>,
+  onUpdateGroupConfig: (callback: (config: IGroupConfig) => void) => void,
   updateEntryCollectedStatus: (group: IGroupMetadata, groupId: number, entryId: string) => Promise<void>
 }
 

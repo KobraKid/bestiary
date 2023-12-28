@@ -42,6 +42,7 @@ const App: React.FC = () => {
         updateGroup,
         selectEntry,
         addEntryToGroup,
+        updateConfig,
         navigateBack,
         prevPage, nextPage
     } = useViewModel();
@@ -56,6 +57,7 @@ const App: React.FC = () => {
     useEffect(() => {
         window.config.onShowOptions(() => setOptionsVisible(true));
         window.pkg.onLoadGroupEntry(addEntryToGroup);
+        window.config.onUpdateGroupConfig(updateConfig);
     }, []);
 
     useEffect(() => {

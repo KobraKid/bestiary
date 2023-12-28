@@ -27,7 +27,7 @@ button {
     height: 100%;
     width: 100%;
     display: grid;
-    grid-template-columns: [group-menu] 64px [group-grid] auto;
+    grid-template-columns: [group-menu] 64px [group-grid] calc(100vw - 64px);
     transition: grid-template-rows .5s ease;
 }
 

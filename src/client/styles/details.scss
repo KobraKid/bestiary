@@ -2,13 +2,13 @@
 @use "colors";
 
 
-.group-tabs {
+.collection-tabs {
     display: flex;
     flex-direction: column;
     width: 24px;
     z-index: 2;
 
-    .group-tab {
+    .collection-tab {
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap;

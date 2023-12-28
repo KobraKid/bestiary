@@ -39,5 +39,9 @@ export interface ICollection {
     entries: string[],
     categories?: string[],
     spoilers?: string[],
-    hideWhenCollected?: boolean
+    hideWhenCollected?: boolean,
+    /**
+     * The maximum number of collectible entries
+     */
+    max: number,
 }

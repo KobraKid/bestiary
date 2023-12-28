@@ -44,6 +44,10 @@ contextBridge.exposeInMainWorld("config", {
         ipcRenderer.send("config:save-config"),
     updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) =>
         ipcRenderer.send("config:update-group-config", pkg, group, config),
+    onUpdateGroupConfig: (callback: (config: IGroupConfig) => void) => {
+        ipcRenderer.removeAllListeners("config:updated-group-config");
+        ipcRenderer.on("config:updated-group-config", (_event: IpcRendererEvent, config: IGroupConfig) => callback(config));
+    },
     updateEntryCollectedStatus: (group: IGroupMetadata, groupId: number, entryId: string) =>
         ipcRenderer.send("config:update-entry-collected-status", group, groupId, entryId)
 });

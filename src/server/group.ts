@@ -7,6 +7,7 @@ import { IGroupMetadata } from "../model/Group";
 import { IGroupConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata } from "../model/Package";
 import { IpcMainEvent } from "electron";
+import Entry from "../model/Entry";
 
 let pkgNamespace = "";
 let pkgConfig: IPackageConfig | null = null;
@@ -57,7 +58,9 @@ export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGro
     if (pkgNamespace !== pkg.ns) {
         await createOrLoadConfig(pkg);
     }
-    return pkgConfig?.groups?.find(c => c.groupId === group.ns) ?? { groupId: group.ns, collections: [] };
+    const groupConfig = pkgConfig?.groups?.find(c => c.groupId === group.ns) ?? { groupId: group.ns, collections: [] };
+    await setCollectionMaximums(pkg, group, groupConfig);
+    return groupConfig;
 }
 
 /**
@@ -89,7 +92,7 @@ export function saveConfig(): void {
  * @param group The group to update
  * @param config The updated configuration data
  */
-export async function updateGroupConfig(_event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig): Promise<void> {
+export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig): Promise<void> {
     if (!pkgConfig) {
         await createOrLoadConfig(pkg);
     }
@@ -100,6 +103,8 @@ export async function updateGroupConfig(_event: IpcMainEvent, pkg: IPackageMetad
             pkgConfig.groups = [];
         }
 
+        await setCollectionMaximums(pkg, group, config);
+
         const index = pkgConfig.groups.findIndex(c => c.groupId === group.ns);
         if (index >= 0 && index < pkgConfig.groups?.length) {
             pkgConfig.groups[index]!.collections = config.collections;
@@ -108,6 +113,7 @@ export async function updateGroupConfig(_event: IpcMainEvent, pkg: IPackageMetad
             pkgConfig.groups.push(config);
         }
     }
+    event.sender.send("config:updated-group-config", config);
 }
 
 /**
@@ -115,12 +121,12 @@ export async function updateGroupConfig(_event: IpcMainEvent, pkg: IPackageMetad
  * If the entry is already marked as collected, it is removed.
  * If the entry is not already marked as collected, it is added.
  * 
- * @param _event The event that triggered this update
+ * @param event The event that triggered this update
  * @param group The group to update
  * @param groupId The group within the group to update
  * @param entryId The entry to add or remove
  */
-export function updateCollectedStatusForEntry(_event: IpcMainEvent, group: IGroupMetadata, groupId: number, entryId: string): void {
+export function updateCollectedStatusForEntry(event: IpcMainEvent, group: IGroupMetadata, groupId: number, entryId: string): void {
     if (pkgConfig?.groups) {
         const config = pkgConfig.groups.find(c => c.groupId === group.ns);
         if (config) {
@@ -131,6 +137,13 @@ export function updateCollectedStatusForEntry(_event: IpcMainEvent, group: IGrou
             else {
                 group?.entries.push(entryId);
             }
+            event.sender.send("config:updated-group-config", config);
         }
+    }
+}
+
+async function setCollectionMaximums(pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) {
+    for (const collection of config.collections) {
+        collection.max = await Entry.find({ packageId: pkg.ns, groupId: group.ns }).count().exec();
     }
 }

@@ -73,6 +73,17 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
                         </button>
                     }
                 </div>
+                <div className="group-collections">
+                    {group.config?.collections.map(collection =>
+                        <div key={collection.id} style={{
+                            backgroundColor: collection.backgroundColor,
+                            color: collection.color,
+                            border: (collection.entries.length === collection.max) ? "1px solid gold" : undefined
+                        }}>
+                            {`${collection.name} (${collection.entries.length} / ${collection.max})`}
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="group-grid">
                 {

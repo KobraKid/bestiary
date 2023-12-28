@@ -52,7 +52,8 @@ export const GroupConfigView: React.FC = () => {
                     name: `Collection ${newConfig.collections.length + 1}`,
                     backgroundColor: bg,
                     color: fg,
-                    entries: []
+                    entries: [],
+                    max: 0
                 };
                 newConfig.collections.push(newCollection);
                 return newConfig;
