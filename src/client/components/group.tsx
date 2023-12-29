@@ -69,7 +69,7 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
                     </select>
                     {sortOption.path.length > 0 &&
                         <button onClick={() => updateSortOption(sortOption.name, groupOption)}>
-                            {sortOption.direction === 1 ? "Ascending" : "Descending"}
+                            {sortOption.direction === 1 ? "🔼 Ascending" : "🔽 Descending"}
                         </button>
                     }
                 </div>
