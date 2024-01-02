@@ -101,7 +101,8 @@ async function __eachHelper(context: object, options: HelperOptions): Promise<st
     let result = "";
     if (array.length > 0) {
         for (let i = 0; i < array.length; i++) {
-            result += await options.fn(array[i], { data: options.data, blockParams: [array[i], i] });
+            const blockData = await getAttribute(array[i], "");
+            result += await options.fn(blockData, { data: options.data, blockParams: [blockData, i] });
         }
     }
     else {
