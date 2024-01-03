@@ -183,9 +183,9 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
                 <Collection name={name} backgroundColor={bgColor} color={color} />
             </div>
             <div className="toolbar">
-                <button onClick={onMoveCollectionUp}>🔼</button>
-                <button onClick={onMoveCollectionDown}>🔽</button>
-                <button onClick={onRemoveCollection}>❌</button>
+                <button title="Move up" onClick={onMoveCollectionUp}>🔼</button>
+                <button title="Move down" onClick={onMoveCollectionDown}>🔽</button>
+                <button title="Remove" onClick={onRemoveCollection}>❌</button>
             </div>
             <label>Name:&nbsp;</label>
             <input type="text" name="name" value={name}

@@ -150,7 +150,7 @@ app.whenReady().then(async () => {
                     label: "Options",
                     accelerator: "CmdOrCtrl+O",
                     click: (_menuItem, browserWindow) => {
-                        browserWindow?.webContents.send("options:open-options");
+                        browserWindow?.webContents.send("options:show-options");
                     }
                 },
                 {

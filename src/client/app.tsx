@@ -67,7 +67,7 @@ const App: React.FC = () => {
 
     return (
         <>
-            <Options show={optionsVisible} />
+            <Options show={optionsVisible} onHide={() => setOptionsVisible(false)} />
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}>
                 <ImportView />
                 <GroupConfigView />

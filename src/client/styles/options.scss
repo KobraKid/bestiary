@@ -1,0 +1,69 @@
+.options-mask {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    width: 100vw;
+    height: 100vh;
+    background-color: gray;
+
+    .close,
+    .save {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        padding: 8px;
+
+        .close-button {
+            height: 32px;
+            width: 32px;
+        }
+
+        .save-button {
+            height: 32px;
+            width: 64px;
+        }
+    }
+
+    .options {
+        display: grid;
+        grid-template-columns: 150px 500px 24px;
+        align-items: center;
+        padding: 8px 32px;
+        row-gap: 8px;
+
+        .option-section {
+            grid-column: 1 / span 3;
+            font-weight: bold;
+        }
+
+        label {
+            margin-left: 32px;
+        }
+
+        .options-server-group {
+            display: flex;
+            flex-direction: row;
+
+            input {
+                flex-grow: 1;
+            }
+        }
+
+        .options-helptext {
+            grid-column: 1 / span 3;
+            margin-left: 32px;
+            background-color: lightgrey;
+            padding: 2px 4px;
+        }
+    }
+
+    .save {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+    }
+}
