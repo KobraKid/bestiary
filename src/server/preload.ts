@@ -3,7 +3,7 @@ import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
-import { IGroupConfig } from "../model/Config";
+import { IAppConfig, IGroupConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 
@@ -37,11 +37,16 @@ contextBridge.exposeInMainWorld("pkg", {
 });
 
 contextBridge.exposeInMainWorld("config", {
-    onShowOptions: (callback: () => void) => {
-        ipcRenderer.on("options:show-options", () => callback());
+    onShowOptions: (callback: (config: IAppConfig) => void) => {
+        ipcRenderer.on("options:show-options", (_event: IpcRendererEvent, config: IAppConfig) => callback(config));
+    },
+    saveAppConfig: (config: IAppConfig) => ipcRenderer.send("config:save-app-config", config),
+    onUpdateAppConfig: (callback: (config: IAppConfig) => void) => {
+        ipcRenderer.removeAllListeners("config:updated-app-config");
+        ipcRenderer.on("config:updated-app-config", (_event: IpcRendererEvent, config: IAppConfig) => callback(config));
     },
     savePkgConfig: () =>
-        ipcRenderer.send("config:save-config"),
+        ipcRenderer.send("config:save-pkg-config"),
     updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) =>
         ipcRenderer.send("config:update-group-config", pkg, group, config),
     onUpdateGroupConfig: (callback: (config: IGroupConfig) => void) => {

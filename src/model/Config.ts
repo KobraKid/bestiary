@@ -1,3 +1,10 @@
+export interface IAppConfig {
+    server: string,
+    username: string,
+    password: string,
+    bgColor: string
+}
+
 export interface IPackageConfig {
     /**
      * The group configuration list

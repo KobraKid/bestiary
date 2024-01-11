@@ -11,7 +11,8 @@ import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
-import { loadGroupConfig, saveConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
+import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
+import { Config } from "./config";
 
 //#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
@@ -24,6 +25,7 @@ ${isDev ? "⚡ " : ""}Electron: ${process.versions.electron}
 ${isDev ? "📦 " : ""}Package directory: ${paths.data}
 ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 `));
+const config = new Config();
 //#endregion
 
 //#region Message handling
@@ -67,7 +69,9 @@ ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackag
 //#endregion
 
 //#region Config API
-ipcMain.on("config:save-config", saveConfig);
+ipcMain.on("config:save-app-config", config.updateConfig);
+
+ipcMain.on("config:save-pkg-config", savePkgConfig);
 
 ipcMain.on("config:update-group-config", updateGroupConfig);
 
@@ -133,7 +137,8 @@ function createWindow(): void {
     });
 
     win.on("close", () => {
-        saveConfig();
+        savePkgConfig();
+        config.saveConfig();
     });
 }
 
@@ -150,7 +155,7 @@ app.whenReady().then(async () => {
                     label: "Options",
                     accelerator: "CmdOrCtrl+O",
                     click: (_menuItem, browserWindow) => {
-                        browserWindow?.webContents.send("options:show-options");
+                        browserWindow?.webContents.send("options:show-options", config.config);
                     }
                 },
                 {

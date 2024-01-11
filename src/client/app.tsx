@@ -4,6 +4,7 @@ import { GroupMenu, PackageMenu } from "./components/menu";
 import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
 import useScript from "./hooks/useScript";
 import { Options } from "./components/options";
+import { IAppConfig } from "../model/Config";
 import { PackageContext } from "./context";
 import { IGroupMetadata } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
@@ -32,6 +33,7 @@ export interface ViewStackframe {
  * @returns The app
  */
 const App: React.FC = () => {
+    const [config, setConfig] = useState<IAppConfig | null>(null);
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
     const {
@@ -55,7 +57,8 @@ const App: React.FC = () => {
     }, [selectEntry]);
 
     useEffect(() => {
-        window.config.onShowOptions(() => setOptionsVisible(true));
+        window.config.onUpdateAppConfig(setConfig);
+        window.config.onShowOptions(config => { setConfig(config); setOptionsVisible(true); });
         window.pkg.onLoadGroupEntry(addEntryToGroup);
         window.config.onUpdateGroupConfig(updateConfig);
     }, []);
@@ -67,7 +70,7 @@ const App: React.FC = () => {
 
     return (
         <>
-            <Options show={optionsVisible} onHide={() => setOptionsVisible(false)} />
+            <Options config={config} show={optionsVisible} onHide={() => setOptionsVisible(false)} />
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}>
                 <ImportView />
                 <GroupConfigView />

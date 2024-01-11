@@ -1,31 +1,71 @@
-import React, { useId, useState } from "react";
+import React, { useCallback, useEffect, useId, useReducer, useState } from "react";
+import { IAppConfig } from "../../model/Config";
 import "../styles/options.scss";
 
 interface IOptionsProps {
+    config: IAppConfig | null,
     show: boolean;
     onHide: () => void;
 }
 
+enum UpdateConfigActionType {
+    SERVER,
+    USERNAME,
+    PASSWORD,
+    BGCOLOR
+}
+
+interface IUpdateConfigAction {
+    type: UpdateConfigActionType,
+    value: string,
+}
+
 export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
-    const { show, onHide } = props;
+    const { config, show, onHide } = props;
+
+    const configReducer = useCallback((state: IAppConfig, action: IUpdateConfigAction) => {
+        switch (action.type) {
+            case UpdateConfigActionType.SERVER:
+                return { ...state, server: action.value };
+            case UpdateConfigActionType.USERNAME:
+                return { ...state, username: action.value };
+            case UpdateConfigActionType.PASSWORD:
+                return { ...state, password: action.value };
+            case UpdateConfigActionType.BGCOLOR:
+                return { ...state, bgColor: action.value };
+        }
+    }, []);
+    const [newConfig, newConfigDispatch] = useReducer<(state: IAppConfig, action: IUpdateConfigAction) => IAppConfig>(configReducer, {
+        server: "", username: "", password: "", bgColor: ""
+    });
+
+    const serverUrlId = useId();
+    const [serverUrlHelpVisible, setServerUrlHelpVisible] = useState<boolean>(false);
+    const usernameId = useId();
+    const [usernameHelpVisible, setUsernameHelpVisible] = useState<boolean>(false);
+    const passwordId = useId();
+    const [passwordHelpVisible, setPasswordHelpVisible] = useState<boolean>(false);
+
+    const bgColorId = useId();
+    const [bgColorHelpVisible, setBgColorHelpVisible] = useState<boolean>(false);
+
+    const onSave = useCallback((newConfig: IAppConfig) => {
+        window.config.saveAppConfig(newConfig);
+        onHide();
+    }, []);
+
+    useEffect(() => {
+        if (config) {
+            newConfigDispatch({ type: UpdateConfigActionType.SERVER, value: config.server });
+            newConfigDispatch({ type: UpdateConfigActionType.USERNAME, value: config.username });
+            newConfigDispatch({ type: UpdateConfigActionType.PASSWORD, value: config.password });
+            newConfigDispatch({ type: UpdateConfigActionType.BGCOLOR, value: config.bgColor });
+        }
+    }, [config]);
 
     if (!show) {
         return null;
     }
-
-    const serverUrlId = useId();
-    const [serverUrl, setServerUrl] = useState<string>("mongodb://127.0.0.1:27017/bestiary");
-    const [serverUrlHelpVisible, setServerUrlHelpVisible] = useState<boolean>(false);
-    const usernameId = useId();
-    const [username, setUsername] = useState<string>("");
-    const [usernameHelpVisible, setUsernameHelpVisible] = useState<boolean>(false);
-    const passwordId = useId();
-    const [password, setPassword] = useState<string>("");
-    const [passwordHelpVisible, setPasswordHelpVisible] = useState<boolean>(false);
-
-    const bgColorId = useId();
-    const [bgColor, setBgColor] = useState<string>("#808080");
-    const [bgColorHelpVisible, setBgColorHelpVisible] = useState<boolean>(false);
 
     return (
         <div className="options-mask">
@@ -40,14 +80,14 @@ export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
                     <input
                         id={serverUrlId}
                         placeholder="mongodb://127.0.0.1:27017/bestiary"
-                        value={serverUrl}
-                        onChange={e => setServerUrl(e.target.value)} />
+                        value={newConfig.server}
+                        onChange={e => newConfigDispatch({ type: UpdateConfigActionType.SERVER, value: e.target.value })} />
                     <button onClick={() =>
-                        setServerUrl("mongodb://127.0.0.1:27017/bestiary")}>
+                        newConfigDispatch({ type: UpdateConfigActionType.SERVER, value: "mongodb://127.0.0.1:27017/bestiary" })}>
                         Local
                     </button>
                     <button onClick={() =>
-                        setServerUrl("mongodb+srv://<username>:<password>@bestiary.scnanv0.mongodb.net/?retryWrites=true&w=majority")}>
+                        newConfigDispatch({ type: UpdateConfigActionType.SERVER, value: "mongodb+srv://<username>:<password>@bestiary.scnanv0.mongodb.net/?retryWrites=true&w=majority" })}>
                         Default
                     </button>
                 </div>
@@ -61,7 +101,10 @@ export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
                 }
                 {/* Server Username */}
                 <label htmlFor={usernameId}>Username:</label>
-                <input id={usernameId} value={username} onChange={e => setUsername(e.target.value)} />
+                <input
+                    id={usernameId}
+                    value={newConfig.username}
+                    onChange={e => newConfigDispatch({ type: UpdateConfigActionType.USERNAME, value: e.target.value })} />
                 <button onClick={() => setUsernameHelpVisible(v => !v)}>🛈</button>
                 {usernameHelpVisible &&
                     <div className="options-helptext">
@@ -70,7 +113,11 @@ export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
                 }
                 {/* Server Password */}
                 <label htmlFor={passwordId}>Password:</label>
-                <input id={passwordId} type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                <input
+                    id={passwordId}
+                    type="password"
+                    value={newConfig.password}
+                    onChange={e => newConfigDispatch({ type: UpdateConfigActionType.PASSWORD, value: e.target.value })} />
                 <button onClick={() => setPasswordHelpVisible(v => !v)}>🛈</button>
                 {passwordHelpVisible &&
                     <div className="options-helptext">
@@ -81,7 +128,11 @@ export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
                 <div className="option-section">Display Settings</div>
                 {/* Background Color */}
                 <label htmlFor={bgColorId}>Background color:</label>
-                <input id={bgColorId} type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} />
+                <input
+                    id={bgColorId}
+                    type="color"
+                    value={newConfig.bgColor}
+                    onChange={e => newConfigDispatch({ type: UpdateConfigActionType.BGCOLOR, value: e.target.value })} />
                 <button onClick={() => setBgColorHelpVisible(v => !v)}>🛈</button>
                 {bgColorHelpVisible &&
                     <div className="options-helptext">
@@ -90,7 +141,7 @@ export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
                 }
             </div>
             <div className="save">
-                <button className="save-button">✔ Save</button>
+                <button className="save-button" onClick={() => onSave(newConfig)}>✔ Save</button>
             </div>
         </div>
     );

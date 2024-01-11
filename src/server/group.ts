@@ -20,9 +20,9 @@ let pkgConfigFile = "";
  * @param pkg The package to load the config file for
  * @returns The configurtion data for a package
  */
-async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig> {
+async function createOrLoadPkgConfig(pkg: IPackageMetadata): Promise<IPackageConfig> {
     if (pkgConfig && pkgConfigFile) {
-        saveConfig();
+        savePkgConfig();
         pkgConfig = null;
     }
 
@@ -56,7 +56,7 @@ async function createOrLoadConfig(pkg: IPackageMetadata): Promise<IPackageConfig
  */
 export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupConfig> {
     if (pkgNamespace !== pkg.ns) {
-        await createOrLoadConfig(pkg);
+        await createOrLoadPkgConfig(pkg);
     }
     const groupConfig = pkgConfig?.groups?.find(c => c.groupId === group.ns) ?? { groupId: group.ns, collections: [] };
     await setCollectionMaximums(pkg, group, groupConfig);
@@ -78,7 +78,7 @@ export async function loadGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata
 /**
  * Writes the package configuration to disk.
  */
-export function saveConfig(): void {
+export function savePkgConfig(): void {
     try {
         writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig));
     } catch (err: unknown) {
@@ -94,7 +94,7 @@ export function saveConfig(): void {
  */
 export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig): Promise<void> {
     if (!pkgConfig) {
-        await createOrLoadConfig(pkg);
+        await createOrLoadPkgConfig(pkg);
     }
 
     if (pkgConfig) {
