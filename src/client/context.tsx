@@ -1,7 +1,13 @@
 import { createContext } from "react";
 import { IPackageMetadata } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
-import { IGroupConfig, IPackageConfig } from "../model/Config";
+import { IAppConfig, IGroupConfig, IPackageConfig } from "../model/Config";
+
+interface IAppContext {
+    config: IAppConfig | null
+}
+
+export const AppContext = createContext<IAppContext>({ config: null });
 
 interface IPackageContext {
     pkg: IPackageMetadata,

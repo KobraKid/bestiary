@@ -37,10 +37,10 @@ contextBridge.exposeInMainWorld("pkg", {
 });
 
 contextBridge.exposeInMainWorld("config", {
-    onShowOptions: (callback: (config: IAppConfig) => void) => {
-        ipcRenderer.on("options:show-options", (_event: IpcRendererEvent, config: IAppConfig) => callback(config));
-    },
-    saveAppConfig: (config: IAppConfig) => ipcRenderer.send("config:save-app-config", config),
+    onShowOptions: (callback: () => void) =>
+        ipcRenderer.on("options:show-options", (_event: IpcRendererEvent) => callback()),
+    saveAppConfig: (config: IAppConfig) =>
+        ipcRenderer.send("config:save-app-config", config),
     onUpdateAppConfig: (callback: (config: IAppConfig) => void) => {
         ipcRenderer.removeAllListeners("config:updated-app-config");
         ipcRenderer.on("config:updated-app-config", (_event: IpcRendererEvent, config: IAppConfig) => callback(config));

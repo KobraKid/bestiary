@@ -5,7 +5,7 @@ import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
 import useScript from "./hooks/useScript";
 import { Options } from "./components/options";
 import { IAppConfig } from "../model/Config";
-import { PackageContext } from "./context";
+import { AppContext, PackageContext } from "./context";
 import { IGroupMetadata } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
@@ -58,7 +58,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         window.config.onUpdateAppConfig(setConfig);
-        window.config.onShowOptions(config => { setConfig(config); setOptionsVisible(true); });
+        window.config.onShowOptions(() => setOptionsVisible(true));
         window.pkg.onLoadGroupEntry(addEntryToGroup);
         window.config.onUpdateGroupConfig(updateConfig);
     }, []);
@@ -69,9 +69,10 @@ const App: React.FC = () => {
     }, [handleLinkEvent]);
 
     return (
-        <>
-            <Options config={config} show={optionsVisible} onHide={() => setOptionsVisible(false)} />
-            <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}>
+        <AppContext.Provider value={{ config }}>
+            <Options show={optionsVisible} onHide={() => setOptionsVisible(false)} />
+            <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}
+                style={{ backgroundColor: config?.bgColor }}>
                 <ImportView />
                 <GroupConfigView />
                 <PackageContext.Provider value={{ pkg: view.pkg, selectGroup, selectEntry, updateGroup }}>
@@ -97,7 +98,7 @@ const App: React.FC = () => {
                     }
                 </PackageContext.Provider>
             </div>
-        </>
+        </AppContext.Provider>
     );
 };
 

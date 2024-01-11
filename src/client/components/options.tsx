@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useId, useReducer, useState } from "react";
+import React, { useCallback, useContext, useEffect, useId, useReducer, useState } from "react";
 import { IAppConfig } from "../../model/Config";
 import "../styles/options.scss";
+import { AppContext } from "../context";
 
 interface IOptionsProps {
-    config: IAppConfig | null,
     show: boolean;
     onHide: () => void;
 }
@@ -21,7 +21,8 @@ interface IUpdateConfigAction {
 }
 
 export const Options: React.FC<IOptionsProps> = (props: IOptionsProps) => {
-    const { config, show, onHide } = props;
+    const { show, onHide } = props;
+    const { config } = useContext(AppContext);
 
     const configReducer = useCallback((state: IAppConfig, action: IUpdateConfigAction) => {
         switch (action.type) {

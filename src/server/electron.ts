@@ -131,6 +131,7 @@ function createWindow(): void {
     win.loadFile(path.join(__dirname, "index.html"));
 
     win.on("ready-to-show", () => {
+        win.webContents.send("config:updated-app-config", config.config);
         if (isDev) {
             win.webContents.openDevTools({ mode: "undocked" });
         }
@@ -155,7 +156,7 @@ app.whenReady().then(async () => {
                     label: "Options",
                     accelerator: "CmdOrCtrl+O",
                     click: (_menuItem, browserWindow) => {
-                        browserWindow?.webContents.send("options:show-options", config.config);
+                        browserWindow?.webContents.send("options:show-options");
                     }
                 },
                 {
