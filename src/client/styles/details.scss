@@ -5,7 +5,7 @@
 .collection-tabs {
     display: flex;
     flex-direction: column;
-    width: 24px;
+    max-width: 24px;
     z-index: 2;
 
     .collection-tab {
