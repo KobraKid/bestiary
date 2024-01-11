@@ -69,7 +69,7 @@ ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackag
 //#endregion
 
 //#region Config API
-ipcMain.on("config:save-app-config", config.updateConfig);
+ipcMain.on("config:save-app-config", config.updateConfig.bind(config));
 
 ipcMain.on("config:save-pkg-config", savePkgConfig);
 
