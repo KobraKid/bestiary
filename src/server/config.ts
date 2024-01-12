@@ -41,8 +41,8 @@ export class Config {
         this.updateConfig(null, config);
     }
 
-    public async updateConfig(event: IpcMainEvent | null, config: IAppConfig): Promise<void> {
-        if (this._config) {
+    public async updateConfig(event: IpcMainEvent | null, config?: IAppConfig): Promise<void> {
+        if (this._config && config) {
             // Server Settings
             if (config.server?.length > 0) { this._config.server = config.server; }
             else { this._config.server = "mongodb+srv://<username>:<password>@bestiary.scnanv0.mongodb.net/?retryWrites=true&w=majority"; }
@@ -55,8 +55,8 @@ export class Config {
             else { this._config.bgColor = "#808080"; }
 
             await setup(config.server, config.username, config.password);
-            event && event.sender.send("config:updated-app-config", this._config);
         }
+        event && event.sender.send("config:updated-app-config", this._config);
     }
 
     get config(): IAppConfig {

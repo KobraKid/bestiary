@@ -19,7 +19,7 @@ export interface IPkgAPI {
 
 export interface IConfigAPI {
   onShowOptions: (callback: () => void) => void,
-  saveAppConfig: (config: IAppConfig) => void,
+  saveAppConfig: (config?: IAppConfig) => void,
   onUpdateAppConfig: (callback: (config: IAppConfig) => void) => void,
   savePkgConfig: () => Promise<void>,
   updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => Promise<void>,

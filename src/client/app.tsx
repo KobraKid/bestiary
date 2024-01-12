@@ -57,6 +57,7 @@ const App: React.FC = () => {
     }, [selectEntry]);
 
     useEffect(() => {
+        window.config.saveAppConfig(); // force a load from the saved config
         window.config.onUpdateAppConfig(setConfig);
         window.config.onShowOptions(() => setOptionsVisible(true));
         window.pkg.onLoadGroupEntry(addEntryToGroup);
