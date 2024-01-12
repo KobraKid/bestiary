@@ -16,9 +16,8 @@ import { pathToFileURL } from "url";
 type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
 
-const dbUrl = "mongodb://127.0.0.1:27017/bestiary";
-
 const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema, lang: ISO639Code }> } = {};
+const entryCache: { [key: string]: [layout: string, style: string, script: string] } = {};
 
 /** Number of entries per page */
 const entriesPerPage = 50;
@@ -61,14 +60,22 @@ interface GroupEntryParams {
 /**
  * Set up the database connection.
  */
-export async function setup() {
-    await mongoose.connect(dbUrl);
+export async function setup(server: string, username: string, password: string): Promise<void> {
+    const connectionState = mongoose.connection.readyState;
+    if (connectionState === mongoose.ConnectionStates.disconnected || connectionState === mongoose.ConnectionStates.uninitialized) {
+        const encodedServerUrl = server.replace("<username>", username).replace("<password>", password);
+        await mongoose.connect(encodedServerUrl);
+    }
+    else {
+        await disconnect();
+        setup(server, username, password);
+    }
 }
 
 /**
  * Close the database connection.
  */
-export async function disconnect() {
+export async function disconnect(): Promise<void> {
     await mongoose.disconnect();
 }
 
@@ -163,11 +170,17 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
         .limit(entriesPerPage)
         .lean()
         .exec();
+
     const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
     for (const entry of entries) {
-        // const cache = {};
-        const entryLayout = await layout({ entry, lang });
+        const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
+        if ((entryCache[key] ?? "").length === 0) {
+            entryCache[key] = [await layout({ entry, lang }), "", ""];
+        }
+
+        const [entryLayout] = entryCache[key] ?? ["", "", ""];
+
         const groupSettings = await Promise.all(
             group.groupSettings?.map(async setting => {
                 return {
@@ -222,9 +235,15 @@ export async function getEntry(pkg: IPackageMetadata, groupId: string, entryId: 
         return getMap(pkg, loadedEntry, lang);
     }
 
-    const entryLayout = await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry: loadedEntry, lang });
-    const entryScript = await (await getScript(pkg.ns, groupId))({ entry: loadedEntry, lang });
-    const entryStyle = await getStyle(pkg.ns, groupId, ViewType.view, { entry: loadedEntry, lang });
+    const key = getEntryCacheKey(pkg.ns, groupId, entryId, ViewType.view);
+    if ((entryCache[key] ?? "").length === 0) {
+        entryCache[key] = [
+            await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry: loadedEntry, lang }),
+            await (await getScript(pkg.ns, groupId))({ entry: loadedEntry, lang }),
+            await getStyle(pkg.ns, groupId, ViewType.view, { entry: loadedEntry, lang })
+        ];
+    }
+    const [entryLayout, entryScript, entryStyle] = entryCache[key] ?? ["", "", ""];
 
     return {
         packageId: loadedEntry.packageId,
@@ -342,6 +361,10 @@ async function getFile(pkgId: string, groupNamespace: string, filePath: string, 
 function getFilePath(pkgId: string, groupNamespace: string, fileType: FileType, viewType: ViewType): string {
     const ext = (fileType === FileType.script) ? "js" : (fileType === FileType.style) ? "scss" : "hbs";
     return path.join(paths.data, pkgId, fileType, viewType, `${groupNamespace}.${ext}`);
+}
+
+function getEntryCacheKey(packageId: string, groupId: string, bid: string, viewType: ViewType) {
+    return `${packageId}.${groupId}.${bid}.${viewType}`;
 }
 
 /**

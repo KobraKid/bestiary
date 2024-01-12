@@ -2,9 +2,9 @@ import chalk from "chalk";
 import path from "path";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { paths } from "./electron";
-import { existsSync } from "fs";
 import { IAppConfig } from "../model/Config";
 import { IpcMainEvent } from "electron";
+import { setup } from "./database";
 
 export class Config {
     private readonly _configFilePath: string;
@@ -18,17 +18,15 @@ export class Config {
             password: "Bestiary",
             bgColor: "#808080"
         };
-        mkdir(paths.config, { recursive: true }).then(() => {
-            if (!existsSync(this._configFilePath)) {
-                console.log(chalk.blue("Creating app config"));
-                this.saveConfig().then(() => this.loadConfig());
-            }
-            else {
-                this.loadConfig();
-            }
-        }).catch(err => {
+    }
+
+    public async initialiazeConfig() {
+        try {
+            await mkdir(paths.config, { recursive: true });
+            await this.loadConfig();
+        } catch (err) {
             console.log(chalk.white.bgRed("❌ Error loading app config", err));
-        });
+        }
     }
 
     public async saveConfig(): Promise<void> {
@@ -38,15 +36,12 @@ export class Config {
     }
 
     public async loadConfig(): Promise<void> {
-        await readFile(this._configFilePath, { encoding: "utf-8" }).then(contents => {
-            const config = JSON.parse(contents);
-            this.updateConfig(null, config);
-        }).catch(err => {
-            console.log(chalk.white.bgRed("❌ Error loading app config", err));
-        });
+        const contents = await readFile(this._configFilePath, { encoding: "utf-8" });
+        const config = JSON.parse(contents);
+        this.updateConfig(null, config);
     }
 
-    public updateConfig(event: IpcMainEvent | null, config: IAppConfig): void {
+    public async updateConfig(event: IpcMainEvent | null, config: IAppConfig): Promise<void> {
         if (this._config) {
             // Server Settings
             if (config.server?.length > 0) { this._config.server = config.server; }
@@ -59,6 +54,7 @@ export class Config {
             if (config.bgColor?.length > 0) { this._config.bgColor = config.bgColor; }
             else { this._config.bgColor = "#808080"; }
 
+            await setup(config.server, config.username, config.password);
             event && event.sender.send("config:updated-app-config", this._config);
         }
     }

@@ -4,7 +4,7 @@ import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
-import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, setup as setupDB, stopLoadingGroupEntries } from "./database";
+import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries } from "./database";
 import { onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
@@ -133,7 +133,7 @@ function createWindow(): void {
     win.on("ready-to-show", () => {
         win.webContents.send("config:updated-app-config", config.config);
         if (isDev) {
-            win.webContents.openDevTools({ mode: "undocked" });
+            win.webContents.openDevTools({ mode: "left" });
         }
     });
 
@@ -147,7 +147,7 @@ function createWindow(): void {
  * Create the main window
  */
 app.whenReady().then(async () => {
-    await setupDB();
+    await config.initialiazeConfig();
     const menu = Menu.buildFromTemplate([
         {
             label: "File",
