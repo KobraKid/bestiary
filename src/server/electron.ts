@@ -4,7 +4,7 @@ import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
-import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries } from "./database";
+import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries, clearEntryCache, clearLayoutCache } from "./database";
 import { onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
@@ -148,6 +148,22 @@ function createWindow(): void {
  */
 app.whenReady().then(async () => {
     await config.initialiazeConfig();
+    const devMenu: Electron.MenuItemConstructorOptions = isDev ? {
+        type: "submenu",
+        label: "Dev Options",
+        submenu: [
+            {
+                label: "Clear Entry Cache",
+                accelerator: "CmdOrCtrl+E",
+                click: clearEntryCache
+            },
+            {
+                label: "Clear Layout Cache",
+                accelerator: "CmdOrCtrl+L",
+                click: clearLayoutCache
+            }
+        ]
+    } : { type: "separator" };
     const menu = Menu.buildFromTemplate([
         {
             label: "File",
@@ -173,7 +189,7 @@ app.whenReady().then(async () => {
                         }
                     }
                 },
-                { type: "separator" },
+                devMenu,
                 { role: "quit" }
             ]
         },

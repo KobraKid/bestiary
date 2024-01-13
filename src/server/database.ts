@@ -4,7 +4,7 @@ import sass from "sass";
 import { IpcMainInvokeEvent } from "electron";
 import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
-import { hb, isDev, paths } from "./electron";
+import { hb, paths } from "./electron";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
@@ -288,7 +288,7 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
  */
 export async function getLayout(pkgId: string, groupNamespace: string, viewType: ViewType): Promise<EntryLayoutFile> {
     const filePath = getFilePath(pkgId, groupNamespace, FileType.layout, viewType);
-    return getFile(pkgId, groupNamespace, filePath, viewType);
+    return getFile(pkgId, groupNamespace, filePath, FileType.layout, viewType);
 }
 
 /**
@@ -299,7 +299,7 @@ export async function getLayout(pkgId: string, groupNamespace: string, viewType:
  */
 export async function getScript(pkgId: string, groupNamespace: string): Promise<EntryLayoutFile> {
     const filePath = getFilePath(pkgId, groupNamespace, FileType.script, ViewType.any);
-    return getFile(pkgId, groupNamespace, filePath, ViewType.any);
+    return getFile(pkgId, groupNamespace, filePath, FileType.script, ViewType.any);
 }
 
 /**
@@ -312,7 +312,7 @@ export async function getStyle(pkgId: string, groupNamespace: string, viewType: 
     const filePath = getFilePath(pkgId, groupNamespace, FileType.style, viewType);
 
     if (context) {
-        const file = await getFile(pkgId, groupNamespace, filePath, viewType);
+        const file = await getFile(pkgId, groupNamespace, filePath, FileType.style, viewType);
         const parsedFile = await file(context);
         return compileStyle(parsedFile, filePath);
     } else {
@@ -343,9 +343,9 @@ function compileStyle(style: string, filePath: string): string {
     return "";
 }
 
-async function getFile(pkgId: string, groupNamespace: string, filePath: string, viewType: ViewType): Promise<EntryLayoutFile> {
-    const key = `${pkgId}-${groupNamespace}-${viewType}`;
-    if (!layoutCache[key] || isDev) {
+async function getFile(pkgId: string, groupNamespace: string, filePath: string, fileType: FileType, viewType: ViewType): Promise<EntryLayoutFile> {
+    const key = `${pkgId}.${groupNamespace}.${fileType}.${viewType}`;
+    if (!layoutCache[key]) {
         try {
             const file = await readFile(filePath, { encoding: "utf-8" });
             layoutCache[key] = hb.compile(file.toString(), { noEscape: true });
@@ -365,6 +365,18 @@ function getFilePath(pkgId: string, groupNamespace: string, fileType: FileType, 
 
 function getEntryCacheKey(packageId: string, groupId: string, bid: string, viewType: ViewType) {
     return `${packageId}.${groupId}.${bid}.${viewType}`;
+}
+
+export function clearEntryCache() {
+    for (const key in entryCache) {
+        delete entryCache[key];
+    }
+}
+
+export function clearLayoutCache() {
+    for (const key in layoutCache) {
+        delete layoutCache[key];
+    }
 }
 
 /**
