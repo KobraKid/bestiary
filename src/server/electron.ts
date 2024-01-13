@@ -121,7 +121,7 @@ function createWindow(): void {
         title: isDev ? `Bestiary | DEVELOPMENT | ${process.env.npm_package_version}` : "Bestiary",
         darkTheme: true,
         autoHideMenuBar: !isDev,
-        frame: isDev,
+        frame: true, // isDev,
         webPreferences: {
             sandbox: false,
             preload: path.join(__dirname, "preload.js")
