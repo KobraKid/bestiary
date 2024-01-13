@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { CSSTransition } from "react-transition-group";
 import { createRoot } from "react-dom/client";
 import { GroupMenu, PackageMenu } from "./components/menu";
 import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
@@ -38,6 +39,7 @@ const App: React.FC = () => {
     const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
     const {
         view,
+        isLoading,
         canNavigateBack,
         selectPkg,
         selectGroup,
@@ -71,6 +73,7 @@ const App: React.FC = () => {
 
     return (
         <AppContext.Provider value={{ config }}>
+            <LoadingMask isLoading={isLoading} />
             <Options show={optionsVisible} onHide={() => setOptionsVisible(false)} />
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}
                 style={{ backgroundColor: config?.bgColor }}>
@@ -141,6 +144,23 @@ const Page: React.FC<IPageProps> = (props: IPageProps) => {
         default:
             return null;
     }
+};
+
+interface ILoadingMaskProps {
+    isLoading: boolean
+}
+
+const LoadingMask: React.FC<ILoadingMaskProps> = (props: ILoadingMaskProps) => {
+    const { isLoading } = props;
+    const nodeRef = useRef(null);
+
+    return (
+        <CSSTransition nodeRef={nodeRef} in={isLoading} classNames="loading" timeout={{ enter: 1000, exit: 0 }}>
+            <div ref={nodeRef}>
+                <div className="loading-spinner"></div>
+            </div>
+        </CSSTransition>
+    );
 };
 
 const container = document.getElementById("app");

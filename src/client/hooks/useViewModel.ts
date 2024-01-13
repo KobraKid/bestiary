@@ -7,6 +7,7 @@ import { IGroupConfig } from "../../model/Config";
 
 interface BestiaryData {
     readonly view: ViewStackframe,
+    readonly isLoading: boolean,
     canNavigateBack: boolean,
     selectPkg: (pkg: IPackageMetadata) => void,
     selectGroup: (group: IGroupMetadata) => void,
@@ -62,6 +63,8 @@ interface IViewStackframeDispatchAction {
 }
 
 export function useViewModel(): BestiaryData {
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
     const [lang, setLang] = useState<ISO639Code>(ISO639Code.English);
 
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
@@ -156,11 +159,13 @@ export function useViewModel(): BestiaryData {
         window.pkg.stopLoadingGroupEntries();
         newGroup.entries = [];
 
+        setIsLoading(true);
         window.pkg.loadGroup(pkg, newGroup).then(group => {
             viewStackDispatch({
                 type: ViewStackframeActionType.RESET,
                 targetView: { pkg, group }
             });
+            setIsLoading(false);
             window.pkg.loadGroupEntries(pkg, group, lang, sortBy, groupBy);
         });
     }, []);
@@ -175,12 +180,14 @@ export function useViewModel(): BestiaryData {
     const selectEntry = useCallback((newGroupId: string, newEntryId: string, lang: ISO639Code) => {
         if (newGroupId === view.current.group.ns && newEntryId === view.current.entry?.bid) { return; }
 
+        setIsLoading(true);
         window.pkg.loadEntry(view.current.pkg, newGroupId, newEntryId, lang).then(loadedEntry => {
             if (!loadedEntry) { return; }
             viewStackDispatch({
                 type: ViewStackframeActionType.NAVIGATE_FORWARDS,
                 targetView: { pkg: view.current.pkg, group: getGroupById(view.current.pkg, newGroupId), entry: loadedEntry }
             });
+            setIsLoading(false);
         });
     }, []);
 
@@ -207,6 +214,7 @@ export function useViewModel(): BestiaryData {
 
     return {
         view: view.current,
+        isLoading,
         canNavigateBack: views.length > 1,
         selectPkg,
         selectGroup: (newGroup: IGroupMetadata) => selectGroup(view.current.pkg, newGroup, lang),
