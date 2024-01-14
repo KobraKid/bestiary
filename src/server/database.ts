@@ -4,7 +4,7 @@ import sass from "sass";
 import { IpcMainInvokeEvent } from "electron";
 import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
-import { hb, paths } from "./electron";
+import { hb, isDev, paths } from "./electron";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
@@ -175,7 +175,7 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
 
     for (const entry of entries) {
         const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
-        if ((entryCache[key] ?? "").length === 0) {
+        if ((entryCache[key] ?? "").length === 0 || isDev) {
             entryCache[key] = [await layout({ entry, lang }), "", ""];
         }
 
@@ -236,7 +236,7 @@ export async function getEntry(pkg: IPackageMetadata, groupId: string, entryId: 
     }
 
     const key = getEntryCacheKey(pkg.ns, groupId, entryId, ViewType.view);
-    if ((entryCache[key] ?? "").length === 0) {
+    if ((entryCache[key] ?? "").length === 0 || isDev) {
         entryCache[key] = [
             await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry: loadedEntry, lang }),
             await (await getScript(pkg.ns, groupId))({ entry: loadedEntry, lang }),
@@ -345,7 +345,7 @@ function compileStyle(style: string, filePath: string): string {
 
 async function getFile(pkgId: string, groupNamespace: string, filePath: string, fileType: FileType, viewType: ViewType): Promise<EntryLayoutFile> {
     const key = `${pkgId}.${groupNamespace}.${fileType}.${viewType}`;
-    if (!layoutCache[key]) {
+    if (!layoutCache[key] || isDev) {
         try {
             const file = await readFile(filePath, { encoding: "utf-8" });
             layoutCache[key] = hb.compile(file.toString(), { noEscape: true });
