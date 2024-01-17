@@ -78,9 +78,11 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
                         <div key={collection.id} style={{
                             backgroundColor: collection.backgroundColor,
                             color: collection.color,
-                            border: (collection.entries.length === collection.max) ? "1px solid gold" : undefined
+                            border: (collection.type === "boolean" && collection.buckets["collected"]?.length === collection.available) ? "1px solid gold" : undefined
                         }}>
-                            {`${collection.name} (${collection.entries.length} / ${collection.max})`}
+                            {collection.type === "boolean" ?
+                                `${collection.name} (${collection.buckets["collected"]?.length ?? 0} / ${collection.available})`
+                                : collection.name}
                         </div>
                     )}
                 </div>

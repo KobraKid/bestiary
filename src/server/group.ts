@@ -4,7 +4,7 @@ import { mkdir } from "fs/promises";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { paths } from "./electron";
 import { IGroupMetadata } from "../model/Group";
-import { IGroupConfig, IPackageConfig } from "../model/Config";
+import { GroupForConfig, ICollection, IGroupConfig, IPackageConfig } from "../model/Config";
 import { IPackageMetadata } from "../model/Package";
 import { IpcMainEvent } from "electron";
 import Entry from "../model/Entry";
@@ -90,9 +90,9 @@ export function savePkgConfig(): void {
  * Updates a colleciton's configuration data.
  * 
  * @param group The group to update
- * @param config The updated configuration data
+ * @param updatedConfig The updated configuration data
  */
-export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig): Promise<void> {
+export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, updatedConfig: GroupForConfig): Promise<void> {
     if (!pkgConfig) {
         await createOrLoadPkgConfig(pkg);
     }
@@ -103,7 +103,10 @@ export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetada
             pkgConfig.groups = [];
         }
 
-        await setCollectionMaximums(pkg, group, config);
+        const config: IGroupConfig = {
+            ...updatedConfig,
+            collections: await setCollectionMaximums(pkg, group, updatedConfig)
+        };
 
         const index = pkgConfig.groups.findIndex(c => c.groupId === group.ns);
         if (index >= 0 && index < pkgConfig.groups?.length) {
@@ -113,7 +116,7 @@ export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetada
             pkgConfig.groups.push(config);
         }
     }
-    event.sender.send("config:updated-group-config", config);
+    event.sender.send("config:updated-group-config", updatedConfig);
 }
 
 /**
@@ -122,28 +125,59 @@ export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetada
  * If the entry is not already marked as collected, it is added.
  * 
  * @param event The event that triggered this update
- * @param group The group to update
- * @param groupId The group within the group to update
+ * @param updatedGroup The group to update
+ * @param collectionId The collection within the group to update
  * @param entryId The entry to add or remove
+ * @param value: The new numeric value of the entry, if the type of this collection is number
  */
-export function updateCollectedStatusForEntry(event: IpcMainEvent, group: IGroupMetadata, groupId: number, entryId: string): void {
+export function updateCollectedStatusForEntry(event: IpcMainEvent, updatedGroup: IGroupMetadata, collectionId: number, entryId: string, value?: number): void {
     if (pkgConfig?.groups) {
-        const config = pkgConfig.groups.find(c => c.groupId === group.ns);
-        if (config) {
-            const group = config.collections.find(g => g.id === groupId);
-            if (group?.entries.includes(entryId)) {
-                group.entries.splice(group.entries.indexOf(entryId), 1);
-            }
-            else {
-                group?.entries.push(entryId);
-            }
-            event.sender.send("config:updated-group-config", config);
+        const group = pkgConfig.groups.find(g => g.groupId === updatedGroup.ns);
+        if (!group) { return; }
+
+        const collection = group.collections.find(c => c.id === collectionId);
+        if (!collection) { return; }
+
+        let bucketToRemoveFrom = "";
+        let bucketToAddTo = "";
+
+        switch (collection.type) {
+            case "boolean":
+                if (collection.buckets["collected"] && collection.buckets["collected"].includes(entryId)) {
+                    bucketToRemoveFrom = "collected";
+                } else {
+                    bucketToAddTo = "collected";
+                }
+                break;
+            case "number":
+                for (const bucket in Object.keys(collection.buckets)) {
+                    if (collection.buckets[bucket]?.includes(entryId)) {
+                        bucketToRemoveFrom = bucket;
+                        break;
+                    }
+                }
+                bucketToAddTo = "" + value ?? 0;
+                break;
         }
+
+        if (bucketToRemoveFrom !== "") {
+            collection.buckets[bucketToRemoveFrom]?.splice(collection.buckets[bucketToRemoveFrom]!.indexOf(entryId), 1);
+        }
+        if (bucketToAddTo !== "") {
+            collection.buckets[bucketToAddTo]?.push(entryId);
+        }
+
+        event.sender.send("config:updated-group-config", group);
     }
 }
 
-async function setCollectionMaximums(pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) {
+async function setCollectionMaximums(pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig): Promise<ICollection[]> {
+    const collections: ICollection[] = [];
     for (const collection of config.collections) {
-        collection.max = await Entry.find({ packageId: pkg.ns, groupId: group.ns }).count().exec();
+        collections.push({
+            ...collection,
+            available: await Entry.find({ packageId: pkg.ns, groupId: group.ns }).count().exec()
+        });
     }
+    return collections;
 }

@@ -3,7 +3,7 @@ import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
-import { IAppConfig, IGroupConfig } from "../model/Config";
+import { GroupForConfig, IAppConfig, IGroupConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 
@@ -47,7 +47,7 @@ contextBridge.exposeInMainWorld("config", {
     },
     savePkgConfig: () =>
         ipcRenderer.send("config:save-pkg-config"),
-    updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) =>
+    updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig) =>
         ipcRenderer.send("config:update-group-config", pkg, group, config),
     onUpdateGroupConfig: (callback: (config: IGroupConfig) => void) => {
         ipcRenderer.removeAllListeners("config:updated-group-config");

@@ -66,10 +66,21 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     );
 };
 
-export const Collection: React.FC<Partial<ICollection & IEntryProps>> = (props: Partial<ICollection & IEntryProps>) => {
-    const { id, name, backgroundColor, color, entries, entry, group } = props;
+type CollectionProps = Partial<ICollection & IEntryProps>;
 
-    const [checked, setChecked] = useState<boolean>(entries?.includes(entry?.bid ?? "") ?? false);
+export const Collection: React.FC<CollectionProps> = (props: CollectionProps) => {
+    if (props.type === "boolean") {
+        return <BooleanCollection {...props} />;
+    }
+    else {
+        return <NumberCollection {...props} />;
+    }
+}
+
+const BooleanCollection: React.FC<CollectionProps> = (props: CollectionProps) => {
+    const { id, name, backgroundColor, color, buckets, entry, group } = props;
+
+    const [checked, setChecked] = useState<boolean>(!!buckets && (buckets["collected"]?.includes(entry?.bid ?? "") ?? false));
 
     const onUpdateCollectedStatus = useCallback(() => {
         if (group && (id !== undefined) && entry) {
@@ -97,3 +108,23 @@ export const Collection: React.FC<Partial<ICollection & IEntryProps>> = (props: 
         </div>
     );
 };
+
+const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => {
+    const { id, name, backgroundColor, color, buckets, min, max, entry, group } = props;
+
+    const [value, setValue] = useState<number>(parseInt(Object.keys(buckets ?? {}).find(key => buckets![key]?.includes(entry?.bid ?? "")) ?? "0", 10));
+
+    const style: Partial<React.CSSProperties> = {
+        backgroundColor: backgroundColor,
+        color: color
+    };
+
+    return (
+        <div className="collection-tab" style={style}>
+            <input type="range" min={min} max={max} value={value} onChange={e => {
+                setValue(parseInt(e.target.value, 10));
+            }} />
+            <span>{name}</span>
+        </div>
+    );
+}

@@ -1,4 +1,4 @@
-import { IAppConfig, IGroupConfig } from "../model/Config";
+import { GroupForConfig, IAppConfig, IGroupConfig } from "../model/Config";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
@@ -22,7 +22,7 @@ export interface IConfigAPI {
   saveAppConfig: (config?: IAppConfig) => void,
   onUpdateAppConfig: (callback: (config: IAppConfig) => void) => void,
   savePkgConfig: () => Promise<void>,
-  updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => Promise<void>,
+  updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig) => Promise<void>,
   onUpdateGroupConfig: (callback: (config: IGroupConfig) => void) => void,
   updateEntryCollectedStatus: (group: IGroupMetadata, groupId: number, entryId: string) => Promise<void>
 }

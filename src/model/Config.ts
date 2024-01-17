@@ -23,6 +23,8 @@ export interface IGroupConfig {
     collections: ICollection[]
 }
 
+export type CollectionType = "boolean" | "number";
+
 export interface ICollection {
     /**
      * The collection ID
@@ -41,14 +43,35 @@ export interface ICollection {
      */
     color: string,
     /**
-     * The collected entries
+     * The type of the collection
      */
-    entries: string[],
+    type: CollectionType,
+    /**
+     * The minimum value entries in this collection can have
+     */
+    min?: number,
+    /**
+     * The maximum value entries in this collection can have
+     */
+    max?: number,
+    /**
+     * The buckets containing collected entries.
+     * 
+     * If the collection type is "boolean," one bucket will
+     * exist for the collected entries.
+     * 
+     * If the collection type is "number," a bucket will
+     * exist for each number between `min` and `max` inclusive.
+     */
+    buckets: { [key: string]: string[] },
     categories?: string[],
     spoilers?: string[],
     hideWhenCollected?: boolean,
     /**
-     * The maximum number of collectible entries
+     * The available number of collectible entries
      */
-    max: number,
+    available: number,
 }
+
+export type CollectionForConfig = Omit<ICollection, "available">;
+export type GroupForConfig = Omit<IGroupConfig, "collections"> & { collections: CollectionForConfig[] };

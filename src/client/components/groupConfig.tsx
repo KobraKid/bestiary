@@ -1,34 +1,51 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { IPackageMetadata } from "../../model/Package";
 import { IGroupMetadata } from "../../model/Group";
-import { IGroupConfig, ICollection } from "../../model/Config";
+import { ICollection, CollectionType, GroupForConfig, CollectionForConfig } from "../../model/Config";
 import { Collection } from "./entry";
 import "../styles/groupConfig.scss";
 
 export const GroupConfigView: React.FC = () => {
     const [pkg, setPkg] = useState<IPackageMetadata>();
     const [group, setGroup] = useState<IGroupMetadata>();
-    const [config, setConfig] = useState<IGroupConfig>();
+    const [config, setConfig] = useState<GroupForConfig>();
 
     const onCancel = useCallback(() => {
         setConfig(undefined);
         setGroup(undefined);
     }, []);
 
-    const onUpdateConfig = useCallback((pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => {
+    const onUpdateConfig = useCallback((pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig) => {
         window.config.updateGroupConfig(pkg, group, config);
         onCancel();
     }, []);
 
-    const onUpdateCollection = useCallback((id: number, name: string, bgColor: string, color: string) => {
+    const onUpdateCollection = useCallback((id: number, newCollection: Partial<CollectionForConfig>) => {
         setConfig(prevConfig => {
             if (prevConfig) {
                 const newConfig = structuredClone(prevConfig);
                 for (const collection of newConfig.collections) {
                     if (collection.id === id) {
-                        collection.name = name;
-                        collection.backgroundColor = bgColor;
-                        collection.color = color;
+                        collection.name = newCollection.name ?? collection.name;
+                        collection.backgroundColor = newCollection.backgroundColor ?? collection.backgroundColor;
+                        collection.color = newCollection.color ?? collection.color;
+                        // handle type changes
+                        if (newCollection.type && newCollection.type !== collection.type) {
+                            collection.type = newCollection.type;
+                            if (collection.type === "boolean") {
+                                delete collection.min;
+                                delete collection.max;
+                                collection.buckets = { "collected": [] };
+                            }
+                            else {
+                                collection.min = newCollection.min;
+                                collection.max = newCollection.max;
+                                collection.buckets = {};
+                                for (let i = (collection.min ?? 0); i <= (collection.max ?? 1); i++) {
+                                    collection.buckets["" + i] = [];
+                                }
+                            }
+                        }
                         break;
                     }
                 }
@@ -47,13 +64,13 @@ export const GroupConfigView: React.FC = () => {
                 const b = Math.floor(Math.random() * 0xFF);
                 const bg = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
                 const fg = ((r + b + g) / 3) < 0x80 ? "#FFFFFF" : "#000000";
-                const newCollection: ICollection = {
+                const newCollection: CollectionForConfig = {
                     id: newConfig.collections.length,
                     name: `Collection ${newConfig.collections.length + 1}`,
                     backgroundColor: bg,
                     color: fg,
-                    entries: [],
-                    max: 0
+                    type: "boolean",
+                    buckets: { "collected": [] }
                 };
                 newConfig.collections.push(newCollection);
                 return newConfig;
@@ -139,8 +156,8 @@ export const GroupConfigView: React.FC = () => {
                     <div className="collection-grid">
                         {config.collections.map(collection =>
                             <CollectionSettings {...collection} key={collection.id + collection.name}
-                                onUpdateCollection={(name, bgColor, color) =>
-                                    onUpdateCollection(collection.id, name, bgColor, color)}
+                                onUpdateCollection={(newCollection: Partial<ICollection>) =>
+                                    onUpdateCollection(collection.id, newCollection)}
                                 onRemoveCollection={() => onRemoveCollection(collection.id)}
                                 onMoveCollectionUp={() => onMoveCollectionUp(collection.id)}
                                 onMoveCollectionDown={() => onMoveCollectionDown(collection.id)} />
@@ -159,8 +176,8 @@ export const GroupConfigView: React.FC = () => {
     );
 };
 
-interface ICollectionSettingsProps extends ICollection {
-    onUpdateCollection: (name: string, bgColor: string, color: string) => void,
+interface ICollectionSettingsProps extends CollectionForConfig {
+    onUpdateCollection: (newCollection: Partial<ICollection>) => void,
     onRemoveCollection: () => void,
     onMoveCollectionUp: () => void,
     onMoveCollectionDown: () => void
@@ -170,17 +187,18 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
     const { onUpdateCollection, onRemoveCollection, onMoveCollectionUp, onMoveCollectionDown } = props;
 
     const [name, setName] = useState<string>(props.name);
-    const [bgColor, setBgColor] = useState<string>(props.backgroundColor);
+    const [type, setType] = useState<CollectionType>("boolean");
+    const [backgroundColor, setBgColor] = useState<string>(props.backgroundColor);
     const [color, setColor] = useState<string>(props.color);
 
-    const updateCollection = (name: string, bgColor: string, color: string) => {
-        onUpdateCollection(name, bgColor, color);
+    const updateCollection = (newCollection: Partial<ICollection>) => {
+        onUpdateCollection(newCollection);
     };
 
     return (
         <div className="collection-settings">
             <div className="preview">
-                <Collection name={name} backgroundColor={bgColor} color={color} />
+                <Collection name={name} backgroundColor={backgroundColor} color={color} />
             </div>
             <div className="toolbar">
                 <button title="Move up" onClick={onMoveCollectionUp}>🔼</button>
@@ -189,17 +207,31 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
             </div>
             <label>Name:&nbsp;</label>
             <input type="text" name="name" value={name}
-                onBlur={() => updateCollection(name, bgColor, color)}
+                onBlur={() => updateCollection({ name })}
                 onChange={e => setName(e.target.value)} />
+            {Object.keys(props.buckets).length > 0 &&
+                <div style={{ color: "black", backgroundColor: "yellow" }}>
+                    Warning: changing the type of this collection will remove all collected entries
+                </div>
+            }
+            {JSON.stringify(props.buckets)}
+            <label>Type:&nbsp;</label>
+            <select name="type" value={type} onChange={e => {
+                setType(e.target.value as CollectionType);
+                updateCollection({ type: e.target.value as CollectionType })
+            }}>
+                <option value="boolean">Boolean</option>
+                <option value="number">Numeric</option>
+            </select>
             <label>Background Color:&nbsp;</label>
-            <input type="color" name="bgColor" value={bgColor} onChange={e => {
+            <input type="color" name="bgColor" value={backgroundColor} onChange={e => {
                 setBgColor(e.target.value);
-                updateCollection(name, e.target.value, color);
+                updateCollection({ backgroundColor: e.target.value });
             }} />
             <label>Text Color:&nbsp;</label>
             <input type="color" name="color" value={color} onChange={e => {
                 setColor(e.target.value);
-                updateCollection(name, bgColor, e.target.value);
+                updateCollection({ color: e.target.value });
             }} />
         </div>
     );
