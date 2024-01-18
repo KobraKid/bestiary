@@ -1,6 +1,6 @@
 @use "menu";
 @use "colors";
-
+@use "collection";
 
 .collection-tabs {
     display: flex;
@@ -9,31 +9,7 @@
     z-index: 2;
 
     .collection-tab {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: nowrap;
-        gap: 4px;
-        padding: 2px;
-        width: 20px;
-        border-radius: 4px;
-        overflow: hidden;
-        text-overflow: clip;
-        transition: width .25s ease;
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
-
-        span {
-            padding-right: 8px;
-            white-space: nowrap;
-        }
-
-        &:hover {
-            width: 100px;
-            overflow: auto;
-            text-overflow: ellipsis;
-        }
+        @include collection.collection-tab(20px, 100px);
     }
 }
 
@@ -48,7 +24,6 @@
 }
 
 .details {
-    // background-color: colors.$dark;
     overflow: auto;
     grid-row: group-grid / span 2;
 }

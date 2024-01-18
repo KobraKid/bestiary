@@ -1,0 +1,55 @@
+$initHeight: 20px;
+$hoverHeight: 40px;
+
+@mixin collection-tab($initWidth, $hoverWidth) {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 2px;
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: clip;
+    width: $initWidth;
+    height: $initHeight;
+    transition: width .25s ease, height .25s ease;
+
+    &.collection-tab-checkbox {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    &.collection-tab-range {
+        flex-direction: column;
+
+        .collection-tab-range-label {
+            display: flex;
+            flex-direction: row;
+            gap: 4px;
+
+            .collection-tab-range-value {
+                min-width: 20px;
+                text-align: center;
+            }
+        }
+    }
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    span {
+        padding-right: 8px;
+        white-space: nowrap;
+    }
+
+    input.collection-range {
+        width: 100px;
+    }
+
+    &:hover {
+        width: calc($hoverWidth + 4px);
+        height: calc($hoverHeight + 4px);
+        overflow: auto;
+        text-overflow: ellipsis;
+    }
+}

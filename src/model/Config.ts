@@ -70,7 +70,7 @@ export interface ICollection {
     /**
      * The available number of collectible entries
      */
-    available: number,
+    available?: number,
 }
 
 export type CollectionForConfig = Omit<ICollection, "available">;

@@ -29,20 +29,37 @@ export const GroupConfigView: React.FC = () => {
                         collection.name = newCollection.name ?? collection.name;
                         collection.backgroundColor = newCollection.backgroundColor ?? collection.backgroundColor;
                         collection.color = newCollection.color ?? collection.color;
-                        // handle type changes
+                        collection.min = newCollection.min ?? collection.min;
+                        if (collection.min != null && collection.min < 0) { collection.min = 0; }
+                        collection.max = newCollection.max ?? collection.max;
+                        if (collection.min != null && collection.max != null && collection.min > collection.max) { collection.max = collection.min + 1; }
+                        if (collection.type === "boolean") {
+                            delete collection.min;
+                            delete collection.max;
+                        }
+                        else {
+                            collection.min = newCollection.min ?? collection.min ?? 0;
+                            collection.max = newCollection.max ?? collection.max ?? 1;
+                        }
                         if (newCollection.type && newCollection.type !== collection.type) {
                             collection.type = newCollection.type;
                             if (collection.type === "boolean") {
-                                delete collection.min;
-                                delete collection.max;
                                 collection.buckets = { "collected": [] };
                             }
                             else {
-                                collection.min = newCollection.min;
-                                collection.max = newCollection.max;
                                 collection.buckets = {};
-                                for (let i = (collection.min ?? 0); i <= (collection.max ?? 1); i++) {
+                                for (let i = collection.min!; i <= collection.max!; i++) {
                                     collection.buckets["" + i] = [];
+                                }
+                            }
+                        }
+                        if ((newCollection.min != null) || (newCollection.max != null)) {
+                            for (let i = collection.min!; i <= collection.max!; i++) {
+                                collection.buckets["" + i] = collection.buckets["" + i] || [];
+                            }
+                            for (const bucket of Object.keys(collection.buckets)) {
+                                if ((parseInt(bucket) < (collection.min ?? 0)) || (parseInt(bucket) > (collection.max ?? 1))) {
+                                    delete collection.buckets[bucket];
                                 }
                             }
                         }
@@ -187,7 +204,9 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
     const { onUpdateCollection, onRemoveCollection, onMoveCollectionUp, onMoveCollectionDown } = props;
 
     const [name, setName] = useState<string>(props.name);
-    const [type, setType] = useState<CollectionType>("boolean");
+    const [type, setType] = useState<CollectionType>(props.type);
+    const [min, setMin] = useState<number>(props.min ?? 0);
+    const [max, setMax] = useState<number>(props.max ?? 1);
     const [backgroundColor, setBgColor] = useState<string>(props.backgroundColor);
     const [color, setColor] = useState<string>(props.color);
 
@@ -198,7 +217,7 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
     return (
         <div className="collection-settings">
             <div className="preview">
-                <Collection name={name} backgroundColor={backgroundColor} color={color} />
+                <Collection name={name} type={type} min={min} max={max} backgroundColor={backgroundColor} color={color} />
             </div>
             <div className="toolbar">
                 <button title="Move up" onClick={onMoveCollectionUp}>🔼</button>
@@ -209,12 +228,6 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
             <input type="text" name="name" value={name}
                 onBlur={() => updateCollection({ name })}
                 onChange={e => setName(e.target.value)} />
-            {Object.keys(props.buckets).length > 0 &&
-                <div style={{ color: "black", backgroundColor: "yellow" }}>
-                    Warning: changing the type of this collection will remove all collected entries
-                </div>
-            }
-            {JSON.stringify(props.buckets)}
             <label>Type:&nbsp;</label>
             <select name="type" value={type} onChange={e => {
                 setType(e.target.value as CollectionType);
@@ -223,6 +236,30 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
                 <option value="boolean">Boolean</option>
                 <option value="number">Numeric</option>
             </select>
+            {(
+                (type === "boolean" && (props.buckets["collected"]?.length ?? 0) > 0) ||
+                (type === "number" && Object.keys(props.buckets).findIndex(b => (props.buckets[b]?.length ?? 0) > 0) >= 0)
+            ) &&
+                <div className="warning">
+                    Warning: changing the type of this collection will remove all collected entries
+                </div>
+            }
+            {type === "number" &&
+                <>
+                    <label>Min value:&nbsp;</label>
+                    <input type="number" name="min" value={min} min={0} max={max} onChange={e => {
+                        const value = parseInt(e.target.value);
+                        setMin(value);
+                        updateCollection({ min: value });
+                    }} />
+                    <label>Max value:&nbsp;</label>
+                    <input type="number" name="max" value={max} min={min} onChange={e => {
+                        const value = parseInt(e.target.value);
+                        setMax(value);
+                        updateCollection({ max: value });
+                    }} />
+                </>
+            }
             <label>Background Color:&nbsp;</label>
             <input type="color" name="bgColor" value={backgroundColor} onChange={e => {
                 setBgColor(e.target.value);

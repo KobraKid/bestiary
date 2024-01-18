@@ -1,3 +1,5 @@
+@use "collection";
+
 .group-config-mask {
     position: absolute;
     top: 0;
@@ -40,34 +42,26 @@
                 .collection-settings {
                     display: grid;
                     grid-template-columns: [start] 100px [preview] 50px [lbl] auto [end];
-                    grid-template-rows: repeat(4, 28px);
                     align-content: stretch;
 
                     .preview {
-                        width: 100px;
+                        width: fit-content;
                         height: fit-content;
                         grid-column: start / preview;
 
                         .collection-tab {
-                            display: flex;
-                            flex-direction: row;
-                            flex-wrap: nowrap;
-                            gap: 4px;
-                            padding: 2px;
-                            width: 100px;
-                            border-radius: 4px;
-                            overflow: auto;
-                            text-overflow: ellipsis;
-
-                            &::-webkit-scrollbar {
-                                display: none;
-                            }
-
-                            span {
-                                padding-right: 8px;
-                                white-space: nowrap;
-                            }
+                            @include collection.collection-tab(100px, 100px);
                         }
+                    }
+
+                    .warning {
+                        color: black;
+                        background-color: yellow;
+                        border: 1px dashed black;
+                        grid-column: start / span end;
+                        text-align: center;
+                        margin: 2px;
+                        border-radius: 4px;
                     }
 
                     .toolbar {
@@ -87,7 +81,8 @@
                         grid-column: start / lbl;
                     }
 
-                    input {
+                    input[type="text"],
+                    input[type="color"] {
                         grid-column: lbl / end;
                         width: auto;
                     }

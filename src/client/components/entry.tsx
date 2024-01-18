@@ -99,8 +99,8 @@ const BooleanCollection: React.FC<CollectionProps> = (props: CollectionProps) =>
         };
 
     return (
-        <div className="collection-tab" style={style}>
-            <input type="checkbox" checked={checked} onChange={e => {
+        <div className="collection-tab collection-tab-checkbox" style={style}>
+            <input className="collection-checkbox" type="checkbox" checked={checked} onChange={e => {
                 setChecked(e.target.checked);
                 onUpdateCollectedStatus();
             }} />
@@ -120,11 +120,14 @@ const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => 
     };
 
     return (
-        <div className="collection-tab" style={style}>
-            <input type="range" min={min} max={max} value={value} onChange={e => {
+        <div className="collection-tab collection-tab-range" style={style}>
+            <div className="collection-tab-range-label">
+                <div className="collection-tab-range-value">{value}</div>
+                <span>{name}</span>
+            </div>
+            <input className="collection-range" type="range" min={min} max={max} value={value} onChange={e => {
                 setValue(parseInt(e.target.value, 10));
             }} />
-            <span>{name}</span>
         </div>
     );
 }
