@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu, protocol } from "electron";
 import chalk from "chalk";
 import envPaths from "env-paths";
 import Formula from "fparser";
@@ -13,6 +13,7 @@ import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
 import { Config } from "./config";
+import Resource from "../model/Resource";
 
 //#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
@@ -112,6 +113,62 @@ ipcMain.handle("eval-formula", (_event: IpcMainInvokeEvent, expression: string, 
 //#endregion
 
 /**
+ * Creates the app menu
+ */
+function createMenu(): void {
+    const devMenu: Electron.MenuItemConstructorOptions = isDev ? {
+        type: "submenu",
+        label: "Dev Options",
+        submenu: [
+            {
+                label: "Clear Entry Cache",
+                accelerator: "CmdOrCtrl+E",
+                click: clearEntryCache
+            },
+            {
+                label: "Clear Layout Cache",
+                accelerator: "CmdOrCtrl+L",
+                click: clearLayoutCache
+            },
+            {
+                label: "Import...",
+                accelerator: "CmdOrCtrl+I",
+                click: (_menuItem, browserWindow) => {
+                    browserWindow?.webContents.send("importer:import-start");
+                    if (browserWindow) {
+                        dialog.showOpenDialog(browserWindow, {
+                            title: "Bestiary", buttonLabel: "Import", properties: ["openFile"], filters: [{ name: "JSON", extensions: ["json"] }]
+                        }).then((files) => {
+                            onImport(browserWindow, files);
+                        });
+                    }
+                }
+            },
+        ]
+    } : { type: "separator" };
+    const menu = Menu.buildFromTemplate([
+        {
+            label: "File",
+            submenu: [
+                {
+                    label: "Options",
+                    accelerator: "CmdOrCtrl+O",
+                    click: (_menuItem, browserWindow) => {
+                        browserWindow?.webContents.send("options:show-options");
+                    }
+                },
+                devMenu,
+                { role: "quit" }
+            ]
+        },
+        { role: "editMenu" },
+        { role: "viewMenu" },
+        { role: "windowMenu" }
+    ]);
+    Menu.setApplicationMenu(menu);
+}
+
+/**
  * Creates the main app window
  */
 function createWindow(): void {
@@ -143,61 +200,19 @@ function createWindow(): void {
     });
 }
 
+protocol.registerSchemesAsPrivileged([{ scheme: "bestiary", privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
+
 /**
  * Create the main window
  */
 app.whenReady().then(async () => {
     await config.initialiazeConfig();
-    const devMenu: Electron.MenuItemConstructorOptions = isDev ? {
-        type: "submenu",
-        label: "Dev Options",
-        submenu: [
-            {
-                label: "Clear Entry Cache",
-                accelerator: "CmdOrCtrl+E",
-                click: clearEntryCache
-            },
-            {
-                label: "Clear Layout Cache",
-                accelerator: "CmdOrCtrl+L",
-                click: clearLayoutCache
-            }
-        ]
-    } : { type: "separator" };
-    const menu = Menu.buildFromTemplate([
-        {
-            label: "File",
-            submenu: [
-                {
-                    label: "Options",
-                    accelerator: "CmdOrCtrl+O",
-                    click: (_menuItem, browserWindow) => {
-                        browserWindow?.webContents.send("options:show-options");
-                    }
-                },
-                {
-                    label: "Import...",
-                    accelerator: "CmdOrCtrl+I",
-                    click: (_menuItem, browserWindow) => {
-                        browserWindow?.webContents.send("importer:import-start");
-                        if (browserWindow) {
-                            dialog.showOpenDialog(browserWindow, {
-                                title: "Bestiary", buttonLabel: "Import", properties: ["openFile"], filters: [{ name: "JSON", extensions: ["json"] }]
-                            }).then((files) => {
-                                onImport(browserWindow, files);
-                            });
-                        }
-                    }
-                },
-                devMenu,
-                { role: "quit" }
-            ]
-        },
-        { role: "editMenu" },
-        { role: "viewMenu" },
-        { role: "windowMenu" }
-    ]);
-    Menu.setApplicationMenu(menu);
+    protocol.handle("bestiary", async request => {
+        const { host, pathname } = new URL(request.url);
+        const imgResource = await Resource.findOne({ packageId: host, resId: pathname.slice(1) }).lean().exec();
+        return fetch("data:image/jpeg;base64," + (imgResource?.values["en"] ?? ""));
+    });
+    createMenu();
     createWindow();
 });
 

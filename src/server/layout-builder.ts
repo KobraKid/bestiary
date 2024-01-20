@@ -175,7 +175,7 @@ async function __imageHelper(hb: AsyncHandlebars, context: unknown, options: Hel
         src = prefix + await getAttribute(context || entry, attributePath) + suffix;
     }
 
-    return new hb.SafeString(`<img src="${path.join(paths.data, entry.packageId, "images", src)}" ${attributes.join(" ")} />`);
+    return new hb.SafeString(`<img src="bestiary://${entry.packageId}/${src}" ${attributes.join(" ")} />`);
 }
 
 async function __stringHelper(context: object, options: HelperOptions): Promise<string | SafeString> {

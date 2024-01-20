@@ -1,13 +1,17 @@
+import chalk from "chalk";
 import { BrowserWindow } from "electron";
 import path from "path";
 import { readFileSync } from "fs";
+import fs, { mkdir, readFile, writeFile } from "fs/promises";
+import path from "path";
+import Entry, { IEntrySchema } from "../model/Entry";
+import { IGroupMetadata } from "../model/Group";
 import Package, { IPackageMetadata } from "../model/Package";
 import Entry, { IEntrySchema } from "../model/Entry";
 import fs, { mkdir } from "fs/promises";
 import chalk from "chalk";
 import Resource, { IResource } from "../model/Resource";
-import { paths } from "./electron";
-import { IGroupMetadata } from "../model/Group";
+import { isDev, paths } from "./electron";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
@@ -71,6 +75,24 @@ async function importJson(
     for (const resource of resources) {
         if (resource.resId === null || resource.resId === undefined) { continue; }
         updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
+        if ("type" in resource) {
+            switch (resource["type"]) {
+                case "image":
+                    if ("basePath" in resource) {
+                        const basePath = resource["basePath"];
+
+                        resource["values"] = {};
+                        for (const lang of pkg.langs) {
+                            const img = await readFile(path.join(paths.data, pkg.ns, "images", lang, basePath as string));
+                            resource["values"][lang] = img.toString("base64");
+                        }
+
+                        delete resource["type"];
+                        delete resource["basePath"];
+                    }
+                    break;
+            }
+        }
         await Resource.findOneAndUpdate({ packageId: pkg.ns, resId: resource.resId }, {
             ...resource,
             packageId: pkg.ns

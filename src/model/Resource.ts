@@ -17,7 +17,7 @@ export interface IResource {
      * The resource values for each supported language
      */
     values: {
-        [lang in ISO639Code]: string
+        [lang in ISO639Code]?: string
     }
 }
 
