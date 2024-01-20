@@ -7,6 +7,9 @@ export interface ILayout {
     groupId: string,
     bid: string,
     viewType: ViewType,
+    sortValues: {
+        [key: string]: string
+    },
     values: {
         [key in ISO639Code]?: {
             layout: string,
@@ -23,6 +26,7 @@ const LayoutSchema = new Schema<ILayoutSchema>({
     groupId: { type: String, required: true },
     bid: { type: String, required: true },
     viewType: { type: String, required: true },
+    sortValues: { type: Object, required: false },
     values: { type: Object, required: true }
 }, { collection: "layout", strict: "throw" });
 LayoutSchema.index({ packageId: 1, groupId: 1, bid: 1 }, { name: "layout_link" });

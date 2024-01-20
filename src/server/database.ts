@@ -157,77 +157,89 @@ export async function nextPage(params: GroupEntryParams) {
  * @param lang The language to display in.
  */
 export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
-    const { event, pkg, group, lang, sortBy, groupBy } = params;
-
     isLoading = true;
+
+    if (isDev) { getGroupEntriesDev(params); }
+    else { getGroupEntriesProd(params); }
+
+    isLoading = false;
+}
+
+async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
+    const { event, pkg, group, lang, sortBy, groupBy } = params;
 
     if (sortBy) { sortOption = sortBy; }
     if (groupBy) { groupOption = groupBy; }
 
-    if (isDev) {
-        const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-            .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
-            .collation({ locale: "en_US", numericOrdering: true })
-            .skip(entriesPerPage * page)
-            .limit(entriesPerPage)
-            .lean()
-            .exec();
+    const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
+        .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
+        .collation({ locale: "en_US", numericOrdering: true })
+        .skip(entriesPerPage * page)
+        .limit(entriesPerPage)
+        .lean()
+        .exec();
 
-        const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
+    const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
-        for (const entry of entries) {
-            const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
-            if ((entryCache[key] ?? "").length === 0 || isDev) {
-                entryCache[key] = [await layout({ entry, lang }), "", ""];
-            }
-
-            const [entryLayout] = entryCache[key] ?? ["", "", ""];
-
-            const groupSettings = await Promise.all(
-                group.groupSettings?.map(async setting => {
-                    return {
-                        name: setting.name,
-                        path: setting.path,
-                        bucketValue: 0 // await getAttribute(entry.packageId, setting.path, entry, cache)
-                    };
-                }) ?? []
-            );
-            const sortSettings = await Promise.all(
-                group.sortSettings?.map(async setting => {
-                    return {
-                        name: setting.name,
-                        path: setting.path,
-                        value: 0 // await getAttribute(entry.packageId, setting.path, entry, cache)
-                    };
-                }) ?? []
-            );
-            event.sender.send("pkg:on-entry-loaded", {
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: entry.bid,
-                groupSettings: groupSettings,
-                sortSettings: sortSettings,
-                layout: entryLayout
-            });
+    for (const entry of entries) {
+        const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
+        if ((entryCache[key] ?? "").length === 0 || isDev) {
+            entryCache[key] = [await layout({ entry, lang }), "", ""];
         }
+
+        const [entryLayout] = entryCache[key] ?? ["", "", ""];
+
+        const groupSettings = await Promise.all(
+            group.groupSettings?.map(async setting => {
+                return {
+                    name: setting.name,
+                    path: setting.path,
+                    bucketValue: 0 // await getAttribute(entry.packageId, setting.path, entry, cache)
+                };
+            }) ?? []
+        );
+        const sortSettings = await Promise.all(
+            group.sortSettings?.map(async setting => {
+                return {
+                    name: setting.name,
+                    path: setting.path,
+                    value: 0 // await getAttribute(entry.packageId, setting.path, entry, cache)
+                };
+            }) ?? []
+        );
+        event.sender.send("pkg:on-entry-loaded", {
+            packageId: pkg.ns,
+            groupId: group.ns,
+            bid: entry.bid,
+            groupSettings: groupSettings,
+            sortSettings: sortSettings,
+            layout: entryLayout
+        });
     }
-    else {
-        const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
-            .collation({ locale: "en_US", numericOrdering: true })
-            .skip(entriesPerPage * page)
-            .limit(entriesPerPage)
-            .lean()
-            .exec();
-        for (const entry of entries) {
-            event.sender.send("pkg:on-entry-loaded", {
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: entry.bid,
-                layout: entry.values[lang]?.layout ?? ""
-            });
-        }
+}
+
+async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
+    const { event, pkg, group, lang, sortBy, groupBy } = params;
+
+    if (sortBy) { sortOption = sortBy; }
+    if (groupBy) { groupOption = groupBy; }
+
+    const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
+        .sort(sortOption ? [["sortValues." + sortOption.name, sortOption.direction]] : undefined)
+        .collation({ locale: "en_US", numericOrdering: true })
+        .skip(entriesPerPage * page)
+        .limit(entriesPerPage)
+        .lean()
+        .exec();
+
+    for (const entry of entries) {
+        event.sender.send("pkg:on-entry-loaded", {
+            packageId: pkg.ns,
+            groupId: group.ns,
+            bid: entry.bid,
+            layout: entry.values[lang]?.layout ?? ""
+        });
     }
-    isLoading = false;
 }
 
 /**
@@ -247,46 +259,62 @@ export function stopLoadingGroupEntries(): boolean {
  * @returns An entry.
  */
 export async function getEntry(pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> {
-    const loadedEntry = await Entry.findOne({ packageId: pkg.ns, groupId, bid: entryId }).lean().exec();
-    if (!loadedEntry) return null;
+    if (isDev) { return getEntryDev(pkg, groupId, entryId, lang); }
+    else { return getEntryProd(pkg, groupId, entryId, lang); }
+}
+
+async function getEntryDev(pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> {
+    const entry = await Entry.findOne({ packageId: pkg.ns, groupId, bid: entryId }).lean().exec();
+    if (!entry) return null;
 
     if (pkg.groups.find(c => c.ns === groupId)?.isMap) {
-        return getMap(pkg, loadedEntry, lang);
+        return getMap(pkg, entry, lang);
     }
 
-    if (isDev) {
-        const key = getEntryCacheKey(pkg.ns, groupId, entryId, ViewType.view);
-        if ((entryCache[key] ?? "").length === 0 || isDev) {
-            entryCache[key] = [
-                await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry: loadedEntry, lang }),
-                await (await getScript(pkg.ns, groupId))({ entry: loadedEntry, lang }),
-                await getStyle(pkg.ns, groupId, ViewType.view, { entry: loadedEntry, lang })
-            ];
-        }
-        const [entryLayout, entryScript, entryStyle] = entryCache[key] ?? ["", "", ""];
-
-        return {
-            packageId: loadedEntry.packageId,
-            groupId: loadedEntry.groupId,
-            bid: loadedEntry.bid,
-            layout: entryLayout,
-            style: entryStyle,
-            script: entryScript
-        } as IEntryMetadata;
+    const key = getEntryCacheKey(pkg.ns, groupId, entryId, ViewType.view);
+    if ((entryCache[key] ?? "").length === 0 || isDev) {
+        entryCache[key] = [
+            await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry, lang }),
+            await (await getScript(pkg.ns, groupId))({ entry, lang }),
+            await getStyle(pkg.ns, groupId, ViewType.view, { entry, lang })
+        ];
     }
-    else {
+    const [entryLayout, entryScript, entryStyle] = entryCache[key] ?? ["", "", ""];
+
+    return {
+        packageId: entry.packageId,
+        groupId: entry.groupId,
+        bid: entry.bid,
+        layout: entryLayout,
+        script: entryScript,
+        style: entryStyle
+    } as IEntryMetadata;
+}
+
+async function getEntryProd(pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata> {
+    const key = getEntryCacheKey(pkg.ns, groupId, entryId, ViewType.view);
+
+    if ((entryCache[key] ?? "").length === 0) {
         const entry = await Layout.findOne({
             packageId: pkg.ns, groupId: groupId, bid: entryId, viewType: ViewType.view
         }).lean().exec();
-        return {
-            packageId: pkg.ns,
-            groupId: groupId,
-            bid: entryId,
-            layout: entry?.values[lang]?.layout ?? "",
-            style: entry?.values[lang]?.style ?? "",
-            script: entry?.values[lang]?.script ?? "",
-        } as IEntryMetadata;
+        entryCache[key] = [
+            entry?.values[lang]?.layout ?? "",
+            entry?.values[lang]?.script ?? "",
+            entry?.values[lang]?.style ?? ""
+        ];
     }
+
+    const [entryLayout, entryScript, entryStyle] = entryCache[key]!;
+
+    return {
+        packageId: pkg.ns,
+        groupId: groupId,
+        bid: entryId,
+        layout: entryLayout,
+        script: entryScript,
+        style: entryStyle
+    } as IEntryMetadata;
 }
 
 async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Code): Promise<IMap> {

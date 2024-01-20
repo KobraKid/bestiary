@@ -7,7 +7,7 @@ import Entry, { IEntrySchema } from "../model/Entry";
 import { IGroupMetadata } from "../model/Group";
 import Package, { IPackageMetadata } from "../model/Package";
 import Resource, { IResource } from "../model/Resource";
-import { ViewType, getLayout, getScript, getStyle } from "./database";
+import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
 import { isDev, paths } from "./electron";
 import Layout, { ILayout } from "../model/Layout";
 
@@ -179,10 +179,12 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
     if (pkg) {
         const outDir = path.join(paths.temp, "output", pkg.ns);
         await mkdir(outDir, { recursive: true });
+
         // Loop over groups
         for (const group of pkg.groups) {
             console.log("Building group", group.ns);
             const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }).lean().exec();
+
             // Loop over entries
             for (const entry of entries) {
                 const previewLayout: ILayout = {
@@ -190,6 +192,7 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
                     groupId: group.ns,
                     bid: entry.bid,
                     viewType: ViewType.preview,
+                    sortValues: {},
                     values: {}
                 };
                 const viewLayout: ILayout = {
@@ -197,8 +200,11 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
                     groupId: group.ns,
                     bid: entry.bid,
                     viewType: ViewType.view,
+                    sortValues: {},
                     values: {}
                 };
+                const precomputedSortValues: { [key: string]: string } = {};
+
                 // Loop over languages
                 for (const lang of pkg.langs) {
                     const script = await (await getScript(pkg.ns, group.ns))({ entry, lang });
@@ -219,8 +225,28 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
                         script: `<script>${script}${Object.values(viewScripts).join("")}</script>`
                     };
                 }
-                await Layout.findOneAndUpdate({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid, viewType: ViewType.preview }, previewLayout, { upsert: true });
-                await Layout.findOneAndUpdate({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid, viewType: ViewType.view }, viewLayout, { upsert: true });
+
+                // Loop over sort settings
+                for (const sortSetting of group.sortSettings) {
+                    precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
+                }
+                precomputedSortValues["None"] = entry.bid;
+                previewLayout.sortValues = precomputedSortValues;
+                viewLayout.sortValues = precomputedSortValues;
+
+                // Save precomputed layout
+                await Layout.findOneAndUpdate({
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.preview
+                }, previewLayout, { upsert: true });
+                await Layout.findOneAndUpdate({
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.view
+                }, viewLayout, { upsert: true });
             }
         }
         console.log("Publishing", pkg.name, "complete!");

@@ -50,6 +50,7 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
             return; // no replacement
         }
     });
+    const style = parse(entry.style ?? "");
 
     return (
         <div className={group ? "preview" : "details"} ref={entryRef}>
@@ -61,7 +62,7 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
                 </div>
             }
             <div onClick={onClick}>{layout}</div>
-            {entry.style && parse(entry.style)}
+            {style}
         </div>
     );
 };
