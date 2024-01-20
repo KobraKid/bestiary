@@ -115,7 +115,7 @@ async function __eachHelper(context: object, options: HelperOptions): Promise<st
 async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const lang = getDataFromOptions<ISO639Code>(options, "lang");
-    const scripts = getDataFromOptions<{ [key: string]: string }>(options, "scripts");
+    const scripts = getDataFromOptions<{ [key: string]: string }>(options, "scripts") || {};
     const attrPath = options.hash["path"] ?? "";
     const linkedEntry = await getAttribute(context || entry, attrPath) as IEntrySchema;
 
