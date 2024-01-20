@@ -1,15 +1,15 @@
 import chalk from "chalk";
 import { BrowserWindow } from "electron";
 import { readFileSync } from "fs";
-import fs, { mkdir, readFile, writeFile } from "fs/promises";
+import fs, { mkdir, readFile } from "fs/promises";
 import path from "path";
 import Entry, { IEntrySchema } from "../model/Entry";
 import { IGroupMetadata } from "../model/Group";
 import Package, { IPackageMetadata } from "../model/Package";
 import Resource, { IResource } from "../model/Resource";
-import { ViewType, getLayout, getStyle } from "./database";
+import { ViewType, getLayout, getScript, getStyle } from "./database";
 import { isDev, paths } from "./electron";
-// import Layout, { ILayout } from "../model/Layout";
+import Layout, { ILayout } from "../model/Layout";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
@@ -185,24 +185,45 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
             const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }).lean().exec();
             // Loop over entries
             for (const entry of entries) {
-                // const layout: ILayout = { bid: entry.bid, packageId: pkg.ns, values: {} };
+                const previewLayout: ILayout = {
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.preview,
+                    values: {}
+                };
+                const viewLayout: ILayout = {
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.view,
+                    values: {}
+                };
                 // Loop over languages
                 for (const lang of pkg.langs) {
-                    const layoutPreview = await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang });
-                    const stylePreview = await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang });
-                    const layoutView = await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang });
-                    const styleView = await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang });
+                    const script = await (await getScript(pkg.ns, group.ns))({ entry, lang });
 
-                    const preview = layoutPreview + stylePreview;
-                    const view = layoutView + styleView;
+                    // Preview
+                    const previewScripts: { [key: string]: string } = {};
+                    previewLayout.values[lang] = {
+                        layout: await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang, scripts: previewScripts }),
+                        style: await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang }),
+                        script: `<script>${script}${Object.values(previewScripts).join("")}</script>`
+                    };
 
-                    writeFile(path.join(outDir, `${entry.bid}_${lang}_preview.html`), preview, { flag: "w" });
-                    writeFile(path.join(outDir, `${entry.bid}_${lang}_view.html`), view, { flag: "w" });
-                    // layout.values[lang] = { preview, view };
+                    // View
+                    const viewScripts: { [key: string]: string } = {};
+                    viewLayout.values[lang] = {
+                        layout: await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang, scripts: viewScripts }),
+                        style: await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang }),
+                        script: `<script>${script}${Object.values(viewScripts).join("")}</script>`
+                    };
                 }
-                // Layout.findOneAndUpdate({ packageId: pkg.ns, bid: entry.bid }, layout, { upsert: true, new: true });
+                await Layout.findOneAndUpdate({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid, viewType: ViewType.preview }, previewLayout, { upsert: true });
+                await Layout.findOneAndUpdate({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid, viewType: ViewType.view }, viewLayout, { upsert: true });
             }
         }
+        console.log("Publishing", pkg.name, "complete!");
     }
     else if (isDev) {
         console.log("Select a package first!");

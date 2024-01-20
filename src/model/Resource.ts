@@ -27,7 +27,7 @@ const ResourceSchema = new Schema<IResourceSchema>({
     resId: { type: String, required: true },
     packageId: { type: String, required: true },
     values: { type: Object, required: true }
-}, { collection: "resources" });
+}, { collection: "resources", strict: "throw" });
 ResourceSchema.index({ packageId: 1, resId: 1 }, { name: "resource_link" });
 
 export default mongoose.model<IResourceSchema>("Resource", ResourceSchema);

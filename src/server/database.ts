@@ -13,7 +13,7 @@ import Resource, { IResource } from "../model/Resource";
 import { createOrLoadGroupConfig } from "./group";
 import { pathToFileURL } from "url";
 
-type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code };
+type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code, scripts?: { [key: string]: string } };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
 
 const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema, lang: ISO639Code }> } = {};

@@ -75,7 +75,7 @@ export const Collection: React.FC<CollectionProps> = (props: CollectionProps) =>
     else {
         return <NumberCollection {...props} />;
     }
-}
+};
 
 const BooleanCollection: React.FC<CollectionProps> = (props: CollectionProps) => {
     const { id, name, backgroundColor, color, buckets, entry, group } = props;
@@ -110,7 +110,7 @@ const BooleanCollection: React.FC<CollectionProps> = (props: CollectionProps) =>
 };
 
 const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => {
-    const { id, name, backgroundColor, color, buckets, min, max, entry, group } = props;
+    const { name, backgroundColor, color, buckets, min, max, entry } = props;
 
     const [value, setValue] = useState<number>(parseInt(Object.keys(buckets ?? {}).find(key => buckets![key]?.includes(entry?.bid ?? "")) ?? "0", 10));
 
@@ -130,4 +130,4 @@ const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => 
             }} />
         </div>
     );
-}
+};

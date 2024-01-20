@@ -5,7 +5,7 @@ import { hb, paths } from "./electron";
 import { IEntrySchema } from "../model/Entry";
 import { ISO639Code } from "../model/Package";
 import Resource from "../model/Resource";
-import { ViewType, getAttribute, getLayout, getStyle } from "./database";
+import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
 
 function getDataFromOptions<T>(options: HelperOptions, data: string): T {
     return options.data.root[data];
@@ -115,14 +115,21 @@ async function __eachHelper(context: object, options: HelperOptions): Promise<st
 async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const lang = getDataFromOptions<ISO639Code>(options, "lang");
+    const scripts = getDataFromOptions<{ [key: string]: string }>(options, "scripts");
     const attrPath = options.hash["path"] ?? "";
     const linkedEntry = await getAttribute(context || entry, attrPath) as IEntrySchema;
 
     if (linkedEntry && linkedEntry.packageId != null && linkedEntry.groupId != null) {
         const layout = await (await getLayout(linkedEntry.packageId, linkedEntry.groupId, ViewType.preview))({ entry: linkedEntry, lang });
         const style = await getStyle(linkedEntry.packageId, linkedEntry.groupId, ViewType.preview, { entry: linkedEntry, lang });
-        // const script = await (await getScript(linkedEntry.packageId, linkedEntry.groupId))({ entry: linkedEntry, lang });
-        return new hb.SafeString(layout + style /* + `<script>${script}</script>` */);
+
+        const scriptKey = `${linkedEntry.packageId}${linkedEntry.groupId}.${ViewType.preview}`;
+        if (!scripts[scriptKey]) {
+            const script = await (await getScript(linkedEntry.packageId, linkedEntry.groupId))({ entry: linkedEntry, lang });
+            scripts[scriptKey] = script;
+        }
+
+        return new hb.SafeString(layout + style);
     }
     else {
         console.debug(linkedEntry);
