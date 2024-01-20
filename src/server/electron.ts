@@ -5,7 +5,7 @@ import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
 import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries, clearEntryCache, clearLayoutCache } from "./database";
-import { onImport } from "./importer";
+import { onImport, publishPackage } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
@@ -27,6 +27,7 @@ ${isDev ? "📦 " : ""}Package directory: ${paths.data}
 ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 `));
 const config = new Config();
+let currentPkg: IPackageMetadata | null = null;
 //#endregion
 
 //#region Message handling
@@ -35,6 +36,7 @@ const config = new Config();
 ipcMain.handle("pkg:load-pkgs", getPackageList);
 
 ipcMain.handle("pkg:load-group", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> => {
+    currentPkg = pkg;
     return getGroup(event, pkg, group);
 });
 
@@ -144,6 +146,11 @@ function createMenu(): void {
                     }
                 }
             },
+            {
+                label: "Publish",
+                accelerator: "CmdOrCtrl+P",
+                click: () => publishPackage(currentPkg)
+            }
         ]
     } : { type: "separator" };
     const menu = Menu.buildFromTemplate([
