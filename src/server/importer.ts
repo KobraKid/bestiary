@@ -57,7 +57,7 @@ async function importJson(
                 updateClient(`Importing entry <${entry.bid}> from group <${groupId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
 
                 if (i === 1) { entry = await buildLinks(pkg, entry); } // only attempt to parse links after the initial load
-                
+
                 await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
                     ...entry,
                     packageId: pkg.ns,
@@ -74,36 +74,47 @@ async function importJson(
     let currentResource = 0;
     currentCompletion++;
     for (const resource of resources) {
-        if (resource.resId === null || resource.resId === undefined) { continue; }
+        if (resource.resId === null || resource.resId === undefined || resource.resId.length === 0) { continue; }
         updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
 
-        if ("type" in resource) {
-            switch (resource["type"]) {
-                case "image":
-                    if ("basePath" in resource) {
-                        const basePath = resource["basePath"];
+        try {
+            if ("type" in resource) {
+                switch (resource["type"]) {
+                    case "image":
+                        if ("basePath" in resource) {
+                            const basePath = resource["basePath"];
 
-                        // Language-independent resource
-                        if (existsSync(path.join(paths.data, pkg.ns, "images", basePath as string))) {
-                            const img = await readFile(path.join(paths.data, pkg.ns, "images", basePath as string));
-                            resource["value"] = img.toString("base64");
-                        }
-
-                        // Localized resource
-                        else {
-                            resource["values"] = {};
-                            for (const lang of pkg.langs) {
-                                const img = await readFile(path.join(paths.data, pkg.ns, "images", lang, basePath as string));
-                                resource["values"][lang] = img.toString("base64");
+                            // Language-independent resource
+                            if (existsSync(path.join(paths.data, pkg.ns, "images", basePath as string))) {
+                                const img = await readFile(path.join(paths.data, pkg.ns, "images", basePath as string));
+                                resource["value"] = img.toString("base64");
                             }
-                        }
 
-                        delete resource["type"];
-                        delete resource["basePath"];
-                    }
-                    break;
+                            // Localized resource
+                            else {
+                                resource["values"] = {};
+                                for (const lang of pkg.langs) {
+                                    if (existsSync(path.join(paths.data, pkg.ns, "images", lang, basePath as string))) {
+                                        const img = await readFile(path.join(paths.data, pkg.ns, "images", lang, basePath as string));
+                                        resource["values"][lang] = img.toString("base64");
+                                    }
+                                    else {
+                                        console.log(chalk.yellowBright(`Resource ${resource.resId} not found for [${lang}]`));
+                                        resource["values"][lang] = ""; // this resource doesn't exist for the current language
+                                    }
+                                }
+                            }
+
+                            delete resource["type"];
+                            delete resource["basePath"];
+                        }
+                        break;
+                }
             }
+        } catch (error) {
+            console.log(error);
         }
+
         await Resource.findOneAndUpdate({ packageId: pkg.ns, resId: resource.resId }, {
             ...resource,
             packageId: pkg.ns
