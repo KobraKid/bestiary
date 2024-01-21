@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { BrowserWindow } from "electron";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import fs, { mkdir, readFile } from "fs/promises";
 import path from "path";
 import Entry, { IEntrySchema } from "../model/Entry";
@@ -42,29 +42,32 @@ async function importJson(
     updateClient("Importing package", 0, currentCompletion / totalCompletion);
     const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
 
-    for (const group of groups) {
-        const groupId = group.ns;
-        const groupEntries = group.entries ?? [];
-        const groupImages = group.images ?? [];
+    for (let i = 0; i < 2; i++) { // import entries twice to parse links
+        for (const group of groups) {
+            const groupId = group.ns;
+            const groupEntries = group.entries ?? [];
+            const groupImages = group.images ?? [];
 
-        const entryCount = Math.max(groupEntries.length, 1);
-        let currentEntry = 0;
-        currentCompletion++;
+            const entryCount = Math.max(groupEntries.length, 1);
+            let currentEntry = 0;
+            currentCompletion += 0.5; // account for the second pass
 
-        for (let entry of groupEntries) {
-            if (entry.bid === null || entry.bid === undefined) { continue; }
-            updateClient(`Importing entry <${entry.bid}> from group <${groupId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
+            for (let entry of groupEntries) {
+                if (entry.bid === null || entry.bid === undefined) { continue; }
+                updateClient(`Importing entry <${entry.bid}> from group <${groupId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
 
-            entry = await buildLinks(pkg, entry);
-            await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
-                ...entry,
-                packageId: pkg.ns,
-                groupId: groupId
-            }, { upsert: true, new: true });
-        }
+                if (i === 1) { entry = await buildLinks(pkg, entry); } // only attempt to parse links after the initial load
+                
+                await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
+                    ...entry,
+                    packageId: pkg.ns,
+                    groupId: groupId
+                }, { upsert: true, new: true });
+            }
 
-        for (const img of groupImages) {
-            images.push({ url: img.url, group: groupId, name: img.name });
+            for (const img of groupImages) {
+                images.push({ url: img.url, group: groupId, name: img.name });
+            }
         }
     }
 
@@ -73,16 +76,26 @@ async function importJson(
     for (const resource of resources) {
         if (resource.resId === null || resource.resId === undefined) { continue; }
         updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
+
         if ("type" in resource) {
             switch (resource["type"]) {
                 case "image":
                     if ("basePath" in resource) {
                         const basePath = resource["basePath"];
 
-                        resource["values"] = {};
-                        for (const lang of pkg.langs) {
-                            const img = await readFile(path.join(paths.data, pkg.ns, "images", lang, basePath as string));
-                            resource["values"][lang] = img.toString("base64");
+                        // Language-independent resource
+                        if (existsSync(path.join(paths.data, pkg.ns, "images", basePath as string))) {
+                            const img = await readFile(path.join(paths.data, pkg.ns, "images", basePath as string));
+                            resource["value"] = img.toString("base64");
+                        }
+
+                        // Localized resource
+                        else {
+                            resource["values"] = {};
+                            for (const lang of pkg.langs) {
+                                const img = await readFile(path.join(paths.data, pkg.ns, "images", lang, basePath as string));
+                                resource["values"][lang] = img.toString("base64");
+                            }
                         }
 
                         delete resource["type"];

@@ -335,7 +335,7 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
     }
     return {
         ...map,
-        name: name.values[lang] ?? "",
+        name: name.value ?? name.values![lang] ?? "",
         image: path.join(paths.data, pkg.ns, "images", map.image),
         landmarks
     };

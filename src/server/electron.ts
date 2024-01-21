@@ -217,7 +217,7 @@ app.whenReady().then(async () => {
     protocol.handle("bestiary", async request => {
         const { host, pathname } = new URL(request.url);
         const imgResource = await Resource.findOne({ packageId: host, resId: pathname.slice(1) }).lean().exec();
-        return fetch("data:image/jpeg;base64," + (imgResource?.values["en"] ?? ""));
+        return fetch("data:image/jpeg;base64," + (imgResource?.value ?? imgResource?.values!["en"] ?? ""));
     });
     createMenu();
     createWindow();

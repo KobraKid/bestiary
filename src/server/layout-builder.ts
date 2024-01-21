@@ -206,7 +206,7 @@ async function __stringHelper(context: object, options: HelperOptions): Promise<
     }
 
     const resource = await Resource.findOne({ packageId: entry.packageId, resId }).lean().exec();
-    return new hb.SafeString(escapeString(resource?.values[lang] ?? ""));
+    return new hb.SafeString(escapeString(resource?.value ?? resource?.values![lang] ?? ""));
 }
 
 function __pathHelper(context: string, options: HelperOptions): string | SafeString {

@@ -16,9 +16,13 @@ export interface IResource {
     /**
      * The resource values for each supported language
      */
-    values: {
+    values?: {
         [lang in ISO639Code]?: string
-    }
+    },
+    /**
+     * The resource value if it is the same across all languages
+     */
+    value?: string
 }
 
 export interface IResourceSchema extends IResource, Document { }
@@ -26,7 +30,8 @@ export interface IResourceSchema extends IResource, Document { }
 const ResourceSchema = new Schema<IResourceSchema>({
     resId: { type: String, required: true },
     packageId: { type: String, required: true },
-    values: { type: Object, required: true }
+    values: { type: Object, required: false },
+    value: { type: String, required: false }
 }, { collection: "resources", strict: "throw" });
 ResourceSchema.index({ packageId: 1, resId: 1 }, { name: "resource_link" });
 
