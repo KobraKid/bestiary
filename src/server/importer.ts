@@ -99,7 +99,7 @@ async function importJson(
                                         resource["values"][lang] = img.toString("base64");
                                     }
                                     else {
-                                        console.log(chalk.yellowBright(`Resource ${resource.resId} not found for [${lang}]`));
+                                        console.log(chalk.yellowBright(`Resource ${resource.resId} not found for [${lang}]. Check paths\n${path.join(paths.data, pkg.ns, "images", basePath as string)}\n${path.join(paths.data, pkg.ns, "images", lang, basePath as string)}`));
                                         resource["values"][lang] = ""; // this resource doesn't exist for the current language
                                     }
                                 }
@@ -196,7 +196,11 @@ function isLink(property: object): boolean {
 
 async function getLink(pkg: IPackageMetadata, attribute: object): Promise<IEntrySchema | null> {
     const property = attribute as { "group": string, "id": string };
-    return await Entry.findOne({ packageId: pkg.ns, groupId: property["group"], bid: property["id"] }).exec();
+    const linkedEntry = await Entry.findOne({ packageId: pkg.ns, groupId: property["group"], bid: property["id"] }).exec();
+    if (!linkedEntry) {
+        console.log(`Couldn't create link to ${property["group"]}.${property["id"]}`);
+    }
+    return linkedEntry;
 }
 
 export async function publishPackage(pkg: IPackageMetadata | null): Promise<void> {

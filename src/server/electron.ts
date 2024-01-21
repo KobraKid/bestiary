@@ -27,93 +27,149 @@ ${isDev ? "📦 " : ""}Package directory: ${paths.data}
 ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 `));
 const config = new Config();
+let window: BrowserWindow | null = null;
 let currentPkg: IPackageMetadata | null = null;
 //#endregion
 
-//#region Message handling
-
-//#region Package API
-ipcMain.handle("pkg:load-pkgs", getPackageList);
-
-ipcMain.handle("pkg:load-group", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> => {
-    currentPkg = pkg;
-    return getGroup(event, pkg, group);
-});
-
-ipcMain.on("pkg:load-group-entries", (
-    event: IpcMainInvokeEvent,
-    pkg: IPackageMetadata,
-    group: IGroupMetadata,
-    lang: ISO639Code,
-    sortBy?: ISortSettings,
-    groupBy?: IGroupSettings): Promise<void> =>
-    getGroupEntries({ event, pkg, group, lang, sortBy, groupBy }));
-
-ipcMain.on("pkg:prev-page", (
-    event: IpcMainInvokeEvent,
-    pkg: IPackageMetadata,
-    group: IGroupMetadata,
-    lang: ISO639Code,
-    sortBy?: ISortSettings,
-    groupBy?: IGroupSettings) => prevPage({ event, pkg, group, lang, sortBy, groupBy }));
-ipcMain.on("pkg:next-page", (
-    event: IpcMainInvokeEvent,
-    pkg: IPackageMetadata,
-    group: IGroupMetadata,
-    lang: ISO639Code,
-    sortBy?: ISortSettings,
-    groupBy?: IGroupSettings) => nextPage({ event, pkg, group, lang, sortBy, groupBy }));
-
-ipcMain.handle("pkg:stop-loading-group", stopLoadingGroupEntries);
-
-ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
-    return getEntry(pkg, groupId, entryId, lang);
-});
-//#endregion
-
-//#region Config API
-ipcMain.on("config:save-app-config", config.updateConfig.bind(config));
-
-ipcMain.on("config:save-pkg-config", savePkgConfig);
-
-ipcMain.on("config:update-group-config", updateGroupConfig);
-
-ipcMain.on("config:update-entry-collected-status", updateCollectedStatusForEntry);
-//#endregion
-
-//#region Context Menu API
-ipcMain.on("context-menu:show-group-menu", (event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata) => {
-    const menu = Menu.buildFromTemplate([
-        {
-            label: group.name,
-            enabled: false
-        },
-        {
-            label: `Manage ${group.name}`,
-            click: () => loadGroupConfig(event, pkg, group)
-        }
-    ]);
-    const sender = BrowserWindow.fromWebContents(event.sender);
-    if (sender) {
-        menu.popup({ window: sender });
+/**
+ * The main entry point into the app
+ */
+function main() {
+    if (!app.requestSingleInstanceLock()) {
+        app.quit();
     }
-});
-//#endregion
+    else {
 
-//#region Logging API
-ipcMain.handle("write", (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
+        //#region Message handling
 
-ipcMain.handle("write-error", (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
-//#endregion
+        //#region Package API
+        ipcMain.handle("pkg:load-pkgs", getPackageList);
 
-//#region Misc. API
-ipcMain.handle("eval-formula", (_event: IpcMainInvokeEvent, expression: string, scope?: object): unknown => {
-    return new Formula(expression).evaluate(scope || {});
-});
-//#endregion
+        ipcMain.handle("pkg:load-group", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> => {
+            currentPkg = pkg;
+            return getGroup(event, pkg, group);
+        });
 
-//#endregion
+        ipcMain.on("pkg:load-group-entries", (
+            event: IpcMainInvokeEvent,
+            pkg: IPackageMetadata,
+            group: IGroupMetadata,
+            lang: ISO639Code,
+            sortBy?: ISortSettings,
+            groupBy?: IGroupSettings): Promise<void> =>
+            getGroupEntries({ event, pkg, group, lang, sortBy, groupBy }));
 
+        ipcMain.on("pkg:prev-page", (
+            event: IpcMainInvokeEvent,
+            pkg: IPackageMetadata,
+            group: IGroupMetadata,
+            lang: ISO639Code,
+            sortBy?: ISortSettings,
+            groupBy?: IGroupSettings) => prevPage({ event, pkg, group, lang, sortBy, groupBy }));
+        ipcMain.on("pkg:next-page", (
+            event: IpcMainInvokeEvent,
+            pkg: IPackageMetadata,
+            group: IGroupMetadata,
+            lang: ISO639Code,
+            sortBy?: ISortSettings,
+            groupBy?: IGroupSettings) => nextPage({ event, pkg, group, lang, sortBy, groupBy }));
+
+        ipcMain.handle("pkg:stop-loading-group", stopLoadingGroupEntries);
+
+        ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
+            return getEntry(pkg, groupId, entryId, lang);
+        });
+        //#endregion
+
+        //#region Config API
+        ipcMain.on("config:save-app-config", config.updateConfig.bind(config));
+
+        ipcMain.on("config:save-pkg-config", savePkgConfig);
+
+        ipcMain.on("config:update-group-config", updateGroupConfig);
+
+        ipcMain.on("config:update-entry-collected-status", updateCollectedStatusForEntry);
+        //#endregion
+
+        //#region Context Menu API
+        ipcMain.on("context-menu:show-group-menu", (event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata) => {
+            const menu = Menu.buildFromTemplate([
+                {
+                    label: group.name,
+                    enabled: false
+                },
+                {
+                    label: `Manage ${group.name}`,
+                    click: () => loadGroupConfig(event, pkg, group)
+                }
+            ]);
+            const sender = BrowserWindow.fromWebContents(event.sender);
+            if (sender) {
+                menu.popup({ window: sender });
+            }
+        });
+        //#endregion
+
+        //#region Logging API
+        ipcMain.handle("write", (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.magenta.bgGrey(...message)));
+
+        ipcMain.handle("write-error", (_event: IpcMainInvokeEvent, ...message: string[]): void => console.log(chalk.red.bgWhiteBright(...message)));
+        //#endregion
+
+        //#region Misc. API
+        ipcMain.handle("eval-formula", (_event: IpcMainInvokeEvent, expression: string, scope?: object): unknown => {
+            return new Formula(expression).evaluate(scope || {});
+        });
+        //#endregion
+
+        //#endregion
+
+        //#region Event handling
+
+        /**
+         * Focus window when user tries to launch second instance
+         */
+        app.on("second-instance", () => {
+            if (window) {
+                if (window.isMinimized()) {
+                    window.restore();
+                }
+                window.focus();
+            }
+        });
+
+        /**
+         * Teardown when exiting app
+         */
+        app.on("window-all-closed", async () => {
+            if (process.platform !== "darwin") {
+                await disconnect();
+                app.quit();
+            }
+        });
+
+        //#endregion
+
+        protocol.registerSchemesAsPrivileged([
+            { scheme: "bestiary", privileges: { standard: true, secure: true, supportFetchAPI: true } }
+        ]);
+
+        /**
+         * Create the main window
+         */
+        app.whenReady().then(async () => {
+            await config.initialiazeConfig();
+            protocol.handle("bestiary", async request => {
+                const { host, pathname } = new URL(request.url);
+                const imgResource = await Resource.findOne({ packageId: host, resId: pathname.slice(1) }).lean().exec();
+                return fetch("data:image/jpeg;base64," + (imgResource?.value ?? imgResource?.values!["en"] ?? ""));
+            });
+            createMenu();
+            window = createWindow();
+        });
+    }
+
+}
 /**
  * Creates the app menu
  */
@@ -178,11 +234,11 @@ function createMenu(): void {
 /**
  * Creates the main app window
  */
-function createWindow(): void {
+function createWindow(): BrowserWindow {
     const win = new BrowserWindow({
         width: 1280,
         height: 720,
-        title: isDev ? `Bestiary | DEVELOPMENT | ${process.env.npm_package_version}` : "Bestiary",
+        title: isDev ? `Bestiary | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}/${app.getSystemLocale()}` : "Bestiary",
         darkTheme: true,
         autoHideMenuBar: !isDev,
         frame: true, // isDev,
@@ -205,30 +261,8 @@ function createWindow(): void {
         savePkgConfig();
         config.saveConfig();
     });
+
+    return win;
 }
 
-protocol.registerSchemesAsPrivileged([{ scheme: "bestiary", privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
-
-/**
- * Create the main window
- */
-app.whenReady().then(async () => {
-    await config.initialiazeConfig();
-    protocol.handle("bestiary", async request => {
-        const { host, pathname } = new URL(request.url);
-        const imgResource = await Resource.findOne({ packageId: host, resId: pathname.slice(1) }).lean().exec();
-        return fetch("data:image/jpeg;base64," + (imgResource?.value ?? imgResource?.values!["en"] ?? ""));
-    });
-    createMenu();
-    createWindow();
-});
-
-/**
- * Teardown when exiting
- */
-app.on("window-all-closed", async () => {
-    if (process.platform !== "darwin") {
-        await disconnect();
-        app.quit();
-    }
-});
+main();
