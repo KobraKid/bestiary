@@ -100,7 +100,7 @@ async function importJson(
                                     }
                                     else {
                                         console.log(chalk.yellowBright(`Resource ${resource.resId} not found for [${lang}]. Check paths\n${path.join(paths.data, pkg.ns, "images", basePath as string)}\n${path.join(paths.data, pkg.ns, "images", lang, basePath as string)}`));
-                                        resource["values"][lang] = ""; // this resource doesn't exist for the current language
+                                        // resource["values"][lang] = ""; // this resource doesn't exist for the current language
                                     }
                                 }
                             }

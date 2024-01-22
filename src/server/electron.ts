@@ -4,7 +4,7 @@ import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
-import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries, clearEntryCache, clearLayoutCache } from "./database";
+import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries, clearEntryCache, clearLayoutCache, getResource } from "./database";
 import { onImport, publishPackage } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
@@ -13,7 +13,6 @@ import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
 import { Config } from "./config";
-import Resource from "../model/Resource";
 
 //#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
@@ -161,8 +160,7 @@ function main() {
             await config.initialiazeConfig();
             protocol.handle("bestiary", async request => {
                 const { host, pathname } = new URL(request.url);
-                const imgResource = await Resource.findOne({ packageId: host, resId: pathname.slice(1) }).lean().exec();
-                return fetch("data:image/jpeg;base64," + (imgResource?.value ?? imgResource?.values!["en"] ?? ""));
+                return fetch("data:image/jpeg;base64," + await getResource(host, pathname.slice(1), ISO639Code.English));
             });
             createMenu();
             window = createWindow();

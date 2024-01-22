@@ -9,7 +9,7 @@ import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { ILandmark, IMap } from "../model/Map";
-import Resource, { IResource } from "../model/Resource";
+import Resource from "../model/Resource";
 import { createOrLoadGroupConfig } from "./group";
 import { pathToFileURL } from "url";
 import Layout from "../model/Layout";
@@ -319,7 +319,7 @@ async function getEntryProd(pkg: IPackageMetadata, groupId: string, entryId: str
 
 async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Code): Promise<IMap> {
     const map = entry as Omit<IEntryMetadata, "layout" | "style" | "script" | "groupSettings" | "sortSettings"> as IMap;
-    const name = await Resource.findOne({ packageId: pkg.ns, resId: map.name }).lean().exec() as IResource;
+    const name = await getResource(pkg.ns, map.name, lang);
     const landmarks: ILandmark[] = [];
     for (const landmark of map.landmarks) {
         const link = landmark.link?.split(".");
@@ -335,7 +335,7 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
     }
     return {
         ...map,
-        name: name.value ?? name.values![lang] ?? "",
+        name: name,
         image: path.join(paths.data, pkg.ns, "images", map.image),
         landmarks
     };
@@ -439,6 +439,16 @@ export function clearLayoutCache() {
     for (const key in layoutCache) {
         delete layoutCache[key];
     }
+}
+
+export async function getResource(pkgId: string, resId: string, lang: ISO639Code): Promise<string> {
+    const resource = await Resource.findOne({ packageId: pkgId, resId: resId }).lean().exec();
+    if (resource?.value !== undefined) {
+        return resource.value;
+    } else if (resource?.values !== undefined) {
+        return resource.values[lang] ?? resource.values[(Object.keys(resource.values).at(0) ?? ISO639Code.English) as ISO639Code] ?? "";
+    }
+    return "";
 }
 
 /**

@@ -4,8 +4,7 @@ import { SafeString } from "handlebars";
 import { hb, paths } from "./electron";
 import { IEntrySchema } from "../model/Entry";
 import { ISO639Code } from "../model/Package";
-import Resource from "../model/Resource";
-import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
+import { ViewType, getAttribute, getLayout, getResource, getScript, getStyle } from "./database";
 
 function getDataFromOptions<T>(options: HelperOptions, data: string): T {
     return options.data.root[data];
@@ -205,8 +204,8 @@ async function __stringHelper(context: object, options: HelperOptions): Promise<
         resId = await getAttribute(context || entry, attributePath) as string;
     }
 
-    const resource = await Resource.findOne({ packageId: entry.packageId, resId }).lean().exec();
-    return new hb.SafeString(escapeString(resource?.value ?? resource?.values![lang] ?? ""));
+    const resource = await getResource(entry.packageId, resId, lang);
+    return new hb.SafeString(escapeString(resource));
 }
 
 function __pathHelper(context: string, options: HelperOptions): string | SafeString {
