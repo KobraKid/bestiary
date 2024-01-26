@@ -161,9 +161,11 @@ export function updateCollectedStatusForEntry(event: IpcMainEvent, updatedGroup:
         }
 
         if (bucketToRemoveFrom !== "") {
+            console.log(`Removing ${collection.name} ${entryId} from ${bucketToRemoveFrom}`);
             collection.buckets[bucketToRemoveFrom]?.splice(collection.buckets[bucketToRemoveFrom]!.indexOf(entryId), 1);
         }
         if (bucketToAddTo !== "") {
+            console.log(`Adding ${collection.name} ${entryId} to ${bucketToAddTo}`);
             collection.buckets[bucketToAddTo]?.push(entryId);
         }
 

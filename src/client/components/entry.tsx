@@ -100,8 +100,11 @@ const BooleanCollection: React.FC<CollectionProps> = (props: CollectionProps) =>
         };
 
     return (
-        <div className="collection-tab collection-tab-checkbox" style={style}>
-            <input className="collection-checkbox" type="checkbox" checked={checked} onChange={e => {
+        <div className="collection-tab collection-tab-checkbox" style={style} onClick={() => {
+            setChecked(checked => !checked);
+            onUpdateCollectedStatus();
+        }}>
+            <input className="collection-checkbox" type="checkbox" checked={checked} onClick={e => e.stopPropagation()} onChange={e => {
                 setChecked(e.target.checked);
                 onUpdateCollectedStatus();
             }} />
@@ -116,7 +119,7 @@ const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => 
     const [value, setValue] = useState<number>(parseInt(Object.keys(buckets ?? {}).find(key => buckets![key]?.includes(entry?.bid ?? "")) ?? "0", 10));
 
     const style: Partial<React.CSSProperties> = {
-        backgroundColor: backgroundColor,
+        backgroundColor: `${backgroundColor}${"FF"}`,
         color: color
     };
 
