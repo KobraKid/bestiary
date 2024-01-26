@@ -65,7 +65,7 @@ export async function setup(server: string, username: string, password: string):
     const connectionState = mongoose.connection.readyState;
     if (connectionState === mongoose.ConnectionStates.disconnected || connectionState === mongoose.ConnectionStates.uninitialized) {
         const encodedServerUrl = server.replace("<username>", username).replace("<password>", password);
-        await mongoose.connect(encodedServerUrl);
+        await mongoose.connect(encodedServerUrl, { dbName: "bestiary" });
     }
     else {
         await disconnect();
