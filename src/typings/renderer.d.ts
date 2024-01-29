@@ -24,7 +24,7 @@ export interface IConfigAPI {
     savePkgConfig: () => Promise<void>,
     updateGroupConfig: (pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig) => Promise<void>,
     onUpdateGroupConfig: (callback: (config: IGroupConfig) => void) => void,
-    updateEntryCollectedStatus: (group: IGroupMetadata, groupId: number, entryId: string) => Promise<void>
+    updateEntryCollectedStatus: (group: IGroupMetadata, groupId: number, entryId: string, value?: number) => Promise<void>
 }
 
 export interface IMenuAPI {

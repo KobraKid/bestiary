@@ -44,7 +44,7 @@ export const GroupConfigView: React.FC = () => {
                         if (newCollection.type && newCollection.type !== collection.type) {
                             collection.type = newCollection.type;
                             if (collection.type === "boolean") {
-                                collection.buckets = { "collected": [] };
+                                collection.buckets["collected"] = [];
                             }
                             else {
                                 collection.buckets = {};
@@ -166,8 +166,8 @@ export const GroupConfigView: React.FC = () => {
     if (!config || !group || !pkg) { return null; }
 
     return (
-        <div className="group-config-mask" onClick={onCancel}>
-            <div className="group-config" onClick={(e) => e.stopPropagation()}>
+        <div className="group-config-mask">
+            <div className="group-config">
                 <h2>{pkg.name} - {group.name}</h2>
                 <div className="collection-grid-container">
                     <div className="collection-grid">
@@ -231,7 +231,7 @@ export const CollectionSettings: React.FC<ICollectionSettingsProps> = (props: IC
             <label>Type:&nbsp;</label>
             <select name="type" value={type} onChange={e => {
                 setType(e.target.value as CollectionType);
-                updateCollection({ type: e.target.value as CollectionType })
+                updateCollection({ type: e.target.value as CollectionType });
             }}>
                 <option value="boolean">Boolean</option>
                 <option value="number">Numeric</option>

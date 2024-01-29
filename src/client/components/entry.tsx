@@ -54,7 +54,7 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
 
     return (
         <div className={group ? "preview" : "details"} ref={entryRef}>
-            {group &&
+            {(group && entry.layout.length > 0) &&
                 <div className="collection-tabs">
                     {group.config?.collections.map(collection =>
                         <Collection key={collection.id} {...collection} entry={entry} group={group} />
@@ -114,9 +114,15 @@ const BooleanCollection: React.FC<CollectionProps> = (props: CollectionProps) =>
 };
 
 const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => {
-    const { name, backgroundColor, color, buckets, min, max, entry } = props;
+    const { id, name, backgroundColor, color, buckets, min, max, entry, group } = props;
 
     const [value, setValue] = useState<number>(parseInt(Object.keys(buckets ?? {}).find(key => buckets![key]?.includes(entry?.bid ?? "")) ?? "0", 10));
+
+    const onUpdateBucket = useCallback((value: number) => {
+        if (group && (id !== undefined) && entry) {
+            window.config.updateEntryCollectedStatus(group, id, entry.bid, value);
+        }
+    }, []);
 
     const style: Partial<React.CSSProperties> = {
         backgroundColor: `${backgroundColor}${"FF"}`,
@@ -130,7 +136,9 @@ const NumberCollection: React.FC<CollectionProps> = (props: CollectionProps) => 
                 <span>{name}</span>
             </div>
             <input className="collection-range" type="range" min={min} max={max} value={value} onChange={e => {
-                setValue(parseInt(e.target.value, 10));
+                const newVal = parseInt(e.target.value, 10);
+                setValue(newVal);
+                onUpdateBucket(newVal);
             }} />
         </div>
     );

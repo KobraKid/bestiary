@@ -35,18 +35,18 @@
             .collection-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: 142px auto;
+                grid-template-rows: auto;
                 gap: 8px;
                 margin: 8px;
 
                 .collection-settings {
                     display: grid;
                     grid-template-columns: [start] 100px [preview] 50px [lbl] auto [end];
+                    grid-template-rows: 48px repeat(6, 1fr);
                     align-content: stretch;
 
                     .preview {
                         width: fit-content;
-                        height: fit-content;
                         grid-column: start / preview;
 
                         .collection-tab {

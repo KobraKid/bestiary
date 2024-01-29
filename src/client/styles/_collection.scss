@@ -16,10 +16,15 @@ $hoverHeight: 40px;
     &.collection-tab-checkbox {
         flex-direction: row;
         align-items: baseline;
+
+        input.collection-checkbox {
+            cursor: pointer;
+        }
     }
 
     &.collection-tab-range {
         flex-direction: column;
+        cursor: revert;
 
         .collection-tab-range-label {
             display: flex;
@@ -31,6 +36,10 @@ $hoverHeight: 40px;
                 text-align: center;
             }
         }
+
+        input.collection-range {
+            width: 100px;
+        }
     }
 
     &::-webkit-scrollbar {
@@ -40,10 +49,6 @@ $hoverHeight: 40px;
     span {
         padding-right: 8px;
         white-space: nowrap;
-    }
-
-    input.collection-range {
-        width: 100px;
     }
 
     &:hover {
