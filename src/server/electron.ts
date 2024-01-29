@@ -4,7 +4,7 @@ import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
-import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, stopLoadingGroupEntries, clearEntryCache, clearLayoutCache, getResource } from "./database";
+import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, clearEntryCache, clearLayoutCache, getResource } from "./database";
 import { onImport, publishPackage } from "./importer";
 import { registerHelpers } from "./layout-builder";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
@@ -72,8 +72,6 @@ function main() {
             lang: ISO639Code,
             sortBy?: ISortSettings,
             groupBy?: IGroupSettings) => nextPage({ event, pkg, group, lang, sortBy, groupBy }));
-
-        ipcMain.handle("pkg:stop-loading-group", stopLoadingGroupEntries);
 
         ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
             return getEntry(pkg, groupId, entryId, lang);

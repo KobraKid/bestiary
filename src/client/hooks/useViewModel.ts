@@ -178,15 +178,9 @@ export function useViewModel(): BestiaryData {
 
     const selectGroup = useCallback((pkg: IPackageMetadata, newGroup: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) => {
         setIsLoading(true);
-
-        window.pkg.stopLoadingGroupEntries();
         newGroup.entries = [];
-
-        window.pkg.loadGroup(pkg, newGroup).then((group): void => {
-            viewStackDispatch({
-                type: ViewStackframeActionType.RESET,
-                targetView: { pkg, group }
-            });
+        window.pkg.loadGroup(pkg, newGroup).then(group => {
+            viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { pkg, group } });
             window.pkg.loadGroupEntries(pkg, group, lang, sortBy || group.sortSettings.at(0), groupBy || group.groupSettings.at(0)).then(entryList => {
                 viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
                 setIsLoading(false);
@@ -216,28 +210,20 @@ export function useViewModel(): BestiaryData {
     //#endregion
     //#region Paging
     const prevPage = useCallback(() => {
-        window.pkg.stopLoadingGroupEntries().then(stopped => {
-            if (stopped) {
-                setIsLoading(true);
-                view.current.group.entries = [];
-                window.pkg.prevPage(view.current.pkg, view.current.group, lang).then(entryList => {
-                    viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
-                    setIsLoading(false);
-                });
-            }
+        setIsLoading(true);
+        view.current.group.entries = [];
+        window.pkg.prevPage(view.current.pkg, view.current.group, lang).then(entryList => {
+            viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
+            setIsLoading(false);
         });
     }, []);
 
     const nextPage = useCallback(() => {
-        window.pkg.stopLoadingGroupEntries().then(stopped => {
-            if (stopped) {
-                setIsLoading(true);
-                view.current.group.entries = [];
-                window.pkg.nextPage(view.current.pkg, view.current.group, lang).then(entryList => {
-                    viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
-                    setIsLoading(false);
-                });
-            }
+        setIsLoading(true);
+        view.current.group.entries = [];
+        window.pkg.nextPage(view.current.pkg, view.current.group, lang).then(entryList => {
+            viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
+            setIsLoading(false);
         });
     }, []);
     //#endregion

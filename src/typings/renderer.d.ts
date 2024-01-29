@@ -13,7 +13,6 @@ export interface IPkgAPI {
     onUpdatePageNumber: (callback: (page: number) => void) => void,
     prevPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) => Promise<IEntryMetadata[]>,
     nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) => Promise<IEntryMetadata[]>,
-    stopLoadingGroupEntries: () => Promise<boolean>,
     loadEntry: (pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
 }
 

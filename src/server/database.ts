@@ -35,8 +35,6 @@ const defaultGroupOption: IGroupSettings = { "name": "None", "path": "", "bucket
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let groupOption: IGroupSettings = defaultGroupOption;
 
-let isLoading = false;
-
 export enum ViewType {
     view = "view",
     preview = "preview",
@@ -132,7 +130,6 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
 
 export async function prevPage(params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
     const { event } = params;
-    if (isLoading) { return null; }
     page = Math.max(page - 1, 0);
     event.sender.send("pkg:update-page-number", page);
     return getGroupEntries(params);
@@ -140,7 +137,6 @@ export async function prevPage(params: GroupEntryParams): Promise<IEntryMetadata
 
 export async function nextPage(params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
     const { event } = params;
-    if (isLoading) { return null; }
     page = Math.min(page + 1, pages - 1);
     event.sender.send("pkg:update-page-number", page);
     return getGroupEntries(params);
@@ -155,8 +151,6 @@ export async function nextPage(params: GroupEntryParams): Promise<IEntryMetadata
  */
 export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryMetadata[]> {
     const { pkg, group, sortBy, groupBy } = params;
-
-    isLoading = true;
 
     if (sortBy) { sortOption = sortBy; }
     if (groupBy) { groupOption = groupBy; }
@@ -230,8 +224,6 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
             layout: entryLayout
         });
     }
-
-    isLoading = false;
 }
 
 async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
@@ -253,16 +245,6 @@ async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
             layout: entry.values[lang]?.layout ?? ""
         });
     }
-
-    isLoading = false;
-}
-
-/**
- * Whether we stopped loading entries.
- * @returns True if we have stopped loading entries for a group/page
- */
-export function stopLoadingGroupEntries(): boolean {
-    return !isLoading;
 }
 
 /**

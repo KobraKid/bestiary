@@ -30,8 +30,6 @@ contextBridge.exposeInMainWorld("pkg", {
         ipcRenderer.invoke("pkg:prev-page", pkg, group, lang, sortBy, sortDescending),
     nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) =>
         ipcRenderer.invoke("pkg:next-page", pkg, group, lang, sortBy, sortDescending),
-    stopLoadingGroupEntries: (): Promise<boolean> =>
-        ipcRenderer.invoke("pkg:stop-loading-group"),
     loadEntry: (pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> =>
         ipcRenderer.invoke("pkg:load-entry", pkg, groupId, entryId, lang),
 });
