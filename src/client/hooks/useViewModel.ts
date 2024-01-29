@@ -182,12 +182,12 @@ export function useViewModel(): BestiaryData {
         window.pkg.stopLoadingGroupEntries();
         newGroup.entries = [];
 
-        window.pkg.loadGroup(pkg, newGroup).then(group => {
+        window.pkg.loadGroup(pkg, newGroup).then((group): void => {
             viewStackDispatch({
                 type: ViewStackframeActionType.RESET,
                 targetView: { pkg, group }
             });
-            window.pkg.loadGroupEntries(pkg, group, lang, sortBy, groupBy).then(entryList => {
+            window.pkg.loadGroupEntries(pkg, group, lang, sortBy || group.sortSettings.at(0), groupBy || group.groupSettings.at(0)).then(entryList => {
                 viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
                 setIsLoading(false);
             });

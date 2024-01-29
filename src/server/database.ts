@@ -118,12 +118,11 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
     return {
         ...group,
         entries: group.entries || [],
-        groupSettings: [
+        groupSettings: (groupMetadata?.groupSettings.length || 0) > 0 ? [
             { "name": "None", "path": "", "buckets": [] },
             ...groupMetadata?.groupSettings || []
-        ],
+        ] : [],
         sortSettings: [
-            { "name": "None", "path": "", "sortType": "string", "direction": -1 },
             ...groupMetadata?.sortSettings?.map(option => { return { ...option, direction: 1 as SortOrder }; }) || []
         ],
         style: groupStyle,
@@ -164,7 +163,7 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryM
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }, ["packageId", "groupId", "bid"])
         .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
-        .collation({ locale: "en_US", numericOrdering: true })
+        // .collation({ locale: "en_US", numericOrdering: true })
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()
@@ -188,7 +187,7 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
         .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
-        .collation({ locale: "en_US", numericOrdering: true })
+        // .collation({ locale: "en_US", numericOrdering: true })
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()
@@ -240,7 +239,7 @@ async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
 
     const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
         .sort(sortOption ? [["sortValues." + sortOption.name, sortOption.direction]] : undefined)
-        .collation({ locale: "en_US", numericOrdering: true })
+        // .collation({ locale: "en_US", numericOrdering: true })
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()

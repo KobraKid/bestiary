@@ -30,7 +30,7 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
         const option = group.groupSettings.find(option => option.name === optionName) || emptyGroupOption;
         setGroupOption(option);
         updateGroup(sortOption, option);
-    }, []);
+    }, [group]);
 
     const updateSortOption = useCallback((optionName: string, groupOption: IGroupSettings) => {
         const option = group.sortSettings.find(option => option.name === optionName) || emptySortOption;
@@ -45,34 +45,38 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
             updateGroup(newOption, groupOption);
             return newOption;
         });
-    }, []);
+    }, [group]);
 
     return (
         <>
             <div className="group-options">
-                <div className="group-group-options">
-                    <span>Group by: </span>
-                    <select
-                        value={groupOption.name}
-                        onChange={e => updateGroupOption(e.target.value, sortOption)}
-                    >
-                        {group.groupSettings.map(option => <option key={option.path} label={option.name} value={option.name} />)}
-                    </select>
-                </div>
-                <div className="group-sort-options">
-                    <span>Sort by: </span>
-                    <select
-                        value={sortOption.name}
-                        onChange={e => updateSortOption(e.target.value, groupOption)}
-                    >
-                        {group.sortSettings.map(option => <option key={option.path} label={option.name} value={option.name} />)}
-                    </select>
-                    {sortOption.path.length > 0 &&
-                        <button onClick={() => updateSortOption(sortOption.name, groupOption)}>
-                            {sortOption.direction === 1 ? "🔼 Ascending" : "🔽 Descending"}
-                        </button>
-                    }
-                </div>
+                {(group.groupSettings.length > 0 && false) && // TODO
+                    <div className="group-group-options">
+                        <span>Group by: </span>
+                        <select
+                            value={groupOption.name}
+                            onChange={e => updateGroupOption(e.target.value, sortOption)}
+                        >
+                            {group.groupSettings.map(option => <option key={option.path} label={option.name} value={option.name} />)}
+                        </select>
+                    </div>
+                }
+                {(group.sortSettings.length > 0) &&
+                    <div className="group-sort-options">
+                        <span>Sort by: </span>
+                        <select
+                            value={sortOption.name}
+                            onChange={e => updateSortOption(e.target.value, groupOption)}
+                        >
+                            {group.sortSettings.map(option => <option key={option.path} label={option.name} value={option.name} />)}
+                        </select>
+                        {sortOption.path.length > 0 &&
+                            <button onClick={() => updateSortOption(sortOption.name, groupOption)}>
+                                {sortOption.direction === 1 ? "🔼 Ascending" : "🔽 Descending"}
+                            </button>
+                        }
+                    </div>
+                }
                 <div className="group-collections">
                     {group.config?.collections.map(collection =>
                         <div key={collection.id} style={{

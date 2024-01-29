@@ -236,7 +236,7 @@ function createWindow(): BrowserWindow {
     const win = new BrowserWindow({
         width: 1280,
         height: 720,
-        title: isDev ? `Bestiary | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}/${app.getSystemLocale()}` : "Bestiary",
+        title: isDev ? `Bestiary | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}` : `Bestiary ${app.getVersion()}`,
         darkTheme: true,
         autoHideMenuBar: !isDev,
         frame: true, // isDev,
