@@ -155,9 +155,12 @@ export async function nextPage(params: GroupEntryParams): Promise<IEntryMetadata
  * @param lang The language to display in.
  */
 export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryMetadata[]> {
-    const { pkg, group } = params;
+    const { pkg, group, sortBy, groupBy } = params;
 
     isLoading = true;
+
+    if (sortBy) { sortOption = sortBy; }
+    if (groupBy) { groupOption = groupBy; }
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }, ["packageId", "groupId", "bid"])
         .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
@@ -181,10 +184,7 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryM
 }
 
 async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
-    const { event, pkg, group, lang, sortBy, groupBy } = params;
-
-    if (sortBy) { sortOption = sortBy; }
-    if (groupBy) { groupOption = groupBy; }
+    const { event, pkg, group, lang } = params;
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
         .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
@@ -236,10 +236,7 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
 }
 
 async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
-    const { event, pkg, group, lang, sortBy, groupBy } = params;
-
-    if (sortBy) { sortOption = sortBy; }
-    if (groupBy) { groupOption = groupBy; }
+    const { event, pkg, group, lang } = params;
 
     const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
         .sort(sortOption ? [["sortValues." + sortOption.name, sortOption.direction]] : undefined)
