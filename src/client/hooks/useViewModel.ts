@@ -52,14 +52,16 @@ enum ViewStackframeActionType {
     NAVIGATE_FORWARDS,
     NAVIGATE_BACKWARDS,
     UPDATE_CONFIG,
-    COLLECT_ENTRY,
+    UPDATE_ENTRY_LIST,
+    UPDATE_ENTRY,
 }
 
 interface IViewStackframeDispatchAction {
     type: ViewStackframeActionType,
     targetView?: Omit<ViewStackframe, "displayMode">,
     newEntry?: IEntryMetadata,
-    updatedConfig?: IGroupConfig
+    updatedConfig?: IGroupConfig,
+    entryList?: IEntryMetadata[],
 }
 
 export function useViewModel(): BestiaryData {
@@ -67,6 +69,7 @@ export function useViewModel(): BestiaryData {
 
     const [lang, setLang] = useState<ISO639Code>(ISO639Code.English);
 
+    //#region View Stack Management
     const viewStackReducer = useCallback((state: ViewStackframe[], action: IViewStackframeDispatchAction): ViewStackframe[] => {
         switch (action.type) {
             case ViewStackframeActionType.RESET:
@@ -116,17 +119,34 @@ export function useViewModel(): BestiaryData {
                     return [...state.slice(0, -1), view];
                 }
                 else { return state; }
-            case ViewStackframeActionType.COLLECT_ENTRY:
-                if (action.newEntry && state.length >= 1 && action.newEntry.groupId === state.at(-1)!.group.ns) {
+            case ViewStackframeActionType.UPDATE_ENTRY_LIST:
+                if (action.entryList && state.length >= 1) {
                     const currentView = state.at(-1)!;
+                    const view: ViewStackframe = {
+                        ...currentView!,
+                        group: {
+                            ...currentView.group,
+                            entries: action.entryList
+                        }
+                    };
+                    return [...state.slice(0, -1), view];
+                }
+                else { return state; }
+            case ViewStackframeActionType.UPDATE_ENTRY:
+                if (state.length >= 1 && action.newEntry?.groupId === state.at(-1)!.group.ns) {
+                    const currentView = state.at(-1)!;
+                    const entries = currentView.group.entries;
+                    for (let i = 0; i < entries.length; i++) {
+                        if (entries[i]?.bid === action.newEntry.bid) {
+                            entries[i] = action.newEntry;
+                            break;
+                        }
+                    }
                     const view = {
                         ...currentView!,
                         group: {
                             ...currentView.group,
-                            entries: [
-                                ...currentView.group.entries,
-                                action.newEntry
-                            ]
+                            entries
                         }
                     };
                     return [...state.slice(0, -1), view];
@@ -149,33 +169,33 @@ export function useViewModel(): BestiaryData {
     });
 
     view.current = views.at(-1)!;
-
+    //#endregion
+    //#region Navigation
     const selectPkg = useCallback((newPkg: IPackageMetadata) => {
         if (newPkg.ns === view.current.pkg.ns) { return; }
         selectGroup(newPkg, getFirstVisibleGroup(newPkg), lang);
     }, []);
 
     const selectGroup = useCallback((pkg: IPackageMetadata, newGroup: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) => {
+        setIsLoading(true);
+
         window.pkg.stopLoadingGroupEntries();
         newGroup.entries = [];
 
-        setIsLoading(true);
         window.pkg.loadGroup(pkg, newGroup).then(group => {
             viewStackDispatch({
                 type: ViewStackframeActionType.RESET,
                 targetView: { pkg, group }
             });
-            setIsLoading(false);
-            window.pkg.loadGroupEntries(pkg, group, lang, sortBy, groupBy);
+            window.pkg.loadGroupEntries(pkg, group, lang, sortBy, groupBy).then(entryList => {
+                viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
+                setIsLoading(false);
+            });
         });
     }, []);
 
     const addEntryToGroup = useCallback((entry: IEntryMetadata) =>
-        viewStackDispatch({ type: ViewStackframeActionType.COLLECT_ENTRY, newEntry: entry }), []);
-
-    const updateConfig = useCallback((config: IGroupConfig) => {
-        viewStackDispatch({ type: ViewStackframeActionType.UPDATE_CONFIG, updatedConfig: config });
-    }, []);
+        viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY, newEntry: entry }), []);
 
     const selectEntry = useCallback((newGroupId: string, newEntryId: string, lang: ISO639Code) => {
         if (newGroupId === view.current.group.ns && newEntryId === view.current.entry?.bid) { return; }
@@ -191,11 +211,19 @@ export function useViewModel(): BestiaryData {
         });
     }, []);
 
+    const navigateBack = useCallback(() =>
+        viewStackDispatch({ type: ViewStackframeActionType.NAVIGATE_BACKWARDS }), []);
+    //#endregion
+    //#region Paging
     const prevPage = useCallback(() => {
         window.pkg.stopLoadingGroupEntries().then(stopped => {
             if (stopped) {
+                setIsLoading(true);
                 view.current.group.entries = [];
-                window.pkg.prevPage(view.current.pkg, view.current.group, lang);
+                window.pkg.prevPage(view.current.pkg, view.current.group, lang).then(entryList => {
+                    viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
+                    setIsLoading(false);
+                });
             }
         });
     }, []);
@@ -203,14 +231,20 @@ export function useViewModel(): BestiaryData {
     const nextPage = useCallback(() => {
         window.pkg.stopLoadingGroupEntries().then(stopped => {
             if (stopped) {
+                setIsLoading(true);
                 view.current.group.entries = [];
-                window.pkg.nextPage(view.current.pkg, view.current.group, lang);
+                window.pkg.nextPage(view.current.pkg, view.current.group, lang).then(entryList => {
+                    viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });
+                    setIsLoading(false);
+                });
             }
         });
     }, []);
+    //#endregion
 
-    const navigateBack = useCallback(() =>
-        viewStackDispatch({ type: ViewStackframeActionType.NAVIGATE_BACKWARDS }), []);
+    const updateConfig = useCallback((config: IGroupConfig) => {
+        viewStackDispatch({ type: ViewStackframeActionType.UPDATE_CONFIG, updatedConfig: config });
+    }, []);
 
     return {
         view: view.current,

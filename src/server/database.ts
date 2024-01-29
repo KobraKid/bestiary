@@ -131,22 +131,20 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
     };
 }
 
-export async function prevPage(params: GroupEntryParams) {
+export async function prevPage(params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
     const { event } = params;
-    if (isLoading) { return; }
+    if (isLoading) { return null; }
     page = Math.max(page - 1, 0);
     event.sender.send("pkg:update-page-number", page);
-    getGroupEntries(params);
-
+    return getGroupEntries(params);
 }
 
-export async function nextPage(params: GroupEntryParams) {
+export async function nextPage(params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
     const { event } = params;
-    if (isLoading) { return; }
+    if (isLoading) { return null; }
     page = Math.min(page + 1, pages - 1);
     event.sender.send("pkg:update-page-number", page);
-    getGroupEntries(params);
-
+    return getGroupEntries(params);
 }
 
 /**
@@ -156,13 +154,30 @@ export async function nextPage(params: GroupEntryParams) {
  * @param group The current group.
  * @param lang The language to display in.
  */
-export async function getGroupEntries(params: GroupEntryParams): Promise<void> {
+export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryMetadata[]> {
+    const { pkg, group } = params;
+
     isLoading = true;
+
+    const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }, ["packageId", "groupId", "bid"])
+        .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
+        .collation({ locale: "en_US", numericOrdering: true })
+        .skip(entriesPerPage * page)
+        .limit(entriesPerPage)
+        .lean()
+        .exec();
 
     if (isDev) { getGroupEntriesDev(params); }
     else { getGroupEntriesProd(params); }
 
-    isLoading = false;
+    return entries.map(entry => {
+        return {
+            ...entry,
+            layout: "",
+            groupSettings: [],
+            sortSettings: []
+        };
+    });
 }
 
 async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
@@ -216,6 +231,8 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
             layout: entryLayout
         });
     }
+
+    isLoading = false;
 }
 
 async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
@@ -240,6 +257,8 @@ async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
             layout: entry.values[lang]?.layout ?? ""
         });
     }
+
+    isLoading = false;
 }
 
 /**

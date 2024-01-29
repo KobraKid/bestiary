@@ -7,12 +7,12 @@ import { IMap } from "../model/Map";
 export interface IPkgAPI {
     loadPackages: () => Promise<IPackageMetadata[]>,
     loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata) => Promise<IGroupMetadata>,
-    loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) => void,
+    loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) => Promise<IEntryMetadata[]>,
     onLoadGroupEntry: (callback: (entry: IEntryMetadata) => void) => void,
     onUpdatePageCount: (callback: (pageCount: number) => void) => void,
     onUpdatePageNumber: (callback: (page: number) => void) => void,
-    prevPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) => void,
-    nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) => void,
+    prevPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) => Promise<IEntryMetadata[]>,
+    nextPage: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, sortDescending?: boolean) => Promise<IEntryMetadata[]>,
     stopLoadingGroupEntries: () => Promise<boolean>,
     loadEntry: (pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code) => Promise<IEntryMetadata | IMap | null>,
 }

@@ -49,23 +49,23 @@ function main() {
             return getGroup(event, pkg, group);
         });
 
-        ipcMain.on("pkg:load-group-entries", (
+        ipcMain.handle("pkg:load-group-entries", (
             event: IpcMainInvokeEvent,
             pkg: IPackageMetadata,
             group: IGroupMetadata,
             lang: ISO639Code,
             sortBy?: ISortSettings,
-            groupBy?: IGroupSettings): Promise<void> =>
+            groupBy?: IGroupSettings) =>
             getGroupEntries({ event, pkg, group, lang, sortBy, groupBy }));
 
-        ipcMain.on("pkg:prev-page", (
+        ipcMain.handle("pkg:prev-page", (
             event: IpcMainInvokeEvent,
             pkg: IPackageMetadata,
             group: IGroupMetadata,
             lang: ISO639Code,
             sortBy?: ISortSettings,
             groupBy?: IGroupSettings) => prevPage({ event, pkg, group, lang, sortBy, groupBy }));
-        ipcMain.on("pkg:next-page", (
+        ipcMain.handle("pkg:next-page", (
             event: IpcMainInvokeEvent,
             pkg: IPackageMetadata,
             group: IGroupMetadata,

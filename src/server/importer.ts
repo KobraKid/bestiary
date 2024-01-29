@@ -5,11 +5,11 @@ import fs, { mkdir, readFile } from "fs/promises";
 import path from "path";
 import Entry, { IEntrySchema } from "../model/Entry";
 import { IGroupMetadata } from "../model/Group";
+import Layout, { ILayout } from "../model/Layout";
 import Package, { IPackageMetadata } from "../model/Package";
 import Resource, { IResource } from "../model/Resource";
 import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
 import { isDev, paths } from "./electron";
-import Layout, { ILayout } from "../model/Layout";
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
