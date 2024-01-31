@@ -27,8 +27,8 @@ let page = 0;
 /** Number of pages for this group */
 let pages = 0;
 
-const defaultSortOption: ISortSettings = { "name": "None", "path": "bid", "sortType": "string", "direction": 1 };
-let sortOption: ISortSettings = defaultSortOption;
+const defaultSortOption: [string, SortOrder][] = [["bid", 1]];
+let sortOption: [string, SortOrder][] = defaultSortOption;
 
 const defaultGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [] };
 // TODO: figure out how to apply groupings
@@ -152,12 +152,20 @@ export async function nextPage(params: GroupEntryParams): Promise<IEntryMetadata
 export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryMetadata[]> {
     const { pkg, group, sortBy, groupBy } = params;
 
-    if (sortBy) { sortOption = sortBy; }
+    if (sortBy) {
+        if (typeof sortBy.path === "string") {
+            sortOption = [[sortBy.path, sortBy.direction]];
+        }
+        else {
+            sortOption = [
+                ...sortBy.path.map((p): [string, SortOrder] => [p, sortBy.direction])
+            ]
+        }
+    }
     if (groupBy) { groupOption = groupBy; }
 
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }, ["packageId", "groupId", "bid"])
-        .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
-        // .collation({ locale: "en_US", numericOrdering: true })
+        .sort(sortOption)
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()
@@ -179,9 +187,9 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryM
 async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
     const { event, pkg, group, lang } = params;
 
+    const currentPage = page;
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-        .sort(sortOption.path ? [[sortOption.path, sortOption.direction]] : undefined)
-        // .collation({ locale: "en_US", numericOrdering: true })
+        .sort(sortOption)
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()
@@ -190,6 +198,7 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
     const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
     for (const entry of entries) {
+        if (currentPage !== page) { continue; }
         const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
         if ((entryCache[key] ?? "").length === 0 || isDev) {
             entryCache[key] = [await layout({ entry, lang }), "", ""];
@@ -229,15 +238,17 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
 async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
     const { event, pkg, group, lang } = params;
 
+    const currentPage = page;
     const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
-        .sort(sortOption ? [["sortValues." + sortOption.name, sortOption.direction]] : undefined)
-        // .collation({ locale: "en_US", numericOrdering: true })
+        // TODO
+        // .sort(sortOption ? [["sortValues." + sortOption.name, sortOption.direction]] : undefined)
         .skip(entriesPerPage * page)
         .limit(entriesPerPage)
         .lean()
         .exec();
 
     for (const entry of entries) {
+        if (currentPage !== page) { continue; }
         event.sender.send("pkg:on-entry-loaded", {
             packageId: pkg.ns,
             groupId: group.ns,

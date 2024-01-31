@@ -231,7 +231,7 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
                     sortValues: {},
                     values: {}
                 };
-                const precomputedSortValues: { [key: string]: string } = {};
+                const precomputedSortValues: { [key: string]: string | string[] } = {};
 
                 // Loop over languages
                 for (const lang of pkg.langs) {
@@ -256,7 +256,15 @@ export async function publishPackage(pkg: IPackageMetadata | null): Promise<void
 
                 // Loop over sort settings
                 for (const sortSetting of group.sortSettings) {
-                    precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
+                    if (typeof sortSetting.path === "string") {
+                        precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
+                    }
+                    else {
+                        precomputedSortValues[sortSetting.name] = [];
+                        for (const p of sortSetting.path) {
+                            (precomputedSortValues[sortSetting.name] as string[]).push(await getAttribute(entry, p) as string);
+                        }
+                    }
                 }
                 precomputedSortValues["None"] = entry.bid;
                 previewLayout.sortValues = precomputedSortValues;

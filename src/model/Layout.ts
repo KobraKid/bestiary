@@ -8,7 +8,7 @@ export interface ILayout {
     bid: string,
     viewType: ViewType,
     sortValues: {
-        [key: string]: string
+        [key: string]: string | string[]
     },
     values: {
         [key in ISO639Code]?: {

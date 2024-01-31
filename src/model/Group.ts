@@ -10,7 +10,7 @@ export interface IGroupSettings {
     /**
      * Attribute path to group on
      */
-    path: string,
+    path: string | string[],
     /**
      * Buckets to group by.
      * 
@@ -55,7 +55,7 @@ export interface ISortSettings {
     /**
      * Attribute path to sort by
      */
-    path: string,
+    path: string | string[],
     /**
      * Sorting method
      */
