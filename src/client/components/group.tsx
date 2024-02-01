@@ -27,8 +27,8 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
     const [sortOption, setSortOption] = useState<ISortSettings>(group.sortSettings.at(0) || emptySortOption);
 
     useEffect(() => {
-        setGroupOption(group.groupSettings.at(0) || emptyGroupOption)
-        setSortOption(group.sortSettings.at(0) || emptySortOption)
+        setGroupOption(group.groupSettings.at(0) || emptyGroupOption);
+        setSortOption(group.sortSettings.at(0) || emptySortOption);
     }, [group.ns]);
 
     const updateGroupOption = useCallback((optionName: string, sortOption: ISortSettings) => {
