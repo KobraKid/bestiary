@@ -159,7 +159,7 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryM
         else {
             sortOption = [
                 ...sortBy.path.map((p): [string, SortOrder] => [p, sortBy.direction])
-            ]
+            ];
         }
     }
     if (groupBy) { groupOption = groupBy; }
