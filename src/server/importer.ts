@@ -1,15 +1,21 @@
 import chalk from "chalk";
 import { BrowserWindow } from "electron";
 import { existsSync, readFileSync } from "fs";
-import fs, { mkdir, readFile } from "fs/promises";
+import { mkdir, readFile } from "fs/promises";
 import path from "path";
-import Entry, { IEntrySchema } from "../model/Entry";
+import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { IGroupMetadata } from "../model/Group";
 import Layout, { ILayout } from "../model/Layout";
 import Package, { IPackageMetadata } from "../model/Package";
 import Resource, { IResource } from "../model/Resource";
 import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
 import { isDev, paths } from "./electron";
+
+interface IImportJson {
+    metadata?: IPackageMetadata,
+    groups?: IGroupMetadata[],
+    resources?: IResource[]
+}
 
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
@@ -27,55 +33,88 @@ export async function onImport(window: BrowserWindow, files: Electron.OpenDialog
 }
 
 async function importJson(
-    pkgJson: { metadata: IPackageMetadata, groups: (IGroupMetadata & { images: { name: string, url: string }[] })[], resources: IResource[] },
+    pkgJson: IImportJson,
     updateClient: (update: string, pctCompletion: number, totalPctCompletion: number) => void) {
     const metadata = pkgJson.metadata;
-    const groups: (IGroupMetadata & { images: { name: string, url: string }[] })[] = pkgJson.groups;
+    const groups: IGroupMetadata[] = pkgJson.groups ?? [];
     const resources: IResource[] = pkgJson.resources ?? [];
     const resourceCount = Math.max(resources.length, 1);
-    const images: { url: string, group: string, name: string }[] = [];
-    const imageCount = Math.max(images.length, 1);
 
-    updateClient(`Importing package <${metadata.name}>`, 0, 0);
+    if (!metadata) { throw new Error("Package contains no metadata."); }
+
+    const totalCompletion = 1 /* package */ + groups.length + 1 /* retries */ + 1 /* resources */;
     let currentCompletion = 1;
-    const totalCompletion = groups.length + 3; // Package + Resources + Images
-    updateClient("Importing package", 0, currentCompletion / totalCompletion);
+    updateClient(`Importing package [${metadata.name}]`, 0, currentCompletion / totalCompletion);
     const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
 
-    for (let i = 0; i < 2; i++) { // import entries twice to parse links
-        for (const group of groups) {
-            const groupId = group.ns;
-            const groupEntries = group.entries ?? [];
-            const groupImages = group.images ?? [];
+    const retryEntries: { [groupId: string]: IEntryMetadata[] } = {};
+    for (const group of groups) {
+        currentCompletion++;
+        const groupId = group.ns;
+        const groupEntries = group.entries;
+        if (!groupEntries || groupEntries.length === 0) { continue; }
+        updateClient(`Importing group [${groupId}]`, 0, currentCompletion / totalCompletion);
 
-            const entryCount = Math.max(groupEntries.length, 1);
-            let currentEntry = 0;
-            currentCompletion += 0.5; // account for the second pass
+        const entryCount = Math.max(groupEntries.length, 1);
+        let currentEntry = 0;
+        retryEntries[groupId] = [];
 
-            for (let entry of groupEntries) {
-                if (entry.bid === null || entry.bid === undefined) { continue; }
-                updateClient(`Importing entry <${entry.bid}> from group <${groupId}>`, (++currentEntry) / entryCount, currentCompletion / totalCompletion);
+        for (let entry of groupEntries) {
+            currentEntry++;
+            if (entry.bid === null || entry.bid === undefined) { continue; }
+            updateClient(`Importing group [${groupId}] - entry [${entry.bid}]`, currentEntry / entryCount, currentCompletion / totalCompletion);
 
-                if (i === 1) { entry = await buildLinks(pkg, entry); } // only attempt to parse links after the initial load
+            let failed = false;
+            ({ objWithLinks: entry, failed } = await buildLinks<IEntryMetadata>(pkg, entry));
 
-                await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
-                    ...entry,
-                    packageId: pkg.ns,
-                    groupId: groupId
-                }, { upsert: true, new: true });
+            if (failed) {
+                // don't quit here, as another future entry may depend on this entry existing
+                // instead, just add this entry to the retry list
+                retryEntries[groupId]?.push(entry);
             }
 
-            for (const img of groupImages) {
-                images.push({ url: img.url, group: groupId, name: img.name });
-            }
+            await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
+                ...entry,
+                packageId: pkg.ns,
+                groupId: groupId
+            }, { upsert: true, new: true });
         }
     }
 
-    let currentResource = 0;
     currentCompletion++;
+    for (const group of groups) {
+        const groupId = group.ns;
+        const groupEntries = retryEntries[groupId];
+        if (!groupEntries || groupEntries.length === 0) { continue; }
+
+        const entryCount = groupEntries.length;
+        let currentEntry = 0;
+        for (let entry of groupEntries) {
+            currentEntry++;
+            updateClient(`Retrying group [${groupId}] - entry [${entry.bid}]`, currentEntry / entryCount, currentCompletion / totalCompletion);
+
+            let failed = false;
+            ({ objWithLinks: entry, failed } = await buildLinks<IEntryMetadata>(pkg, entry));
+
+            if (failed) {
+                // we've failed in the second pass, so something truly is missing
+                console.log(chalk.yellowBright(`Failed to parse links for entry [${entry.bid}] in group [${groupId}].`));
+            }
+
+            await Entry.findOneAndUpdate({ packageId: pkg.ns, groupId: groupId, bid: entry.bid }, {
+                ...entry,
+                packageId: pkg.ns,
+                groupId: groupId
+            }, { upsert: true, new: true });
+        }
+    }
+
+    currentCompletion++;
+    let currentResource = 0;
     for (const resource of resources) {
+        currentResource++;
         if (resource.resId === null || resource.resId === undefined || resource.resId.length === 0) { continue; }
-        updateClient(`Importing resource <${resource.resId}>`, (++currentResource) / resourceCount, currentCompletion / totalCompletion);
+        updateClient(`Importing resource [${resource.resId}]`, currentResource / resourceCount, currentCompletion / totalCompletion);
 
         try {
             if ("type" in resource) {
@@ -84,7 +123,7 @@ async function importJson(
                         if ("basePath" in resource) {
                             const basePath = resource["basePath"];
 
-                            // Language-independent resource
+                            // Locale-independent resource
                             if (existsSync(path.join(paths.data, pkg.ns, "images", basePath as string))) {
                                 const img = await readFile(path.join(paths.data, pkg.ns, "images", basePath as string));
                                 resource["value"] = img.toString("base64");
@@ -99,8 +138,7 @@ async function importJson(
                                         resource["values"][lang] = img.toString("base64");
                                     }
                                     else {
-                                        console.log(chalk.yellowBright(`Resource ${resource.resId} not found for [${lang}]. Check paths\n${path.join(paths.data, pkg.ns, "images", basePath as string)}\n${path.join(paths.data, pkg.ns, "images", lang, basePath as string)}`));
-                                        // resource["values"][lang] = ""; // this resource doesn't exist for the current language
+                                        console.log(chalk.yellowBright(`Resource ${resource.resId} not found for [${lang}].`));
                                     }
                                 }
                             }
@@ -120,87 +158,69 @@ async function importJson(
             packageId: pkg.ns
         }, { upsert: true, new: true });
     }
-
-    let currentImage = 0;
-    currentCompletion++;
-    for (const img of images) {
-        try {
-            await mkdir(path.join(paths.data, pkg.ns, "images", img.group), { recursive: true });
-        } catch (err) {
-            if (!(err as Error).message.startsWith("EEXIST")) { console.log((err as Error).message); }
-        } finally {
-            // check if the file exists
-            try {
-                await fs.stat(path.join(paths.data, pkg.ns, "images", img.group, img.name));
-                updateClient(`Image <${img.name}> already imported`, (++currentImage) / imageCount, currentCompletion / totalCompletion);
-                // file exists, no need to re-download
-            }
-            catch (err) {
-                updateClient(`Importing image <${img.name}>`, (++currentImage) / imageCount, currentCompletion / totalCompletion);
-                // fetch the file
-                try {
-                    const imgResponse = await fetch(encodeURI(img.url));
-                    // convert to a blob
-                    const imgBlob = await imgResponse.blob();
-                    // convert to a buffer
-                    const imgArrayBuffer = await imgBlob.arrayBuffer();
-                    // write to disk
-                    await fs.writeFile(path.join(paths.data, pkg.ns, "images", img.group, img.name), Buffer.from(imgArrayBuffer));
-                }
-                catch (err) {
-                    console.log(chalk.red("Failed to download"), chalk.red.bgGreen(img.url), chalk.red(`to ${img.group}/${img.name}`), err.message);
-                }
-            }
-        }
-    }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function buildLinks(pkg: IPackageMetadata, o: any): Promise<any> {
-    if (o != null) {
-        if (isLink(o)) {
-            const link = await getLink(pkg, o);
-            if (link?._id) {
-                return link._id;
-            }
-        }
-        else if (typeof o === "object") {
-            for (const key of Object.keys(o)) {
-                const attribute = o[key as keyof typeof o];
+interface ILink {
+    type: "link",
+    group: string,
+    id: string
+}
 
-                if (attribute != null) {
+async function buildLinks<T>(pkg: IPackageMetadata, obj: T): Promise<{ objWithLinks: T, failed: boolean }> {
+    let failed = false;
+    let objWithLinks = obj;
+
+    if (obj !== null && obj !== undefined) {
+        if (isLink(obj)) {
+            const link = await getLink(pkg, obj);
+            if (link?._id) { objWithLinks = link._id; }
+            else { failed = true; } // link was null or undefined
+        }
+        else if (typeof obj === "object") {
+            objKeys: for (const key of Object.keys(obj)) {
+                const attribute = obj[key as keyof T];
+
+                if (attribute !== null && attribute !== undefined) {
                     if (isLink(attribute)) {
                         const link = await getLink(pkg, attribute);
-                        if (link?._id) {
-                            o[key as keyof typeof o] = link._id;
-                        }
+                        if (link?._id) { obj[key as keyof T] = link._id; }
+                        else { failed = true; } // link was null or undefined
                     }
                     else if (Array.isArray(attribute)) {
                         for (let i = 0; i < attribute.length; i++) {
-                            attribute[i] = await buildLinks(pkg, attribute[i]);
+                            const { objWithLinks: link, failed: f } = await buildLinks(pkg, attribute[i]);
+                            if (!f) { attribute[i] = link; }
+                            else { failed = true; break objKeys; } // an inner recursive call failed
                         }
                     }
                     else if (typeof attribute === "object") {
-                        o[key] = await buildLinks(pkg, o[key]);
+                        const { objWithLinks: link, failed: f } = await buildLinks(pkg, obj[key as keyof T]);
+                        if (!f) { obj[key as keyof T] = link; }
+                        else { failed = true; break objKeys; } // an inner recursive call failed
                     }
                 }
             }
         }
     }
-    return o;
+    else { failed = true; } // obj was null or undefined
+
+    return { objWithLinks, failed };
 }
 
-function isLink(property: object): boolean {
-    return typeof property === "object" && "type" in property && property["type"] === "link" && "group" in property && "id" in property;
+function isLink(property: unknown): property is ILink {
+    return (
+        typeof property === "object"
+        && property !== null
+        && property !== undefined
+        && "type" in property
+        && property["type"] === "link"
+        && "group" in property
+        && "id" in property
+    );
 }
 
-async function getLink(pkg: IPackageMetadata, attribute: object): Promise<IEntrySchema | null> {
-    const property = attribute as { "group": string, "id": string };
-    const linkedEntry = await Entry.findOne({ packageId: pkg.ns, groupId: property["group"], bid: property["id"] }).exec();
-    if (!linkedEntry) {
-        console.log(`Couldn't create link to ${property["group"]}.${property["id"]}`);
-    }
-    return linkedEntry;
+async function getLink(pkg: IPackageMetadata, link: ILink): Promise<IEntrySchema | null> {
+    return await Entry.findOne({ packageId: pkg.ns, groupId: link["group"], bid: link["id"] }).exec();
 }
 
 export async function publishPackage(pkg: IPackageMetadata | null): Promise<void> {
