@@ -7,7 +7,7 @@ import sass from "sass";
 import { pathToFileURL } from "url";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
-import Layout from "../model/Layout";
+import Layout, { ILayoutSchema } from "../model/Layout";
 import { ILandmark, IMap } from "../model/Map";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
 import Resource from "../model/Resource";
@@ -163,49 +163,61 @@ export async function nextPage(event: IpcMainInvokeEvent, params: GroupEntryPara
 export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<IEntryMetadata[]> {
     const { pkg, group, sortBy, groupBy } = params;
 
-    if (sortBy) {
-        if (typeof sortBy.path === "string") {
-            sortOption = [[sortBy.path, sortBy.direction]];
+    let entries: (IEntrySchema | ILayoutSchema)[] = [];
+    if (isDev) {
+        // Set up sorting and grouping
+        if (sortBy) {
+            if (typeof sortBy.path === "string") {
+                sortOption = [[sortBy.path, sortBy.direction]];
+            }
+            else {
+                sortOption = [
+                    ...sortBy.path.map((p): [string, SortOrder] => [p, sortBy.direction])
+                ];
+            }
         }
-        else {
-            sortOption = [
-                ...sortBy.path.map((p): [string, SortOrder] => [p, sortBy.direction])
-            ];
-        }
+        if (groupBy) { groupOption = groupBy; } // TODO
+        // Load all entries for the page
+        entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
+            .sort(sortOption)
+            .skip(entriesPerPage * page)
+            .limit(entriesPerPage)
+            .lean()
+            .exec();
+        // Kick off individual entry load
+        setImmediate(() => getGroupEntriesDev(event, params, entries));
     }
-    if (groupBy) { groupOption = groupBy; }
+    else {
+        // Set up sorting and grouping
+        if (sortBy) {
+            if (typeof sortBy.path === "string") {
+                sortOption = [[`sortValues.${sortBy.name}`, sortBy.direction]];
+            }
+            else {
+                sortOption = [
+                    ...sortBy.path.map((_path, index): [string, SortOrder] => [`sortValues.${sortBy.name}.${index}`, sortBy.direction])
+                ];
+            }
+        }
+        if (groupBy) { groupOption = groupBy; } // TODO
+        // Load all entries for the page
+        entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
+            .sort(sortOption)
+            .skip(entriesPerPage * page)
+            .limit(entriesPerPage)
+            .lean()
+            .exec();
+        // Kick off individual entry load
+        setImmediate(() => getGroupEntriesProd(event, params, entries as ILayoutSchema[]));
+    }
 
-    const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }, ["packageId", "groupId", "bid"])
-        .sort(sortOption)
-        .skip(entriesPerPage * page)
-        .limit(entriesPerPage)
-        .lean()
-        .exec();
-
-    if (isDev) { getGroupEntriesDev(event, params); }
-    else { getGroupEntriesProd(event, params); }
-
-    return entries.map(entry => {
-        return {
-            ...entry,
-            layout: "",
-            groupSettings: [],
-            sortSettings: []
-        };
-    });
+    return entries.map(entry => ({ ...entry, layout: "", groupSettings: [], sortSettings: [] }));
 }
 
-async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<void> {
+async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryParams, entries: IEntrySchema[]): Promise<void> {
     const { pkg, group, lang } = params;
 
     const currentPage = page;
-    const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-        .sort(sortOption)
-        .skip(entriesPerPage * page)
-        .limit(entriesPerPage)
-        .lean()
-        .exec();
-
     const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
     for (const entry of entries) {
@@ -246,17 +258,10 @@ async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryP
     }
 }
 
-async function getGroupEntriesProd(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<void> {
+async function getGroupEntriesProd(event: IpcMainInvokeEvent, params: GroupEntryParams, entries: ILayoutSchema[]): Promise<void> {
     const { pkg, group, lang } = params;
 
     const currentPage = page;
-    const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
-        // TODO
-        // .sort(sortOption ? [["sortValues." + sortOption.name, sortOption.direction]] : undefined)
-        .skip(entriesPerPage * page)
-        .limit(entriesPerPage)
-        .lean()
-        .exec();
 
     for (const entry of entries) {
         if (currentPage !== page) { continue; }

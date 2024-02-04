@@ -24,7 +24,7 @@ enum Action {
 //#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
 export const hb = registerHelpers(Handlebars);
-export const isDev = !app.isPackaged;
+export let isDev = !app.isPackaged;
 console.log(chalk.blue(`
 ${isDev ? "🐬 " : ""}Bestiary ${process.env.npm_package_version}
 ${isDev ? "📗 " : ""}NodeJS ${process.version}
@@ -185,6 +185,11 @@ function createMenu(): void {
         type: "submenu",
         label: "Dev Options",
         submenu: [
+            {
+                label: "Toggle Dev Mode",
+                accelerator: "CmdOrCtrl+Alt+Insert",
+                click: () => isDev = !isDev
+            },
             {
                 label: "Clear Entry Cache",
                 accelerator: "CmdOrCtrl+E",

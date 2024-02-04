@@ -52,6 +52,8 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     });
     const style = parse(entry.style ?? "");
 
+    if (entry.layout.length === 0) { return null; }
+
     return (
         <div className={group ? "preview" : "details"} ref={entryRef}>
             {(group && entry.layout.length > 0) &&
