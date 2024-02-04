@@ -1,13 +1,13 @@
 import chalk from "chalk";
-import path from "path";
-import { mkdir } from "fs/promises";
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { paths } from "./electron";
-import { IGroupMetadata } from "../model/Group";
-import { GroupForConfig, ICollection, IGroupConfig, IPackageConfig } from "../model/Config";
-import { IPackageMetadata } from "../model/Package";
 import { IpcMainEvent } from "electron";
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import { mkdir } from "fs/promises";
+import path from "path";
+import { GroupForConfig, ICollection, IGroupConfig, IPackageConfig } from "../model/Config";
 import Entry from "../model/Entry";
+import { IGroupMetadata } from "../model/Group";
+import { IPackageMetadata } from "../model/Package";
+import { paths } from "./electron";
 
 let pkgNamespace = "";
 let pkgConfig: IPackageConfig | null = null;
@@ -15,10 +15,11 @@ let pkgConfigFile = "";
 
 /**
  * Loads the configuration data for a package.
+ * 
  * If the package doesn't have a configuration file, one is created.
  * 
- * @param pkg The package to load the config file for
- * @returns The configurtion data for a package
+ * @param pkg The package to load the config file for.
+ * @returns The configurtion data for a package.
  */
 async function createOrLoadPkgConfig(pkg: IPackageMetadata): Promise<IPackageConfig> {
     if (pkgConfig && pkgConfigFile) {
@@ -48,11 +49,12 @@ async function createOrLoadPkgConfig(pkg: IPackageMetadata): Promise<IPackageCon
 
 /**
  * Loads the configuration data for a group from a package's configuration file.
+ * 
  * If the package doesn't have a configuration file, one is created.
  * 
- * @param pkg The package to load the config file for
- * @param group The group to load the config for
- * @returns The configuration data for a group
+ * @param pkg The package to load the config file for.
+ * @param group The group to load the config for.
+ * @returns The configuration data for a group.
  */
 export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupConfig> {
     if (pkgNamespace !== pkg.ns) {
@@ -65,10 +67,9 @@ export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGro
 
 /**
  * Loads the configuration data for a group, and sends it back to the client.
- * 
  * @param event The event that triggered this load. The sender receives the resulting configuration data.
- * @param pkg The package to load the config for
- * @param group The group to load the config for
+ * @param pkg The package to load the config for.
+ * @param group The group to load the config for.
  */
 export async function loadGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<void> {
     const config = await createOrLoadGroupConfig(pkg, group);
@@ -88,9 +89,8 @@ export function savePkgConfig(): void {
 
 /**
  * Updates a colleciton's configuration data.
- * 
- * @param group The group to update
- * @param updatedConfig The updated configuration data
+ * @param group The group to update.
+ * @param updatedConfig The updated configuration data.
  */
 export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata, updatedConfig: GroupForConfig): Promise<void> {
     if (!pkgConfig) {
@@ -121,6 +121,7 @@ export async function updateGroupConfig(event: IpcMainEvent, pkg: IPackageMetada
 
 /**
  * Updates the collected status for an entry in a particular group.
+ * 
  * If the entry is already marked as collected, it is removed.
  * If the entry is not already marked as collected, it is added.
  * 
@@ -171,6 +172,13 @@ export function updateCollectedStatusForEntry(event: IpcMainEvent, updatedGroup:
     }
 }
 
+/**
+ * Determines the maximum available entries for a collection.
+ * @param pkg The current package.
+ * @param group The current group.
+ * @param config The configuration for the group.
+ * @returns The configuration with maximum values populated.
+ */
 async function setCollectionMaximums(pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig): Promise<ICollection[]> {
     const collections: ICollection[] = [];
     for (const collection of config.collections) {

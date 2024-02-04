@@ -1,18 +1,25 @@
-import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu, protocol } from "electron";
 import chalk from "chalk";
+import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, Menu, protocol } from "electron";
 import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
 import path from "path";
-import { disconnect, getGroup, getGroupEntries, getEntry, getPackageList, nextPage, prevPage, clearEntryCache, clearLayoutCache, getResource } from "./database";
-import { onImport, publishPackage } from "./importer";
-import { registerHelpers } from "./layout-builder";
-import { IPackageMetadata, ISO639Code } from "../model/Package";
-import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
+import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IMap } from "../model/Map";
-import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
+import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { Config } from "./config";
+import { clearEntryCache, clearLayoutCache, disconnect, getEntry, getGroup, getGroupEntries, getPackageList, getResource, nextPage, prevPage } from "./database";
+import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
+import { onCompile, onImport } from "./importer";
+import { registerHelpers } from "./layout-builder";
+
+enum Action {
+    NONE,
+    CONFIGURING,
+    IMPORTING,
+    COMPILING
+}
 
 //#region Setup and logging
 export const paths = envPaths("Bestiary", { suffix: "" });
@@ -27,7 +34,7 @@ ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 `));
 const config = new Config();
 let window: BrowserWindow | null = null;
-let currentPkg: IPackageMetadata | null = null;
+let currentAction: Action = Action.NONE;
 //#endregion
 
 /**
@@ -44,10 +51,7 @@ function main() {
         //#region Package API
         ipcMain.handle("pkg:load-pkgs", getPackageList);
 
-        ipcMain.handle("pkg:load-group", (event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> => {
-            currentPkg = pkg;
-            return getGroup(event, pkg, group);
-        });
+        ipcMain.handle("pkg:load-group", getGroup);
 
         ipcMain.handle("pkg:load-group-entries", (
             event: IpcMainInvokeEvent,
@@ -56,7 +60,7 @@ function main() {
             lang: ISO639Code,
             sortBy?: ISortSettings,
             groupBy?: IGroupSettings) =>
-            getGroupEntries({ event, pkg, group, lang, sortBy, groupBy }));
+            getGroupEntries(event, { pkg, group, lang, sortBy, groupBy }));
 
         ipcMain.handle("pkg:prev-page", (
             event: IpcMainInvokeEvent,
@@ -64,14 +68,14 @@ function main() {
             group: IGroupMetadata,
             lang: ISO639Code,
             sortBy?: ISortSettings,
-            groupBy?: IGroupSettings) => prevPage({ event, pkg, group, lang, sortBy, groupBy }));
+            groupBy?: IGroupSettings) => prevPage(event, { pkg, group, lang, sortBy, groupBy }));
         ipcMain.handle("pkg:next-page", (
             event: IpcMainInvokeEvent,
             pkg: IPackageMetadata,
             group: IGroupMetadata,
             lang: ISO639Code,
             sortBy?: ISortSettings,
-            groupBy?: IGroupSettings) => nextPage({ event, pkg, group, lang, sortBy, groupBy }));
+            groupBy?: IGroupSettings) => nextPage(event, { pkg, group, lang, sortBy, groupBy }));
 
         ipcMain.handle("pkg:load-entry", async (_event: IpcMainInvokeEvent, pkg: IPackageMetadata, groupId: string, entryId: string, lang: ISO639Code): Promise<IEntryMetadata | IMap | null> => {
             return getEntry(pkg, groupId, entryId, lang);
@@ -88,7 +92,7 @@ function main() {
         ipcMain.on("config:update-entry-collected-status", updateCollectedStatusForEntry);
         //#endregion
 
-        //#region Context Menu API
+        //#region Menu API
         ipcMain.on("context-menu:show-group-menu", (event: IpcMainEvent, pkg: IPackageMetadata, group: IGroupMetadata) => {
             const menu = Menu.buildFromTemplate([
                 {
@@ -97,14 +101,19 @@ function main() {
                 },
                 {
                     label: `Manage ${group.name}`,
-                    click: () => loadGroupConfig(event, pkg, group)
+                    click: () => {
+                        currentAction = Action.CONFIGURING;
+                        loadGroupConfig(event, pkg, group);
+                    }
                 }
             ]);
             const sender = BrowserWindow.fromWebContents(event.sender);
-            if (sender) {
+            if (sender && currentAction === Action.NONE) {
                 menu.popup({ window: sender });
             }
         });
+
+        ipcMain.on("task:compile", onCompile);
         //#endregion
 
         //#region Logging API
@@ -117,6 +126,8 @@ function main() {
         ipcMain.handle("eval-formula", (_event: IpcMainInvokeEvent, expression: string, scope?: object): unknown => {
             return new Formula(expression).evaluate(scope || {});
         });
+
+        ipcMain.on("action-complete", () => currentAction = Action.NONE);
         //#endregion
 
         //#endregion
@@ -188,20 +199,28 @@ function createMenu(): void {
                 label: "Import...",
                 accelerator: "CmdOrCtrl+I",
                 click: (_menuItem, browserWindow) => {
-                    browserWindow?.webContents.send("importer:import-start");
-                    if (browserWindow) {
-                        dialog.showOpenDialog(browserWindow, {
-                            title: "Bestiary", buttonLabel: "Import", properties: ["openFile"], filters: [{ name: "JSON", extensions: ["json"] }]
-                        }).then((files) => {
-                            onImport(browserWindow, files);
-                        });
+                    if (currentAction === Action.NONE) {
+                        currentAction = Action.IMPORTING;
+                        browserWindow?.webContents.send("task:import");
+                        if (browserWindow) {
+                            dialog.showOpenDialog(browserWindow, {
+                                title: "Bestiary", buttonLabel: "Import", properties: ["openFile"], filters: [{ name: "JSON", extensions: ["json"] }]
+                            }).then((files) => {
+                                onImport(browserWindow, files);
+                            });
+                        }
                     }
                 }
             },
             {
-                label: "Publish",
-                accelerator: "CmdOrCtrl+P",
-                click: () => publishPackage(currentPkg)
+                label: "Compile",
+                accelerator: "Alt+C",
+                click: (_menuItem, browserWindow) => {
+                    if (currentAction === Action.NONE) {
+                        currentAction = Action.COMPILING;
+                        browserWindow?.webContents.send("menu:show-compile");
+                    }
+                }
             }
         ]
     } : { type: "separator" };
@@ -213,7 +232,10 @@ function createMenu(): void {
                     label: "Options",
                     accelerator: "CmdOrCtrl+O",
                     click: (_menuItem, browserWindow) => {
-                        browserWindow?.webContents.send("options:show-options");
+                        if (currentAction === Action.NONE) {
+                            currentAction = Action.CONFIGURING;
+                            browserWindow?.webContents.send("menu:show-options");
+                        }
                     }
                 },
                 devMenu,

@@ -17,7 +17,6 @@ export interface IPkgAPI {
 }
 
 export interface IConfigAPI {
-    onShowOptions: (callback: () => void) => void,
     saveAppConfig: (config?: IAppConfig) => void,
     onUpdateAppConfig: (callback: (config: IAppConfig) => void) => void,
     savePkgConfig: () => Promise<void>,
@@ -27,15 +26,20 @@ export interface IConfigAPI {
 }
 
 export interface IMenuAPI {
+    onShowOptions: (callback: () => void) => void,
+    onShowCompile: (callback: () => void) => void,
     showGroupMenu: (pkg: IPackageMetadata, group: IGroupMetadata) => Promise<void>,
-    onConfigureGroup: (groupManager: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => void) => Promise<void>
+    onConfigureGroup: (groupManager: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => void) => Promise<void>,
+    actionComplete: () => void
 }
 
-export interface IImporterAPI {
-    importStart: (callback: () => void) => void,
-    importUpdate: (callback: (update: string, pctComplete: number, totalPctCompletion: number) => void) => void,
-    importComplete: (callback: () => void) => void,
-    importFailed: (callback: () => void) => void
+export interface ITaskAPI {
+    taskUpdate: (callback: (update: string, pctComplete: number, totalPctCompletion: number) => void) => void,
+    taskComplete: (callback: () => void) => void,
+    taskFailed: (callback: () => void) => void,
+    // specific tasks
+    importPackage: (callback: () => void) => void,
+    compilePackage: (pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[]) => void,
 }
 
 export interface IPathAPI {
@@ -56,7 +60,7 @@ declare global {
         pkg: IPkgAPI,
         config: IConfigAPI,
         menu: IMenuAPI,
-        importer: IImporterAPI,
+        task: ITaskAPI,
         path: IPathAPI,
         log: ILoggingAPI,
         formula: IFormulaAPI

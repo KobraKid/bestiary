@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { BrowserWindow } from "electron";
+import { BrowserWindow, IpcMainEvent } from "electron";
 import { existsSync, readFileSync } from "fs";
 import { mkdir, readFile } from "fs/promises";
 import path from "path";
@@ -9,7 +9,15 @@ import Layout, { ILayout } from "../model/Layout";
 import Package, { IPackageMetadata } from "../model/Package";
 import Resource, { IResource } from "../model/Resource";
 import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
-import { isDev, paths } from "./electron";
+import { paths } from "./electron";
+
+type ClientUpdater = (update: string, pctCompletion: number, totalPctCompletion: number) => void;
+
+interface ILink {
+    type: "link",
+    group: string,
+    id: string
+}
 
 interface IImportJson {
     metadata?: IPackageMetadata,
@@ -17,24 +25,32 @@ interface IImportJson {
     resources?: IResource[]
 }
 
+/**
+ * Imports a packages from a JSON file
+ * @param window The window handling the import
+ * @param files The JSON files opened by the user
+ */
 export async function onImport(window: BrowserWindow, files: Electron.OpenDialogReturnValue) {
     try {
         for (const filePath of files.filePaths) {
             const pkgJson = JSON.parse(readFileSync(filePath, { encoding: "utf-8" }));
             await importJson(pkgJson, (update: string, pctCompletion: number, totalPctCompletion: number) =>
-                window.webContents.send("importer:import-update", update, pctCompletion, totalPctCompletion));
+                window.webContents.send("task:task-update", update, pctCompletion, totalPctCompletion));
         }
-        window.webContents.send("importer:import-complete");
+        window.webContents.send("task:task-complete");
     }
     catch (e) {
-        window.webContents.send("importer:import-failed");
+        window.webContents.send("task:task-failed");
         console.log(chalk.red.bgWhite(e), e);
     }
 }
 
-async function importJson(
-    pkgJson: IImportJson,
-    updateClient: (update: string, pctCompletion: number, totalPctCompletion: number) => void) {
+/**
+ * Helper function for importing a packages from a JSON file
+ * @param pkgJson The JSON representation of the package to import
+ * @param updateClient A callback used to update the client as entries are compiled
+ */
+async function importJson(pkgJson: IImportJson, updateClient: ClientUpdater) {
     const metadata = pkgJson.metadata;
     const groups: IGroupMetadata[] = pkgJson.groups ?? [];
     const resources: IResource[] = pkgJson.resources ?? [];
@@ -65,7 +81,7 @@ async function importJson(
             updateClient(`Importing group [${groupId}] - entry [${entry.bid}]`, currentEntry / entryCount, currentCompletion / totalCompletion);
 
             let failed = false;
-            ({ objWithLinks: entry, failed } = await buildLinks<IEntryMetadata>(pkg, entry));
+            ({ objWithLinks: entry, failed } = await populateLinks<IEntryMetadata>(pkg, entry, true));
 
             if (failed) {
                 // don't quit here, as another future entry may depend on this entry existing
@@ -94,7 +110,7 @@ async function importJson(
             updateClient(`Retrying group [${groupId}] - entry [${entry.bid}]`, currentEntry / entryCount, currentCompletion / totalCompletion);
 
             let failed = false;
-            ({ objWithLinks: entry, failed } = await buildLinks<IEntryMetadata>(pkg, entry));
+            ({ objWithLinks: entry, failed } = await populateLinks<IEntryMetadata>(pkg, entry, false));
 
             if (failed) {
                 // we've failed in the second pass, so something truly is missing
@@ -158,15 +174,18 @@ async function importJson(
             packageId: pkg.ns
         }, { upsert: true, new: true });
     }
+
+    updateClient("", 0, 0);
 }
 
-interface ILink {
-    type: "link",
-    group: string,
-    id: string
-}
-
-async function buildLinks<T>(pkg: IPackageMetadata, obj: T): Promise<{ objWithLinks: T, failed: boolean }> {
+/**
+ * Populates links for an entry
+ * @param pkg The current package
+ * @param obj The object being scanned for links
+ * @param stopOnFailure Whether to stop as soon as we fail to populate a link
+ * @returns The object with links populated, and a boolean indicating whether link population was successful
+ */
+async function populateLinks<T>(pkg: IPackageMetadata, obj: T, stopOnFailure: boolean): Promise<{ objWithLinks: T, failed: boolean }> {
     let failed = false;
     let objWithLinks = obj;
 
@@ -188,15 +207,25 @@ async function buildLinks<T>(pkg: IPackageMetadata, obj: T): Promise<{ objWithLi
                     }
                     else if (Array.isArray(attribute)) {
                         for (let i = 0; i < attribute.length; i++) {
-                            const { objWithLinks: link, failed: f } = await buildLinks(pkg, attribute[i]);
-                            if (!f) { attribute[i] = link; }
-                            else { failed = true; break objKeys; } // an inner recursive call failed
+                            const { objWithLinks: link, failed: f } = await populateLinks(pkg, attribute[i], stopOnFailure);
+                            if (!f) {
+                                attribute[i] = link;
+                            }
+                            else {
+                                failed = true;  // an inner recursive call failed
+                                if (stopOnFailure) { break objKeys; }
+                            }
                         }
                     }
                     else if (typeof attribute === "object") {
-                        const { objWithLinks: link, failed: f } = await buildLinks(pkg, obj[key as keyof T]);
-                        if (!f) { obj[key as keyof T] = link; }
-                        else { failed = true; break objKeys; } // an inner recursive call failed
+                        const { objWithLinks: link, failed: f } = await populateLinks(pkg, obj[key as keyof T], stopOnFailure);
+                        if (!f) {
+                            obj[key as keyof T] = link;
+                        }
+                        else {
+                            failed = true;  // an inner recursive call failed
+                            if (stopOnFailure) { break objKeys; }
+                        }
                     }
                 }
             }
@@ -207,6 +236,11 @@ async function buildLinks<T>(pkg: IPackageMetadata, obj: T): Promise<{ objWithLi
     return { objWithLinks, failed };
 }
 
+/**
+ * Determins whether a property is a link
+ * @param property The property to check
+ * @returns Whether the property is a link
+ */
 function isLink(property: unknown): property is ILink {
     return (
         typeof property === "object"
@@ -219,95 +253,142 @@ function isLink(property: unknown): property is ILink {
     );
 }
 
+/**
+ * Gets a linked entry
+ * @param pkg The current package
+ * @param link The link to get
+ * @returns A linked entry
+ */
 async function getLink(pkg: IPackageMetadata, link: ILink): Promise<IEntrySchema | null> {
     return await Entry.findOne({ packageId: pkg.ns, groupId: link["group"], bid: link["id"] }).exec();
 }
 
-export async function publishPackage(pkg: IPackageMetadata | null): Promise<void> {
-    if (pkg) {
-        const outDir = path.join(paths.temp, "output", pkg.ns);
-        await mkdir(outDir, { recursive: true });
-
-        // Loop over groups
-        for (const group of pkg.groups) {
-            console.log("Building group", group.ns);
-            const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }).lean().exec();
-
-            // Loop over entries
-            for (const entry of entries) {
-                const previewLayout: ILayout = {
-                    packageId: pkg.ns,
-                    groupId: group.ns,
-                    bid: entry.bid,
-                    viewType: ViewType.preview,
-                    sortValues: {},
-                    values: {}
-                };
-                const viewLayout: ILayout = {
-                    packageId: pkg.ns,
-                    groupId: group.ns,
-                    bid: entry.bid,
-                    viewType: ViewType.view,
-                    sortValues: {},
-                    values: {}
-                };
-                const precomputedSortValues: { [key: string]: string | string[] } = {};
-
-                // Loop over languages
-                for (const lang of pkg.langs) {
-                    const script = await (await getScript(pkg.ns, group.ns))({ entry, lang });
-
-                    // Preview
-                    const previewScripts: { [key: string]: string } = {};
-                    previewLayout.values[lang] = {
-                        layout: await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang, scripts: previewScripts }),
-                        style: await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang }),
-                        script: `<script>${script}${Object.values(previewScripts).join("")}</script>`
-                    };
-
-                    // View
-                    const viewScripts: { [key: string]: string } = {};
-                    viewLayout.values[lang] = {
-                        layout: await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang, scripts: viewScripts }),
-                        style: await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang }),
-                        script: `<script>${script}${Object.values(viewScripts).join("")}</script>`
-                    };
-                }
-
-                // Loop over sort settings
-                for (const sortSetting of group.sortSettings) {
-                    if (typeof sortSetting.path === "string") {
-                        precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
-                    }
-                    else {
-                        precomputedSortValues[sortSetting.name] = [];
-                        for (const p of sortSetting.path) {
-                            (precomputedSortValues[sortSetting.name] as string[]).push(await getAttribute(entry, p) as string);
-                        }
-                    }
-                }
-                precomputedSortValues["None"] = entry.bid;
-                previewLayout.sortValues = precomputedSortValues;
-                viewLayout.sortValues = precomputedSortValues;
-
-                // Save precomputed layout
-                await Layout.findOneAndUpdate({
-                    packageId: pkg.ns,
-                    groupId: group.ns,
-                    bid: entry.bid,
-                    viewType: ViewType.preview
-                }, previewLayout, { upsert: true });
-                await Layout.findOneAndUpdate({
-                    packageId: pkg.ns,
-                    groupId: group.ns,
-                    bid: entry.bid,
-                    viewType: ViewType.view
-                }, viewLayout, { upsert: true });
-            }
-        }
-        console.log("Publishing", pkg.name, "complete!");
+/**
+ * Compiles entries for production
+ * @param event The event that kicked off the compilation
+ * @param pkg The current package
+ * @param compileAllGroups Whether all groups should be compiled
+ * @param compileAllEntries Whether all entries should be compiled, or just new ones
+ * @param groupCompilationSettings If only some groups should be compiled, this array indicates which groups should be compiled
+ */
+export async function onCompile(event: IpcMainEvent, pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[]): Promise<void> {
+    try {
+        await compilePackage(pkg, compileAllGroups, compileAllEntries, groupCompilationSettings, (update: string, pctCompletion: number, totalPctCompletion: number) =>
+            event.sender.send("task:task-update", update, pctCompletion, totalPctCompletion));
+        event.sender.send("task:task-complete");
     }
-    else if (isDev) {
-        console.log("Select a package first!");
+    catch (e) {
+        event.sender.send("task:task-failed");
+        console.log(chalk.red.bgWhite(e), e);
+    }
+}
+
+/**
+ * Helper function to compile entries for production
+ * @param pkg The current package
+ * @param compileAllGroups Whether all groups should be compiled
+ * @param compileAllEntries Whether all entries should be compiled, or just new ones
+ * @param groupCompilationSettings If only some groups should be compiled, this array indicates which groups should be compiled
+ * @param updateClient A callback used to update the client as entries are compiled
+ */
+async function compilePackage(pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[], updateClient: ClientUpdater) {
+    const outDir = path.join(paths.temp, "output", pkg.ns);
+    await mkdir(outDir, { recursive: true });
+
+    const groupsToCompile = pkg.groups.filter((_group, i) => compileAllGroups || groupCompilationSettings[i]);
+
+    const totalCompletion = 1 /* package */ + groupsToCompile.length;
+    let currentCompletion = 1;
+    updateClient(`Compiling package [${pkg.name}]`, 0, currentCompletion / totalCompletion);
+
+    // Loop over groups
+    for (let i = 0; i < groupsToCompile.length; i++) {
+        currentCompletion++;
+        const group = groupsToCompile[i];
+        if (!group) { continue; }
+
+        updateClient(`Compiling group [${group.ns}]`, 0, currentCompletion / totalCompletion);
+        const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns }).lean().exec();
+
+        const entryCount = entries.length;
+        let currentEntry = 0;
+
+        // Loop over entries
+        for (const entry of entries) {
+            currentEntry++;
+            updateClient(`Compiling group [${group.ns}] - entry [${entry.bid}]`, currentEntry / entryCount, currentCompletion / totalCompletion);
+            if (!compileAllEntries && await Layout.exists({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid }) !== null) {
+                continue; // only build new entries
+            }
+
+            const previewLayout: ILayout = {
+                packageId: pkg.ns,
+                groupId: group.ns,
+                bid: entry.bid,
+                viewType: ViewType.preview,
+                sortValues: {},
+                values: {}
+            };
+            const viewLayout: ILayout = {
+                packageId: pkg.ns,
+                groupId: group.ns,
+                bid: entry.bid,
+                viewType: ViewType.view,
+                sortValues: {},
+                values: {}
+            };
+            const precomputedSortValues: { [key: string]: string | string[] } = {};
+
+            // Loop over languages
+            for (const lang of pkg.langs) {
+                const script = await (await getScript(pkg.ns, group.ns))({ entry, lang });
+
+                // Preview
+                const previewScripts: { [key: string]: string } = {};
+                previewLayout.values[lang] = {
+                    layout: await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang, scripts: previewScripts }),
+                    style: await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang }),
+                    script: `<script>${script}${Object.values(previewScripts).join("")}</script>`
+                };
+
+                // View
+                const viewScripts: { [key: string]: string } = {};
+                viewLayout.values[lang] = {
+                    layout: await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang, scripts: viewScripts }),
+                    style: await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang }),
+                    script: `<script>${script}${Object.values(viewScripts).join("")}</script>`
+                };
+            }
+
+            // Loop over sort settings
+            for (const sortSetting of group.sortSettings) {
+                if (typeof sortSetting.path === "string") {
+                    precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
+                }
+                else {
+                    precomputedSortValues[sortSetting.name] = [];
+                    for (const p of sortSetting.path) {
+                        (precomputedSortValues[sortSetting.name] as string[]).push(await getAttribute(entry, p) as string);
+                    }
+                }
+            }
+            precomputedSortValues["None"] = entry.bid;
+            previewLayout.sortValues = precomputedSortValues;
+            viewLayout.sortValues = precomputedSortValues;
+
+            // Save precomputed layout
+            await Layout.findOneAndUpdate({
+                packageId: pkg.ns,
+                groupId: group.ns,
+                bid: entry.bid,
+                viewType: ViewType.preview
+            }, previewLayout, { upsert: true });
+            await Layout.findOneAndUpdate({
+                packageId: pkg.ns,
+                groupId: group.ns,
+                bid: entry.bid,
+                viewType: ViewType.view
+            }, viewLayout, { upsert: true });
+        }
     }
 }

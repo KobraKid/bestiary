@@ -35,8 +35,6 @@ contextBridge.exposeInMainWorld("pkg", {
 });
 
 contextBridge.exposeInMainWorld("config", {
-    onShowOptions: (callback: () => void) =>
-        ipcRenderer.on("options:show-options", () => callback()),
     saveAppConfig: (config?: IAppConfig) =>
         ipcRenderer.send("config:save-app-config", config),
     onUpdateAppConfig: (callback: (config: IAppConfig) => void) => {
@@ -56,26 +54,31 @@ contextBridge.exposeInMainWorld("config", {
 });
 
 contextBridge.exposeInMainWorld("menu", {
+    onShowOptions: (callback: () => void) => ipcRenderer.on("menu:show-options", () => callback()),
+    onShowCompile: (callback: () => void) => ipcRenderer.on("menu:show-compile", () => callback()),
     showGroupMenu: (pkg: IPackageMetadata, group: IGroupMetadata) => ipcRenderer.send("context-menu:show-group-menu", pkg, group),
     onConfigureGroup: (groupManager: (pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => void) => {
         ipcRenderer.removeAllListeners("context-menu:manage-group");
         ipcRenderer.on("context-menu:manage-group", (_event: IpcRendererEvent, pkg: IPackageMetadata, group: IGroupMetadata, config: IGroupConfig) => groupManager(pkg, group, config));
-    }
+    },
+    actionComplete: () => ipcRenderer.send("action-complete")
 });
 
-contextBridge.exposeInMainWorld("importer", {
-    importStart: (callback: () => void) => {
-        ipcRenderer.on("importer:import-start", () => callback());
-    },
-    importUpdate: (callback: (update: string, pctComplete: number, totalPctCompletion: number) => void) => {
-        ipcRenderer.on("importer:import-update", (_event: IpcRendererEvent, update: string, pctComplete: number, totalPctCompletion: number) =>
+contextBridge.exposeInMainWorld("task", {
+    taskUpdate: (callback: (update: string, pctComplete: number, totalPctCompletion: number) => void) => {
+        ipcRenderer.on("task:task-update", (_event: IpcRendererEvent, update: string, pctComplete: number, totalPctCompletion: number) =>
             callback(update, pctComplete, totalPctCompletion));
     },
-    importComplete: (callback: () => void) => {
-        ipcRenderer.on("importer:import-complete", () => callback());
+    taskComplete: (callback: () => void) => {
+        ipcRenderer.on("task:task-complete", () => callback());
     },
-    importFailed: (callback: () => void) => {
-        ipcRenderer.on("importer:import-failed", () => callback());
+    taskFailed: (callback: () => void) => {
+        ipcRenderer.on("task:task-failed", () => callback());
+    },
+    // specific tasks
+    importPackage: (callback: () => void) => ipcRenderer.on("task:import", () => callback()),
+    compilePackage: (pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[]) => {
+        ipcRenderer.send("task:compile", pkg, compileAllGroups, compileAllEntries, groupCompilationSettings);
     }
 });
 

@@ -1,23 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { CSSTransition } from "react-transition-group";
 import { createRoot } from "react-dom/client";
-import { GroupMenu, PackageMenu } from "./components/menu";
-import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
-import useScript from "./hooks/useScript";
-import { Options } from "./components/options";
+import { CSSTransition } from "react-transition-group";
 import { IAppConfig } from "../model/Config";
-import { AppContext, PackageContext } from "./context";
-import { IGroupMetadata } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
+import { IGroupMetadata } from "../model/Group";
 import { IMap } from "../model/Map";
-import { Group } from "./components/group";
 import { Entry } from "./components/entry";
-import { Map } from "./components/map";
+import { Group } from "./components/group";
 import { GroupConfigView } from "./components/groupConfig";
-import { ImportView } from "./components/importview";
+import { Map } from "./components/map";
+import { GroupMenu, PackageMenu } from "./components/menu";
+import { Options } from "./components/options";
+import { CompileView } from "./components/tasks/compileView";
+import { ImportView } from "./components/tasks/importView";
+import { AppContext, PackageContext } from "./context";
+import useScript from "./hooks/useScript";
+import { DISPLAY_MODE, useViewModel } from "./hooks/useViewModel";
+
 import "./styles/app.scss";
 import "./styles/transitions.scss";
-import "./styles/importer.scss";
 
 /**
  * Represents a view frame for backwards navigation
@@ -59,9 +60,10 @@ const App: React.FC = () => {
     }, [selectEntry]);
 
     useEffect(() => {
+        window.menu.actionComplete(); // force no action in progress
         window.config.saveAppConfig(); // force a load from the saved config
         window.config.onUpdateAppConfig(setConfig);
-        window.config.onShowOptions(() => setOptionsVisible(true));
+        window.menu.onShowOptions(() => setOptionsVisible(true));
         window.pkg.onLoadGroupEntry(addEntryToGroup);
         window.config.onUpdateGroupConfig(updateConfig);
     }, []);
@@ -74,12 +76,16 @@ const App: React.FC = () => {
     return (
         <AppContext.Provider value={{ config }}>
             <LoadingMask isLoading={isLoading} />
-            <Options show={optionsVisible} onHide={() => setOptionsVisible(false)} />
+            <Options show={optionsVisible} onHide={() => {
+                setOptionsVisible(false);
+                window.menu.actionComplete();
+            }} />
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}
                 style={{ backgroundColor: config?.bgColor }}>
-                <ImportView />
-                <GroupConfigView />
                 <PackageContext.Provider value={{ pkg: view.pkg, selectGroup, selectEntry, updateGroup }}>
+                    <ImportView />
+                    <CompileView />
+                    <GroupConfigView />
                     <PackageMenu
                         expanded={pkgMenuExpanded}
                         setExpanded={setPkgMenuExpanded}

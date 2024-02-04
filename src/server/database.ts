@@ -1,18 +1,18 @@
-import mongoose, { SortOrder } from "mongoose";
-import path from "path";
-import sass from "sass";
 import { IpcMainInvokeEvent } from "electron";
 import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
-import { hb, isDev, paths } from "./electron";
-import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
-import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
-import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
-import { ILandmark, IMap } from "../model/Map";
-import Resource from "../model/Resource";
-import { createOrLoadGroupConfig } from "./group";
+import mongoose, { SortOrder } from "mongoose";
+import path from "path";
+import sass from "sass";
 import { pathToFileURL } from "url";
+import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
+import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import Layout from "../model/Layout";
+import { ILandmark, IMap } from "../model/Map";
+import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
+import Resource from "../model/Resource";
+import { hb, isDev, paths } from "./electron";
+import { createOrLoadGroupConfig } from "./group";
 
 type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code, scripts?: { [key: string]: string } };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
@@ -48,7 +48,6 @@ enum FileType {
 }
 
 interface GroupEntryParams {
-    event: IpcMainInvokeEvent,
     pkg: IPackageMetadata,
     group: IGroupMetadata,
     lang: ISO639Code,
@@ -58,6 +57,9 @@ interface GroupEntryParams {
 
 /**
  * Set up the database connection.
+ * @param server The server connection string
+ * @param username The username to connect with
+ * @param password The password to connect with
  */
 export async function setup(server: string, username: string, password: string): Promise<void> {
     const connectionState = mongoose.connection.readyState;
@@ -128,28 +130,37 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
     };
 }
 
-export async function prevPage(params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
-    const { event } = params;
+/**
+ * Navigates to the previous page
+ * @param event The event which triggered the page change
+ * @param params The remaining parameters
+ * @returns A list of entries for the updated page
+ */
+export async function prevPage(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
     page = Math.max(page - 1, 0);
     event.sender.send("pkg:update-page-number", page);
-    return getGroupEntries(params);
+    return getGroupEntries(event, params);
 }
 
-export async function nextPage(params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
-    const { event } = params;
+/**
+ * Navigates to the next page
+ * @param event The event which triggered the page change
+ * @param params The remaining parameters
+ * @returns A list of entries for the updated page
+ */
+export async function nextPage(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<IEntryMetadata[] | null> {
     page = Math.min(page + 1, pages - 1);
     event.sender.send("pkg:update-page-number", page);
-    return getGroupEntries(params);
+    return getGroupEntries(event, params);
 }
 
 /**
  * Loads each entry in a group and sends the results back to the event's original sender.
  * @param event The event that triggered this action.
- * @param pkg The current package.
- * @param group The current group.
- * @param lang The language to display in.
+ * @param params The remaining parameters
+ * @returns A list of entries for the group on the current page
  */
-export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryMetadata[]> {
+export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<IEntryMetadata[]> {
     const { pkg, group, sortBy, groupBy } = params;
 
     if (sortBy) {
@@ -171,8 +182,8 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryM
         .lean()
         .exec();
 
-    if (isDev) { getGroupEntriesDev(params); }
-    else { getGroupEntriesProd(params); }
+    if (isDev) { getGroupEntriesDev(event, params); }
+    else { getGroupEntriesProd(event, params); }
 
     return entries.map(entry => {
         return {
@@ -184,8 +195,8 @@ export async function getGroupEntries(params: GroupEntryParams): Promise<IEntryM
     });
 }
 
-async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
-    const { event, pkg, group, lang } = params;
+async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<void> {
+    const { pkg, group, lang } = params;
 
     const currentPage = page;
     const entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
@@ -200,7 +211,7 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
     for (const entry of entries) {
         if (currentPage !== page) { continue; }
         const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
-        if ((entryCache[key] ?? "").length === 0 || isDev) {
+        if ((entryCache[key] ?? "").length === 0) {
             entryCache[key] = [await layout({ entry, lang }), "", ""];
         }
 
@@ -235,8 +246,8 @@ async function getGroupEntriesDev(params: GroupEntryParams): Promise<void> {
     }
 }
 
-async function getGroupEntriesProd(params: GroupEntryParams): Promise<void> {
-    const { event, pkg, group, lang } = params;
+async function getGroupEntriesProd(event: IpcMainInvokeEvent, params: GroupEntryParams): Promise<void> {
+    const { pkg, group, lang } = params;
 
     const currentPage = page;
     const entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
@@ -280,7 +291,7 @@ async function getEntryDev(pkg: IPackageMetadata, groupId: string, entryId: stri
     }
 
     const key = getEntryCacheKey(pkg.ns, groupId, entryId, ViewType.view);
-    if ((entryCache[key] ?? "").length === 0 || isDev) {
+    if ((entryCache[key] ?? "").length === 0) {
         entryCache[key] = [
             await (await getLayout(pkg.ns, groupId, ViewType.view))({ entry, lang }),
             await (await getScript(pkg.ns, groupId))({ entry, lang }),
@@ -352,42 +363,42 @@ async function getMap(pkg: IPackageMetadata, entry: IEntrySchema, lang: ISO639Co
 /**
  * Gets the layout for an entry.
  * @param pkg The current package.
- * @param groupNamespace The current group's namespace.
+ * @param groupId The current group.
  * @param viewType The type of view we are loading.
  * @returns An HTML string populated with attributes from the current entry.
  */
-export async function getLayout(pkgId: string, groupNamespace: string, viewType: ViewType): Promise<EntryLayoutFile> {
-    const filePath = getFilePath(pkgId, groupNamespace, FileType.layout, viewType);
-    return getFile(pkgId, groupNamespace, filePath, FileType.layout, viewType);
+export async function getLayout(pkgId: string, groupId: string, viewType: ViewType): Promise<EntryLayoutFile> {
+    const filePath = getFilePath(pkgId, groupId, FileType.layout, viewType);
+    return getFile(pkgId, groupId, filePath, FileType.layout, viewType);
 }
 
 /**
  * Gets the script for an entry.
  * @param pkg The current package.
- * @param groupNamespace The current group's namespace.
+ * @param groupId The current group.
  * @returns JavaScript code.
  */
-export async function getScript(pkgId: string, groupNamespace: string): Promise<EntryLayoutFile> {
-    const filePath = getFilePath(pkgId, groupNamespace, FileType.script, ViewType.any);
-    return getFile(pkgId, groupNamespace, filePath, FileType.script, ViewType.any);
+export async function getScript(pkgId: string, groupId: string): Promise<EntryLayoutFile> {
+    const filePath = getFilePath(pkgId, groupId, FileType.script, ViewType.any);
+    return getFile(pkgId, groupId, filePath, FileType.script, ViewType.any);
 }
 
 /**
  * Gets the style for an entry.
  * @param pkg The current package.
- * @param groupNamespace The current group's namespace.
+ * @param groupId The current group.
  * @returns A <style></style> element.
  */
-export async function getStyle(pkgId: string, groupNamespace: string, viewType: ViewType, context?: EntryLayoutContext): Promise<string> {
-    const filePath = getFilePath(pkgId, groupNamespace, FileType.style, viewType);
+export async function getStyle(pkgId: string, groupId: string, viewType: ViewType, context?: EntryLayoutContext): Promise<string> {
+    const filePath = getFilePath(pkgId, groupId, FileType.style, viewType);
 
     if (context) {
-        const file = await getFile(pkgId, groupNamespace, filePath, FileType.style, viewType);
+        const file = await getFile(pkgId, groupId, filePath, FileType.style, viewType);
         const parsedFile = await file(context);
         return compileStyle(parsedFile, filePath);
     } else {
         try {
-            return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${groupNamespace}.scss`)).css}</style>`;
+            return `<style>${sass.compile(path.join(paths.data, pkgId, "style", viewType, `${groupId}.scss`)).css}</style>`;
         }
         catch (err) {
             console.log((err as Error).message);
@@ -396,6 +407,12 @@ export async function getStyle(pkgId: string, groupNamespace: string, viewType: 
     }
 }
 
+/**
+ * Compiles a SASS stylesheet for an entry.
+ * @param style The SASS code to compile.
+ * @param filePath The location of the SASS file.
+ * @returns A string containing the compiled HTML style element.
+ */
 function compileStyle(style: string, filePath: string): string {
     try {
         return `<style>${sass.compileString(style, {
@@ -413,26 +430,53 @@ function compileStyle(style: string, filePath: string): string {
     return "";
 }
 
-async function getFile(pkgId: string, groupNamespace: string, filePath: string, fileType: FileType, viewType: ViewType): Promise<EntryLayoutFile> {
-    const key = `${pkgId}.${groupNamespace}.${fileType}.${viewType}`;
+/**
+ * Gets a file (layout, style, or script) for an entry.
+ * @param pkgId The current package.
+ * @param groupId The current group.
+ * @param filePath The location of the file to load.
+ * @param fileType The type of file to load.
+ * @param viewType The view type to load.
+ * @returns The file compiled through handlebars.
+ */
+async function getFile(pkgId: string, groupId: string, filePath: string, fileType: FileType, viewType: ViewType): Promise<EntryLayoutFile> {
+    const key = `${pkgId}.${groupId}.${fileType}.${viewType}`;
     if (!layoutCache[key] || isDev) {
         try {
             const file = await readFile(filePath, { encoding: "utf-8" });
             layoutCache[key] = hb.compile(file.toString(), { noEscape: true });
         }
         catch (err) {
-            console.log((err as Error).message);
+            if (!(err as Error).message.startsWith("ENOENT")) { // ignore file not found errors
+                console.log((err as Error).message);
+            }
             layoutCache[key] = async () => { return ""; }; // cache an empty string to skip trying to re-get file on each cache miss
         }
     }
     return layoutCache[key]!; // we guarantee that the cache holds a value even when an error is thrown
 }
 
-function getFilePath(pkgId: string, groupNamespace: string, fileType: FileType, viewType: ViewType): string {
+/**
+ * Builds a file path for an entry based on the fileType and viewType.
+ * @param pkgId The current package.
+ * @param groupId The current group.
+ * @param fileType The type of file to load.
+ * @param viewType The view type to load.
+ * @returns The file path that should be used to load the file.
+ */
+function getFilePath(pkgId: string, groupId: string, fileType: FileType, viewType: ViewType): string {
     const ext = (fileType === FileType.script) ? "js" : (fileType === FileType.style) ? "scss" : "hbs";
-    return path.join(paths.data, pkgId, fileType, viewType, `${groupNamespace}.${ext}`);
+    return path.join(paths.data, pkgId, fileType, viewType, `${groupId}.${ext}`);
 }
 
+/**
+ * Generates a unique key for an entry based on the viewType.
+ * @param packageId The current package.
+ * @param groupId The current group.
+ * @param bid The current entry.
+ * @param viewType The view type to load.
+ * @returns A unique key to store in the entry cache.
+ */
 function getEntryCacheKey(packageId: string, groupId: string, bid: string, viewType: ViewType) {
     return `${packageId}.${groupId}.${bid}.${viewType}`;
 }
@@ -449,7 +493,19 @@ export function clearLayoutCache() {
     }
 }
 
+/**
+ * Gets a resource string in the current locale
+ * @param pkgId The current package
+ * @param resId The resource ID
+ * @param lang The ISO-639 code of the language to load
+ * @returns A resource string
+ */
 export async function getResource(pkgId: string, resId: string, lang: ISO639Code): Promise<string> {
+    if (typeof resId !== "string") {
+        console.debug("Caution - expected resId to be a string, got", resId);
+        return "";
+    }
+
     const resource = await Resource.findOne({ packageId: pkgId, resId: resId }).lean().exec();
     if (resource?.value !== undefined) {
         return resource.value;

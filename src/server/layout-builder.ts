@@ -1,11 +1,16 @@
-import asyncHelpers, { AsyncHandlebars, HelperOptions } from "handlebars-async-helpers";
-import path from "path";
 import { SafeString } from "handlebars";
-import { hb, paths } from "./electron";
+import asyncHelpers, { AsyncHandlebars, HelperOptions } from "handlebars-async-helpers";
 import { IEntrySchema } from "../model/Entry";
 import { ISO639Code } from "../model/Package";
 import { ViewType, getAttribute, getLayout, getResource, getScript, getStyle } from "./database";
+import { hb } from "./electron";
 
+/**
+ * Gets data from the handlebars options
+ * @param options The handlebars options
+ * @param data The data node to retrieve
+ * @returns The data value
+ */
 function getDataFromOptions<T>(options: HelperOptions, data: string): T {
     return options.data.root[data];
 }
@@ -43,6 +48,11 @@ function parseDelegateParams(context?: any, arg1?: any, arg2?: any, arg3?: any, 
     return { context: undefined, arg1: undefined, arg2: undefined, arg3: undefined, arg4: undefined, arg5: undefined, options: context };
 }
 
+/**
+ * Registers bestiary helpers to handlebars
+ * @param handlebars The instance of handlebars to register helpers to
+ * @returns An async handlebars instance that can handle bestiary handlebars calls
+ */
 export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars {
     const hb = asyncHelpers(handlebars);
 
@@ -71,11 +81,6 @@ export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars 
         return await __stringHelper(context, options);
     });
 
-    hb.registerHelper("path", (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
-        const { context, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
-        return __pathHelper(context, options);
-    });
-
     hb.registerHelper("eq", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
         const { context, arg1, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
         return __eqHelper(context, arg1, options);
@@ -84,6 +89,9 @@ export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars 
     return hb;
 }
 
+/**
+ * Handles an {{#each}} block asynchronously
+ */
 async function __eachHelper(context: object, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
 
@@ -111,6 +119,9 @@ async function __eachHelper(context: object, options: HelperOptions): Promise<st
     return result;
 }
 
+/**
+ * Handles a {{view}} element asynchronously
+ */
 async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const lang = getDataFromOptions<ISO639Code>(options, "lang");
@@ -130,12 +141,15 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
 
         return new hb.SafeString(layout + style);
     }
-    else {
-        console.debug(linkedEntry);
+    else if (linkedEntry !== null) {
+        console.debug("Failed to get view for", context, "found", linkedEntry);
     }
     return "";
 }
 
+/**
+ * Handles a {{link}} element asynchronously
+ */
 async function __linkHelper(context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const attrPath = options.hash["path"] ?? "";
@@ -146,6 +160,9 @@ async function __linkHelper(context: unknown, options: HelperOptions): Promise<s
     return "";
 }
 
+/**
+ * Handles an {{image}} element asynchronously
+ */
 async function __imageHelper(hb: AsyncHandlebars, context: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
 
@@ -184,6 +201,9 @@ async function __imageHelper(hb: AsyncHandlebars, context: unknown, options: Hel
     return new hb.SafeString(`<img src="bestiary://${entry.packageId}/${src}" ${attributes.join(" ")} />`);
 }
 
+/**
+ * Handles a {{string}} element asynchronously
+ */
 async function __stringHelper(context: object, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     const lang = getDataFromOptions<ISO639Code>(options, "lang");
@@ -208,12 +228,9 @@ async function __stringHelper(context: object, options: HelperOptions): Promise<
     return new hb.SafeString(escapeString(resource));
 }
 
-function __pathHelper(context: string, options: HelperOptions): string | SafeString {
-    const entry = getDataFromOptions<IEntrySchema>(options, "entry");
-    if (!entry) { return ""; }
-    return new hb.SafeString(path.join(paths.data, entry.packageId, context).replace(/\\/g, "/"));
-}
-
+/**
+ * Handles an {{#eq}} block asynchronously
+ */
 async function __eqHelper(context: unknown, arg1: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
     let lCompare = context;
@@ -237,6 +254,9 @@ async function __eqHelper(context: unknown, arg1: unknown, options: HelperOption
     return lCompare == rCompare ? (await options.fn(this, { data: options.data })) : (await options.inverse(this));
 }
 
+/**
+ * Escapes < and >
+ */
 function escapeString(str: string): string {
     return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

@@ -10,14 +10,15 @@ export const GroupConfigView: React.FC = () => {
     const [group, setGroup] = useState<IGroupMetadata>();
     const [config, setConfig] = useState<GroupForConfig>();
 
-    const onCancel = useCallback(() => {
+    const onClose = useCallback(() => {
         setConfig(undefined);
         setGroup(undefined);
+        window.menu.actionComplete();
     }, []);
 
     const onUpdateConfig = useCallback((pkg: IPackageMetadata, group: IGroupMetadata, config: GroupForConfig) => {
         window.config.updateGroupConfig(pkg, group, config);
-        onCancel();
+        onClose();
     }, []);
 
     const onUpdateCollection = useCallback((id: number, newCollection: Partial<CollectionForConfig>) => {
@@ -145,9 +146,9 @@ export const GroupConfigView: React.FC = () => {
 
     const onKeyDown = useCallback((event: KeyboardEvent) => {
         if (event.key === "Escape") {
-            onCancel();
+            onClose();
         }
-    }, [onCancel]);
+    }, [onClose]);
 
     useEffect(() => {
         window.menu.onConfigureGroup((configPkg, configCollection, loadedConfig) => {
@@ -186,7 +187,7 @@ export const GroupConfigView: React.FC = () => {
                 </div>
                 <div className="collection-buttons">
                     <button onClick={() => onUpdateConfig(pkg, group, config)}>✔️ Accept</button>
-                    <button onClick={onCancel}>❌ Cancel</button>
+                    <button onClick={onClose}>❌ Cancel</button>
                 </div>
             </div>
         </div>
