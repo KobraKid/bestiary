@@ -348,7 +348,7 @@ async function compilePackage(pkg: IPackageMetadata, compileAllGroups: boolean, 
                 previewLayout.values[lang] = {
                     layout: await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang, scripts: previewScripts }),
                     style: await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang }),
-                    script: `<script>${script}${Object.values(previewScripts).join("")}</script>`
+                    script: `${script}${Object.values(previewScripts).join("")}`
                 };
 
                 // View
@@ -356,7 +356,7 @@ async function compilePackage(pkg: IPackageMetadata, compileAllGroups: boolean, 
                 viewLayout.values[lang] = {
                     layout: await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang, scripts: viewScripts }),
                     style: await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang }),
-                    script: `<script>${script}${Object.values(viewScripts).join("")}</script>`
+                    script: `${script}${Object.values(viewScripts).join("")}`
                 };
             }
 
