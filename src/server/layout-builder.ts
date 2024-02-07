@@ -82,8 +82,8 @@ export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars 
     });
 
     hb.registerHelper("eq", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
-        const { context, arg1, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
-        return __eqHelper(context, arg1, options);
+        const { context, arg1, arg2, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
+        return __eqHelper(context, arg1, arg2, options);
     });
 
     return hb;
@@ -229,12 +229,28 @@ async function __stringHelper(context: object, options: HelperOptions): Promise<
 }
 
 /**
- * Handles an {{#eq}} block asynchronously
+ * Handles an {{#eq}} block asynchronously.
+ * 
+ * Syntax: {{#eq context [arg1] [arg2] [lPath="..."] [rPath="..."]}}
+ * 
+ * If arg1 is provided, it is used as the left side of an equality comparison.
+ * If arg2 is provided, it is used as the right side of an equality comparison.
+ * If lPath is provided, it is used instead of arg1.
+ * If rPath is provided, it is used instead of arg2.
+ * 
+ * Performs an equality check bewteen the left and right side values.
+ * 
+ * @param context The context to use inside the block
+ * @param arg1 The first argument passed in
+ * @param arg2 The second argument passed in
+ * @param options Handlebars options
+ * 
+ * @returns A string containing the contents of the block if the left and right sides of the comparison were equal.
  */
-async function __eqHelper(context: unknown, arg1: unknown, options: HelperOptions): Promise<string | SafeString> {
+async function __eqHelper(context: unknown, arg1: unknown, arg2: unknown, options: HelperOptions): Promise<string | SafeString> {
     const entry = getDataFromOptions<IEntrySchema>(options, "entry");
-    let lCompare = context;
-    let rCompare = arg1;
+    let lCompare = arg1;
+    let rCompare = arg2;
     let lPath = "";
     let rPath = "";
     Object.keys(options.hash).forEach(key => {
@@ -249,9 +265,9 @@ async function __eqHelper(context: unknown, arg1: unknown, options: HelperOption
         lCompare = await getAttribute(context || entry, lPath);
     }
     if (rPath !== "") {
-        rCompare = await getAttribute(arg1 || entry, rPath);
+        rCompare = await getAttribute(context || entry, rPath);
     }
-    return lCompare == rCompare ? (await options.fn(this, { data: options.data })) : (await options.inverse(this));
+    return lCompare == rCompare ? (await options.fn(context, { data: options.data, blockParams: [context] })) : (await options.inverse(this));
 }
 
 /**
