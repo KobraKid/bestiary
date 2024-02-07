@@ -130,6 +130,8 @@ async function __viewHelper(hb: AsyncHandlebars, context: unknown, options: Help
     const linkedEntry = await getAttribute(context || entry, attrPath) as IEntrySchema;
 
     if (linkedEntry && linkedEntry.packageId != null && linkedEntry.groupId != null) {
+        if (linkedEntry.groupId === entry.groupId && linkedEntry.bid === linkedEntry.bid) { return ""; }
+
         const layout = await (await getLayout(linkedEntry.packageId, linkedEntry.groupId, ViewType.preview))({ entry: linkedEntry, lang });
         const style = await getStyle(linkedEntry.packageId, linkedEntry.groupId, ViewType.preview, { entry: linkedEntry, lang });
 
