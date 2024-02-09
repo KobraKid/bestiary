@@ -174,14 +174,12 @@ function main() {
             protocol.handle("bestiary", async request => {
                 const { host, pathname } = new URL(request.url);
                 const key = pathname.slice(1);
-                let response = imgCache.get<Response>(key);
+                let response = imgCache.get<string>(key);
                 if (response === null || response === undefined) {
-                    imgCache.set<Response>(key, await fetch(
-                        "data:image/jpeg;base64," + await getResource(host, pathname.slice(1), ISO639Code.English)
-                    ));
-                    response = imgCache.get<Response>(key);
+                    imgCache.set<string>(key, "data:image/jpeg;base64," + await getResource(host, pathname.slice(1), ISO639Code.English));
+                    response = imgCache.get<string>(key);
                 }
-                return response ?? new Response(`Unable to cache image ${request.url}`);
+                return response ? await fetch(response) : new Response(null);
             });
             createMenu();
             window = createWindow();
