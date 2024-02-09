@@ -32,118 +32,16 @@ Right clicking on a group in the list on the left edge brings up the *Manage* op
 
 For example, suppose your game features recruitable NPCs. You can add a collection named "Recruited" and after accepting the popup, you'll see checkboxes appear beside each entry in the group. Hovering over the checkbox will expand a banner indicating which collection it is linked to. Checking the box will collect that entry, adding it to your totals displayed below the games list.
 
-## Development
+## Host Your Own Bestiary
 
-You may wish to set up your own bestiary database. To do so, you'll need a few things.
-
-First of all, when running from source, you'll have access to two development-specific tools: importing and compiling. Importing is the first step, where a game packgae is imported into your database. Once a game package has been imported, you can compile it so that anyone can view it.
-
-#### Packages
-
-Packages contain the set of groups available within a particular game.
-
-A package is a `package.json` file, which contains the following data:
-
-```JavaScript
-{
-    "metadata": {
-        "name": "<Game name>",
-        "ns": "<Namespace/unique package prefix>",
-        "icon": "<Relative path to the game's icon>",
-        "langs": [ "<List of ISO-639 languages the game supports>" ],
-        "groups": [
-            {
-                "ns": "<Group namespace/unique prefix>",
-                "name": "<Group name>"
-            }
-        ]
-    },
-    "groups": [
-        {
-            "ns": "<Group namespace/unique prefix>",
-            "entries": [
-                {
-                    "bid": "<Unique entry bestiary ID>",
-                    ... // attributes for each entry
-                }
-            ]
-        }
-    ],
-    "resources": [
-        {
-            "resId": "<Unique resource ID>",
-            "values": {
-                "<Supported language>": "<Resource value>",
-                ...
-            }
-            // or
-            "resId": "<Unique resource ID>",
-            "type": "<Resource type (currently only image type is supported)>",
-            "basePath": "<Path to image resource>"
-        }
-    ]
-}
-```
-
-#### Groups
-
-Group represent each "type" of collectible group within a game.
-
-A group can be pretty much anything plural in a game, such as monsters, items, or abilities. Groups are shown on the left edge once a game package has been selected, and can be configured to host collections, as described in *Collection management*.
-
-#### Entries
-
-Entries represent individual items within a collectible group.
-
-An entry contains all of the attributes particular to itself, as well as links to other entries. Links take the following form:
-
-```JavaScript
-{
-    "type": "link",
-    "group": "<Group namespace to link to>",
-    "id": "<Entry bestiary ID to link to>"
-}
-```
-
-### Importing
-
-Once you've created a package, you can import it via File -> Dev Options -> Import...
-
-Any errors encountered during the load are logged to the console.
-
-### View setup
-
-After a package is imported, you'll want to set up some views for your entries. Views consist of files in the following folder structure:
-
-```
-%BestiaryData%/<group namespace>/layout
-                                       /preview
-                                               /GroupName.hbs
-                                       /view
-                                            /GroupName.hbs
-                                /scripts
-                                        /GroupName.js
-                                /style
-                                      /partials
-                                               /_partialFile.scss
-                                      /preview
-                                              /GroupName.scss
-                                      /view
-                                           /GroupName.scss
-```
-
-Files in the `preview` folders determine how entries are displayed in the group list (or when linked to with a Handlebars `{{view}}` element). Files in the `view` folders determine how a single entry is displayed when clicked. 
-
-The `.hbs` files are Handlebars-parsed HTML files. The `.scss` and `.js` files also support Handlebars.
-
-When running from source, these files will be parsed to build a layout for each entry. However, this can be slow as Handlebars needs to use the entry's attributes to populate the layout files. Once you've finished creating your layout files, they need to be compiled for general use.
-
-### Compiling
-
-Compiling is accessed via File -> Dev Options -> Complie.
-
-Compiling runs the layout files through Handlebars for each entry in each group you've indicated you'd like to compile. By default, all groups are compiled, but only new entries are compiled. Compiling generates a layout document that is stored in the database, and contains the final HTML code for an entry's `preview` and `view` variants, in each of your game package's supported languages.
+It's easy to set up your own Bestiary database. See the [Bestiary Wiki](https://github.com/KobraKid/bestiary/wiki) for more info.
 
 ## Attributions
 
 Logo created with [LogoMakr](https://LogoMakr.com/app)
+
+<a href="https://www.flaticon.com/packs/font-awesome" title="arrow icons">Arrow icons created by Dave Gandy - Flaticon</a>
+
+## Support
+
+[Support me here!](https://ko-fi.com/kobrakid1337)
