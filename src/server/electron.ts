@@ -13,6 +13,7 @@ import { clearEntryCache, clearLayoutCache, disconnect, getEntry, getGroup, getG
 import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
 import { onCompile, onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
+import NodeCache from "node-cache";
 
 enum Action {
     NONE,
@@ -35,6 +36,7 @@ ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 const config = new Config();
 let window: BrowserWindow | null = null;
 let currentAction: Action = Action.NONE;
+const imgCache = new NodeCache({ stdTTL: 600, useClones: false });
 //#endregion
 
 /**
@@ -152,6 +154,8 @@ function main() {
         app.on("window-all-closed", async () => {
             if (process.platform !== "darwin") {
                 await disconnect();
+                imgCache.flushAll();
+                imgCache.close();
                 app.quit();
             }
         });
@@ -169,7 +173,15 @@ function main() {
             await config.initialiazeConfig();
             protocol.handle("bestiary", async request => {
                 const { host, pathname } = new URL(request.url);
-                return fetch("data:image/jpeg;base64," + await getResource(host, pathname.slice(1), ISO639Code.English));
+                const key = pathname.slice(1);
+                let response = imgCache.get<Response>(key);
+                if (response === null || response === undefined) {
+                    imgCache.set<Response>(key, await fetch(
+                        "data:image/jpeg;base64," + await getResource(host, pathname.slice(1), ISO639Code.English)
+                    ));
+                    response = imgCache.get<Response>(key);
+                }
+                return response ?? new Response(`Unable to cache image ${request.url}`);
             });
             createMenu();
             window = createWindow();
@@ -201,7 +213,7 @@ function createMenu(): void {
                 click: clearLayoutCache
             },
             {
-                label: "Import...",
+                label: "Import",
                 accelerator: "CmdOrCtrl+I",
                 click: (_menuItem, browserWindow) => {
                     if (currentAction === Action.NONE) {
