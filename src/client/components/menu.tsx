@@ -50,7 +50,7 @@ export const PackageMenu = (props: IPackageMenuProps) => {
                 <PackageMenuItem
                     key={pkg.name}
                     name={pkg.name}
-                    icon={pkg.path + "\\" + pkg.icon}
+                    icon={pkg.icon}
                     expanded={expanded}
                     onPkgClicked={() => onPkgClickedCallback(pkg)} />)
             }
@@ -70,7 +70,7 @@ interface IPackageMenuItemProps {
      */
     name: string,
     /**
-     * Packagen icon
+     * Package icon
      */
     icon: string,
     /**

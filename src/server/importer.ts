@@ -61,7 +61,12 @@ async function importJson(pkgJson: IImportJson, updateClient: ClientUpdater) {
     const totalCompletion = 1 /* package */ + groups.length + 1 /* retries */ + 1 /* resources */;
     let currentCompletion = 1;
     updateClient(`Importing package [${metadata.name}]`, 0, currentCompletion / totalCompletion);
-    const pkg = await Package.findOneAndUpdate({ ns: metadata.ns }, metadata, { upsert: true, new: true });
+    const icon = await readFile(path.join(paths.data, metadata.ns, metadata.icon));
+    const pkg = await Package.findOneAndUpdate(
+        { ns: metadata.ns },
+        { ...metadata, icon: "data:image/jpeg;base64," + icon.toString("base64") },
+        { upsert: true, new: true }
+    );
 
     const retryEntries: { [groupId: string]: IEntryMetadata[] } = {};
     for (const group of groups) {
