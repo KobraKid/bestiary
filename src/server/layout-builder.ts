@@ -56,6 +56,11 @@ function parseDelegateParams(context?: any, arg1?: any, arg2?: any, arg3?: any, 
 export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars {
     const hb = asyncHelpers(handlebars);
 
+    hb.registerHelper("attr", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
+        const { context, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
+        return await __attrHelper(context, options);
+    });
+
     hb.registerHelper("each", async (_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options) => {
         const { context, options } = parseDelegateParams(_context, _arg1, _arg2, _arg3, _arg4, _arg5, _options);
         return await __eachHelper(context, options);
@@ -89,6 +94,21 @@ export function registerHelpers(handlebars: typeof Handlebars): AsyncHandlebars 
     return hb;
 }
 
+async function __attrHelper(context: object, options: HelperOptions): Promise<string | SafeString> {
+    const entry = getDataFromOptions<IEntrySchema>(options, "entry");
+
+    let attributePath = "";
+
+    Object.keys(options.hash).forEach(key => {
+        if (key === "path") {
+            attributePath = options.hash[key];
+        }
+    });
+
+    const attrValue = await getAttribute(context || entry, attributePath);
+    return new hb.SafeString(attrValue + "");
+}
+
 /**
  * Handles an {{#each}} block asynchronously
  */
@@ -113,7 +133,7 @@ async function __eachHelper(context: object, options: HelperOptions): Promise<st
         }
     }
     else {
-        result = await options.inverse(this);
+        result = await options.inverse(context ?? entry);
     }
 
     return result;
@@ -269,7 +289,7 @@ async function __eqHelper(context: unknown, arg1: unknown, arg2: unknown, option
     if (rPath !== "") {
         rCompare = await getAttribute(context || entry, rPath);
     }
-    return lCompare == rCompare ? (await options.fn(context, { data: options.data, blockParams: [context] })) : (await options.inverse(this));
+    return lCompare == rCompare ? (await options.fn(context, { data: options.data, blockParams: [context] })) : (await options.inverse(context, { data: options.data, blockParams: [context] }));
 }
 
 /**
