@@ -34,7 +34,7 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
 
     const layout = parse(entry.layout, {
         replace: (domNode) => {
-            if (domNode.type === "tag" && domNode.name === "a") {
+            if (domNode.type === "tag" && (domNode.name === "a" || domNode.name === "div")) {
                 const linkedGroup = domNode.attribs["data-linked-group"];
                 const linkedEntry = domNode.attribs["data-linked-entry"];
                 if (linkedGroup !== undefined && linkedEntry !== undefined) {
