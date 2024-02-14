@@ -273,8 +273,6 @@ function createWindow(): BrowserWindow {
         height: 720,
         title: isDev ? `Bestiary | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}` : `Bestiary ${app.getVersion()}`,
         darkTheme: true,
-        autoHideMenuBar: !isDev,
-        frame: true, // isDev,
         webPreferences: {
             sandbox: false,
             preload: path.join(__dirname, "preload.js")

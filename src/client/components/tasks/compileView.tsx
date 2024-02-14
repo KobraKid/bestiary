@@ -11,28 +11,32 @@ enum CompileState {
     COMPILING
 }
 
-type RecompileOption = "NEW" | "ALL";
+export const enum RecompileOption {
+    NEW = "New",
+    ALL = "All",
+    RECOMP_VALS = "Recompute Sorting/Grouping Values"
+}
 
 export const CompileView: React.FC = () => {
     const { pkg } = useContext(PackageContext);
     const [compileState, setCompileState] = useState<CompileState>(CompileState.NOT_COMPILING);
     const [compileAllGroups, setCompileAllGroups] = useState<boolean>(true);
     const [groupsToCompile, setGroupsToCompile] = useState<boolean[]>([]);
-    const [recompileOption, setRecompileOption] = useState<RecompileOption>("NEW");
+    const [recompileOption, setRecompileOption] = useState<RecompileOption>(RecompileOption.NEW);
 
     const onClose = useCallback(() => {
         setCompileState(CompileState.NOT_COMPILING);
         window.menu.actionComplete();
     }, []);
 
-    const onCompile = useCallback((pkg: IPackageMetadata, allGroups: boolean, allEntries: RecompileOption, groupSettings: boolean[]) => {
+    const onCompile = useCallback((pkg: IPackageMetadata, allGroups: boolean, recompileOption: RecompileOption, groupSettings: boolean[]) => {
         setCompileState(CompileState.COMPILING);
-        window.task.compilePackage(pkg, allGroups, allEntries === "ALL", groupSettings);
+        window.task.compilePackage(pkg, allGroups, recompileOption, groupSettings);
     }, []);
 
     useEffect(() => {
         setGroupsToCompile(pkg.groups.map(() => false));
-        setRecompileOption("NEW");
+        setRecompileOption(RecompileOption.NEW);
     }, [pkg]);
 
     useEffect(() => {
@@ -49,7 +53,10 @@ export const CompileView: React.FC = () => {
                         <input
                             type="checkbox"
                             checked={compileAllGroups}
-                            onChange={e => setCompileAllGroups(e.target.checked)} />All
+                            onChange={e => {
+                                setCompileAllGroups(e.target.checked);
+                                if (e.target.checked) { setGroupsToCompile(pkg.groups.map(() => false)); }
+                            }} />All
                     </div>
                     {!compileAllGroups &&
                         <div className="compile-group-list">
@@ -71,8 +78,9 @@ export const CompileView: React.FC = () => {
                     <h3>Select entries to compile</h3>
                     <div>
                         <select value={recompileOption} onChange={e => setRecompileOption(e.target.value as RecompileOption)}>
-                            <option value={"ALL"}>All entries</option>
-                            <option value={"NEW"}>Only new entries</option>
+                            <option value={RecompileOption.ALL}>All entries</option>
+                            <option value={RecompileOption.NEW}>Only new entries</option>
+                            <option value={RecompileOption.RECOMP_VALS}>Recompute Sorting/Grouping Values</option>
                         </select>
                     </div>
                     <div className="compile-buttons">

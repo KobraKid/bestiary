@@ -118,7 +118,9 @@
 }
 
 .group-bucket {
-    width: 100%;
+    width: calc(100vw - 64px);
+    margin: 0 4px 2px;
     background-color: lightgray;
+    border-radius: 8px;
     text-align: center;
 }

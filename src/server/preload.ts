@@ -6,6 +6,7 @@ import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { GroupForConfig, IAppConfig, IGroupConfig } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
+import { RecompileOption } from "../client/components/tasks/compileView";
 
 contextBridge.exposeInMainWorld("pkg", {
     loadPackages: (): Promise<IPackageMetadata[]> =>
@@ -77,8 +78,8 @@ contextBridge.exposeInMainWorld("task", {
     },
     // specific tasks
     importPackage: (callback: () => void) => ipcRenderer.on("task:import", () => callback()),
-    compilePackage: (pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[]) => {
-        ipcRenderer.send("task:compile", pkg, compileAllGroups, compileAllEntries, groupCompilationSettings);
+    compilePackage: (pkg: IPackageMetadata, compileAllGroups: boolean, recompileOption: RecompileOption, groupCompilationSettings: boolean[]) => {
+        ipcRenderer.send("task:compile", pkg, compileAllGroups, recompileOption, groupCompilationSettings);
     }
 });
 

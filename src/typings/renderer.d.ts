@@ -3,6 +3,7 @@ import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
+import { RecompileOption } from "../client/components/tasks/compileView";
 
 export interface IPkgAPI {
     loadPackages: () => Promise<IPackageMetadata[]>,
@@ -39,7 +40,7 @@ export interface ITaskAPI {
     taskFailed: (callback: () => void) => void,
     // specific tasks
     importPackage: (callback: () => void) => void,
-    compilePackage: (pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[]) => void,
+    compilePackage: (pkg: IPackageMetadata, compileAllGroups: boolean, recompileOption: RecompileOption, groupCompilationSettings: boolean[]) => void,
 }
 
 export interface IPathAPI {

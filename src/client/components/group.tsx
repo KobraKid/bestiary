@@ -4,6 +4,7 @@ import { IGroupMetadata, IGroupSettings, ISortSettings } from "../../model/Group
 import { PackageContext } from "../context";
 import { Entry } from "./entry";
 import "../styles/group.scss";
+import { IEntryMetadata } from "../../model/Entry";
 
 export interface IGroupProps {
     group: IGroupMetadata,
@@ -16,7 +17,7 @@ interface IPageProps {
     nextPage: () => void
 }
 
-const emptyGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [] };
+const emptyGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [], "direction": 1 };
 const emptySortOption: ISortSettings = { "name": "None", "path": "", "sortType": "string", "direction": 1 };
 
 export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & IPageProps) => {
@@ -33,11 +34,20 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
 
     const updateGroupOption = useCallback((optionName: string, sortOption: ISortSettings) => {
         const option = group.groupSettings.find(option => option.name === optionName) || emptyGroupOption;
-        setGroupOption(option);
-        updateGroup(sortOption, option);
+        setGroupOption(prevOption => {
+            const newOption: IGroupSettings = { ...option };
+            if (!newOption.direction) {
+                newOption.direction = 1;
+            }
+            if (option.name === prevOption.name) {
+                newOption.direction = (prevOption?.direction === 1) ? -1 : 1;
+            }
+            updateGroup(sortOption, newOption);
+            return newOption;
+        });
     }, [group.ns]);
 
-    const updateSortOption = useCallback((optionName: string, groupOption: IGroupSettings) => {
+    const updateSortOption = useCallback((optionName: string, groupOption?: IGroupSettings) => {
         const option = group.sortSettings.find(option => option.name === optionName) || emptySortOption;
         setSortOption(prevOption => {
             const newOption: ISortSettings = { ...option };
@@ -52,10 +62,16 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
         });
     }, [group.ns]);
 
+    const groupOptionBuckets = groupOption.direction === 1 ? groupOption.buckets : groupOption.buckets.slice().reverse();
+    const buckets: { name: string | undefined, entries: IEntryMetadata[] }[] = (groupOption?.buckets && group.entries.every(entry => entry.groupValues))
+        ? groupOptionBuckets.map(bucket =>
+            ({ name: bucket.name, entries: group.entries.filter(entry => entry.groupValues ? (entry.groupValues[groupOption.name] === bucket.value) : true) }))
+        : [{ name: undefined, entries: group.entries }];
+
     return (
         <>
             <div className="group-options">
-                {(group.groupSettings.length > 0 && false) && // TODO
+                {(group.groupSettings.length > 0 && groupOption !== undefined) &&
                     <div className="group-group-options">
                         <span>Group by: </span>
                         <select
@@ -64,6 +80,11 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
                         >
                             {group.groupSettings.map(option => <option key={option.name} label={option.name} value={option.name} />)}
                         </select>
+                        {groupOption.path.length > 0 &&
+                            <button onClick={() => updateGroupOption(groupOption.name, sortOption)}>
+                                {groupOption.direction === 1 ? "🔼 Ascending" : "🔽 Descending"}
+                            </button>
+                        }
                     </div>
                 }
                 {(group.sortSettings.length > 0) &&
@@ -99,11 +120,19 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
                 </div>
             </div>
             <div className="group-grid">
-                {
-                    group.entries.map(entry =>
-                        <Entry key={entry.bid} entry={entry} group={group} onClick={() => selectEntry(group.ns, entry.bid)} />
-                    )
-                }
+                {buckets.map(bucket => {
+                    return bucket.entries.length > 0 ?
+                        <>
+                            {bucket.name && <div className="group-bucket">{bucket.name}</div>}
+                            {bucket.entries.map(entry =>
+                                <Entry
+                                    key={entry.packageId + entry.groupId + entry.bid}
+                                    entry={entry}
+                                    group={group}
+                                    onClick={() => selectEntry(group.ns, entry.bid)} />
+                            )}
+                        </> : null;
+                })}
                 {group.style && parse(group.style)}
             </div>
             <div className="group-page-select">

@@ -30,10 +30,8 @@ let pages = 0;
 const defaultSortOption: [string, SortOrder][] = [["bid", 1]];
 let sortOption: [string, SortOrder][] = defaultSortOption;
 
-const defaultGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [] };
-// TODO: figure out how to apply groupings
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-let groupOption: IGroupSettings = defaultGroupOption;
+const defaultGroupOption: [string, SortOrder][] = [];
+let groupOption: [string, SortOrder][] = defaultGroupOption;
 
 export enum ViewType {
     view = "view",
@@ -115,16 +113,25 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
     const groupStyle = await getStyle(pkg.ns, group.ns, ViewType.preview);
     const groupConfig = await createOrLoadGroupConfig(pkg, group);
 
+    const groupSettings: IGroupSettings[] = [];
+    for (const option of groupMetadata?.groupSettings ?? []) {
+        const buckets: typeof option.buckets = [];
+        for (const bucket of option.buckets) {
+            buckets.push({ ...bucket, name: await getResource(pkg.ns, bucket.name, ISO639Code.English) });
+        }
+        groupSettings.push({ ...option, buckets, direction: 1 as SortOrder });
+    }
+
+    const sortSettings: ISortSettings[] = [];
+    for (const option of groupMetadata?.sortSettings ?? []) {
+        sortSettings.push({ ...option, direction: 1 as SortOrder });
+    }
+
     return {
         ...group,
         entries: group.entries || [],
-        groupSettings: (groupMetadata?.groupSettings.length || 0) > 0 ? [
-            { "name": "None", "path": "", "buckets": [] },
-            ...groupMetadata?.groupSettings || []
-        ] : [],
-        sortSettings: [
-            ...groupMetadata?.sortSettings?.map(option => { return { ...option, direction: 1 as SortOrder }; }) || []
-        ],
+        groupSettings,
+        sortSettings,
         style: groupStyle,
         config: groupConfig
     };
@@ -171,19 +178,26 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
                 sortOption = [[sortBy.path, sortBy.direction]];
             }
             else {
-                sortOption = [
-                    ...sortBy.path.map((p): [string, SortOrder] => [p, sortBy.direction])
-                ];
+                sortOption = [...sortBy.path.map((p): [string, SortOrder] => [p, sortBy.direction])];
             }
         }
-        if (groupBy) { groupOption = groupBy; } // TODO
+        if (groupBy) {
+            if (typeof groupBy.path === "string") {
+                groupOption = [[groupBy.path, 1]];
+            }
+            else {
+                groupOption = [...groupBy.path.map((p): [string, SortOrder] => [p, groupBy.direction])];
+            }
+        }
+
         // Load all entries for the page
         entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-            .sort(sortOption)
+            .sort(groupOption.concat(sortOption))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
             .lean()
             .exec();
+
         // Kick off individual entry load
         setImmediate(() => getGroupEntriesDev(event, params, entries));
     }
@@ -199,19 +213,30 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
                 ];
             }
         }
-        if (groupBy) { groupOption = groupBy; } // TODO
+        if (groupBy) {
+            if (typeof groupBy.path === "string") {
+                groupOption = [[`groupValues.${groupBy.name}`, groupBy.direction]];
+            }
+            else {
+                groupOption = [
+                    ...groupBy.path.map((_path, index): [string, SortOrder] => [`groupValues.${groupBy.name}.${index}`, groupBy.direction])
+                ];
+            }
+        }
+
         // Load all entries for the page
         entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
-            .sort(sortOption)
+            .sort(groupOption.concat(sortOption))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
             .lean()
             .exec();
+
         // Kick off individual entry load
         setImmediate(() => getGroupEntriesProd(event, params, entries as ILayoutSchema[]));
     }
 
-    return entries.map(entry => ({ ...entry, layout: "", groupSettings: [], sortSettings: [] }));
+    return entries.map(entry => ({ ...entry, layout: "" }));
 }
 
 async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryParams, entries: IEntrySchema[]): Promise<void> {
@@ -229,30 +254,10 @@ async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryP
 
         const [entryLayout] = entryCache[key] ?? ["", "", ""];
 
-        const groupSettings = await Promise.all(
-            group.groupSettings?.map(async setting => {
-                return {
-                    name: setting.name,
-                    path: setting.path,
-                    bucketValue: 0 // await getAttribute(entry.packageId, setting.path, entry, cache)
-                };
-            }) ?? []
-        );
-        const sortSettings = await Promise.all(
-            group.sortSettings?.map(async setting => {
-                return {
-                    name: setting.name,
-                    path: setting.path,
-                    value: 0 // await getAttribute(entry.packageId, setting.path, entry, cache)
-                };
-            }) ?? []
-        );
         event.sender.send("pkg:on-entry-loaded", {
             packageId: pkg.ns,
             groupId: group.ns,
             bid: entry.bid,
-            groupSettings: groupSettings,
-            sortSettings: sortSettings,
             layout: entryLayout
         });
     }
@@ -269,6 +274,8 @@ async function getGroupEntriesProd(event: IpcMainInvokeEvent, params: GroupEntry
             packageId: pkg.ns,
             groupId: group.ns,
             bid: entry.bid,
+            groupValues: entry.groupValues,
+            sortValues: entry.sortValues,
             layout: entry.values[lang]?.layout ?? ""
         });
     }

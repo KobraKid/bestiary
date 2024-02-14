@@ -10,6 +10,7 @@ import Package, { IPackageMetadata } from "../model/Package";
 import Resource, { IResource } from "../model/Resource";
 import { ViewType, getAttribute, getLayout, getScript, getStyle } from "./database";
 import { paths } from "./electron";
+import { RecompileOption } from "../client/components/tasks/compileView";
 
 type ClientUpdater = (update: string, pctCompletion: number, totalPctCompletion: number) => void;
 
@@ -273,12 +274,12 @@ async function getLink(pkg: IPackageMetadata, link: ILink): Promise<IEntrySchema
  * @param event The event that kicked off the compilation
  * @param pkg The current package
  * @param compileAllGroups Whether all groups should be compiled
- * @param compileAllEntries Whether all entries should be compiled, or just new ones
+ * @param recompileOption What should be compiled for each entry - the full view for all entries, the full view for new entreis, or just grouping/sorting values
  * @param groupCompilationSettings If only some groups should be compiled, this array indicates which groups should be compiled
  */
-export async function onCompile(event: IpcMainEvent, pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[]): Promise<void> {
+export async function onCompile(event: IpcMainEvent, pkg: IPackageMetadata, compileAllGroups: boolean, recompileOption: RecompileOption, groupCompilationSettings: boolean[]): Promise<void> {
     try {
-        await compilePackage(pkg, compileAllGroups, compileAllEntries, groupCompilationSettings, (update: string, pctCompletion: number, totalPctCompletion: number) =>
+        await compilePackage(pkg, compileAllGroups, recompileOption, groupCompilationSettings, (update: string, pctCompletion: number, totalPctCompletion: number) =>
             event.sender.send("task:task-update", update, pctCompletion, totalPctCompletion));
         event.sender.send("task:task-complete");
     }
@@ -292,11 +293,11 @@ export async function onCompile(event: IpcMainEvent, pkg: IPackageMetadata, comp
  * Helper function to compile entries for production
  * @param pkg The current package
  * @param compileAllGroups Whether all groups should be compiled
- * @param compileAllEntries Whether all entries should be compiled, or just new ones
+ * @param recompileOption What should be compiled for each entry - the full view for all entries, the full view for new entreis, or just grouping/sorting values
  * @param groupCompilationSettings If only some groups should be compiled, this array indicates which groups should be compiled
  * @param updateClient A callback used to update the client as entries are compiled
  */
-async function compilePackage(pkg: IPackageMetadata, compileAllGroups: boolean, compileAllEntries: boolean, groupCompilationSettings: boolean[], updateClient: ClientUpdater) {
+async function compilePackage(pkg: IPackageMetadata, compileAllGroups: boolean, recompileOption: RecompileOption, groupCompilationSettings: boolean[], updateClient: ClientUpdater) {
     const outDir = path.join(paths.temp, "output", pkg.ns);
     await mkdir(outDir, { recursive: true });
 
@@ -322,78 +323,123 @@ async function compilePackage(pkg: IPackageMetadata, compileAllGroups: boolean, 
         for (const entry of entries) {
             currentEntry++;
             updateClient(`Compiling group [${group.ns}] - entry [${entry.bid}]`, currentEntry / entryCount, currentCompletion / totalCompletion);
-            if (!compileAllEntries && await Layout.exists({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid }) !== null) {
-                continue; // only build new entries
+
+            // only build new entries
+            if ((recompileOption === RecompileOption.NEW) && await Layout.exists({ packageId: pkg.ns, groupId: group.ns, bid: entry.bid }) !== null) {
+                continue;
             }
 
-            const previewLayout: ILayout = {
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: entry.bid,
-                viewType: ViewType.preview,
-                sortValues: {},
-                values: {}
-            };
-            const viewLayout: ILayout = {
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: entry.bid,
-                viewType: ViewType.view,
-                sortValues: {},
-                values: {}
-            };
-            const precomputedSortValues: { [key: string]: string | string[] } = {};
+            // only recompute grouping/sorting values
+            else if ((recompileOption === RecompileOption.RECOMP_VALS)) {
+                const precomputedSortValues = await precomputeSortValues(group, entry);
+                const precomputedGroupValues = await precomputeGroupValues(group, entry);
 
-            // Loop over languages
-            for (const lang of pkg.langs) {
-                const script = await (await getScript(pkg.ns, group.ns))({ entry, lang });
+                await Layout.findOneAndUpdate({
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.preview
+                }, { sortValues: precomputedSortValues, groupValues: precomputedGroupValues });
+            }
 
-                // Preview
-                const previewScripts: { [key: string]: string } = {};
-                previewLayout.values[lang] = {
-                    layout: await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang, scripts: previewScripts }),
-                    style: await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang }),
-                    script: `${script}${Object.values(previewScripts).join("")}`
+            else {
+                const previewLayout: ILayout = {
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.preview,
+                    sortValues: {},
+                    values: {}
+                };
+                const viewLayout: ILayout = {
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.view,
+                    sortValues: {},
+                    values: {}
                 };
 
-                // View
-                const viewScripts: { [key: string]: string } = {};
-                viewLayout.values[lang] = {
-                    layout: await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang, scripts: viewScripts }),
-                    style: await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang }),
-                    script: `${script}${Object.values(viewScripts).join("")}`
-                };
-            }
+                // Loop over languages
+                for (const lang of pkg.langs) {
+                    const script = await (await getScript(pkg.ns, group.ns))({ entry, lang });
 
-            // Loop over sort settings
-            for (const sortSetting of group.sortSettings) {
-                if (typeof sortSetting.path === "string") {
-                    precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
-                }
-                else {
-                    precomputedSortValues[sortSetting.name] = [];
-                    for (const p of sortSetting.path) {
-                        (precomputedSortValues[sortSetting.name] as string[]).push(await getAttribute(entry, p) as string);
-                    }
-                }
-            }
-            precomputedSortValues["None"] = entry.bid;
-            previewLayout.sortValues = precomputedSortValues;
-            viewLayout.sortValues = precomputedSortValues;
+                    // Preview
+                    const previewScripts: { [key: string]: string } = {};
+                    previewLayout.values[lang] = {
+                        layout: await (await getLayout(pkg.ns, group.ns, ViewType.preview))({ entry, lang, scripts: previewScripts }),
+                        style: await getStyle(pkg.ns, group.ns, ViewType.preview, { entry, lang }),
+                        script: `${script}${Object.values(previewScripts).join("")}`
+                    };
 
-            // Save precomputed layout
-            await Layout.findOneAndUpdate({
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: entry.bid,
-                viewType: ViewType.preview
-            }, previewLayout, { upsert: true });
-            await Layout.findOneAndUpdate({
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: entry.bid,
-                viewType: ViewType.view
-            }, viewLayout, { upsert: true });
+                    // View
+                    const viewScripts: { [key: string]: string } = {};
+                    viewLayout.values[lang] = {
+                        layout: await (await getLayout(pkg.ns, group.ns, ViewType.view))({ entry, lang, scripts: viewScripts }),
+                        style: await getStyle(pkg.ns, group.ns, ViewType.view, { entry, lang }),
+                        script: `${script}${Object.values(viewScripts).join("")}`
+                    };
+                }
+
+                const precomputedSortValues = await precomputeSortValues(group, entry);
+                previewLayout.sortValues = precomputedSortValues;
+
+                const precomputedGroupValues = await precomputeGroupValues(group, entry);
+                previewLayout.groupValues = precomputedGroupValues;
+
+                // Save precomputed layout
+                await Layout.findOneAndUpdate({
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.preview
+                }, previewLayout, { upsert: true });
+                await Layout.findOneAndUpdate({
+                    packageId: pkg.ns,
+                    groupId: group.ns,
+                    bid: entry.bid,
+                    viewType: ViewType.view
+                }, viewLayout, { upsert: true });
+            }
         }
     }
+}
+
+async function precomputeSortValues(group: IGroupMetadata, entry: IEntrySchema) {
+    const precomputedSortValues: { [key: string]: string | string[] } = {};
+
+    // Loop over sort settings
+    for (const sortSetting of group.sortSettings) {
+        if (typeof sortSetting.path === "string") {
+            precomputedSortValues[sortSetting.name] = await getAttribute(entry, sortSetting.path) as string;
+        }
+        else {
+            precomputedSortValues[sortSetting.name] = [];
+            for (const p of sortSetting.path) {
+                (precomputedSortValues[sortSetting.name] as string[]).push(await getAttribute(entry, p) as string);
+            }
+        }
+    }
+    precomputedSortValues["None"] = entry.bid;
+
+    return precomputedSortValues;
+}
+
+async function precomputeGroupValues(group: IGroupMetadata, entry: IEntrySchema) {
+    const precomputedGroupValues: { [key: string]: string | string[] } = {};
+
+    // Loop over group settings
+    for (const groupSetting of group.groupSettings) {
+        if (typeof groupSetting.path === "string") {
+            precomputedGroupValues[groupSetting.name] = await getAttribute(entry, groupSetting.path) as string;
+        }
+        else {
+            precomputedGroupValues[groupSetting.name] = [];
+            for (const p of groupSetting.path) {
+                (precomputedGroupValues[groupSetting.name] as string[]).push(await getAttribute(entry, p) as string);
+            }
+        }
+    }
+
+    return precomputedGroupValues;
 }

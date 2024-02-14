@@ -2,6 +2,17 @@ import { SortOrder } from "mongoose";
 import { IGroupConfig } from "./Config";
 import { IEntryMetadata } from "./Entry";
 
+export interface IGroupBucket {
+    /**
+     * Bucket name
+     */
+    name: string,
+    /**
+     * Bucket value
+     */
+    value: string | number
+}
+
 export interface IGroupSettings {
     /**
      * Grouping name
@@ -26,25 +37,11 @@ export interface IGroupSettings {
      * In either case, buckets will be displayed in the same
      * order they are listed.
      */
-    buckets: {
-        /**
-         * Bucket name
-         */
-        name: string,
-        /**
-         * Bucket value
-         */
-        value: string
-    }[] | {
-        /**
-         * Bucket name
-         */
-        name: string,
-        /**
-         * Bucket value
-         */
-        value: number
-    }[]
+    buckets: IGroupBucket[],
+    /**
+     * Sort direction
+     */
+    direction: SortOrder
 }
 
 export interface ISortSettings {
@@ -63,7 +60,7 @@ export interface ISortSettings {
     /**
      * Sort direction
      */
-    direction: SortOrder;
+    direction: SortOrder
 }
 
 export interface IGroupMetadata {
