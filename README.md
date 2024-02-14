@@ -1,4 +1,5 @@
 # Bestiary
+![Logo](./icon-light.png)
 
 A flexible video game bestiary and collection manager.
 
