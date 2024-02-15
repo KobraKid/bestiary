@@ -1,6 +1,6 @@
 {
   "name": "bestiary",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bestiary - flexible and customizable",
   "main": "./dist/index.js",
   "scripts": {
