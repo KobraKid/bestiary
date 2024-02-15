@@ -19,7 +19,7 @@ export interface IEntryMetadata {
     /**
      * The values to use when grouping this entry
      */
-    groupValues?: { [key: string]: string | string[] } | undefined,
+    groupValues?: { [key: string]: number | number[] } | undefined,
     /**
      * The values to use when sorting this entry
      */

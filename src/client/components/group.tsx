@@ -17,6 +17,11 @@ interface IPageProps {
     nextPage: () => void
 }
 
+interface IBucket {
+    name?: string | undefined,
+    entries: IEntryMetadata[]
+}
+
 const emptyGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [], "direction": 1 };
 const emptySortOption: ISortSettings = { "name": "None", "path": "", "sortType": "string", "direction": 1 };
 
@@ -62,11 +67,12 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
         });
     }, [group.ns]);
 
-    const groupOptionBuckets = groupOption.direction === 1 ? groupOption.buckets : groupOption.buckets.slice().reverse();
-    const buckets: { name: string | undefined, entries: IEntryMetadata[] }[] = (groupOption?.buckets && group.entries.every(entry => entry.groupValues))
-        ? groupOptionBuckets.map(bucket =>
-            ({ name: bucket.name, entries: group.entries.filter(entry => entry.groupValues ? (entry.groupValues[groupOption.name] === bucket.value) : true) }))
-        : [{ name: undefined, entries: group.entries }];
+    const buckets: IBucket[] = (group.entries.every(entry => entry.groupValues))
+        ? groupOption.buckets.map((bucket, index) =>
+            ({ name: bucket.name, entries: group.entries.filter(entry => entry.groupValues![groupOption.name] === index) }))
+        : [{ entries: group.entries }];
+
+    if (groupOption.direction === -1) { buckets.reverse(); }
 
     return (
         <>

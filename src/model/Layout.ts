@@ -11,7 +11,7 @@ export interface ILayout {
         [key: string]: string | string[]
     },
     groupValues?: {
-        [key: string]: string | string[]
+        [key: string]: number | number[]
     }
     values: {
         [key in ISO639Code]?: {

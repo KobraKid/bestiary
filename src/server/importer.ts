@@ -426,17 +426,21 @@ async function precomputeSortValues(group: IGroupMetadata, entry: IEntrySchema) 
 }
 
 async function precomputeGroupValues(group: IGroupMetadata, entry: IEntrySchema) {
-    const precomputedGroupValues: { [key: string]: string | string[] } = {};
+    const precomputedGroupValues: { [key: string]: number | number[] } = {};
 
     // Loop over group settings
     for (const groupSetting of group.groupSettings) {
         if (typeof groupSetting.path === "string") {
-            precomputedGroupValues[groupSetting.name] = await getAttribute(entry, groupSetting.path) as string;
+            const bucketVal = await getAttribute(entry, groupSetting.path) as string;
+            const bucketNumber = groupSetting.buckets.findIndex(bucket => bucket.value === bucketVal);
+            precomputedGroupValues[groupSetting.name] = (bucketNumber === -1 ? groupSetting.buckets.length : bucketNumber);
         }
         else {
             precomputedGroupValues[groupSetting.name] = [];
             for (const p of groupSetting.path) {
-                (precomputedGroupValues[groupSetting.name] as string[]).push(await getAttribute(entry, p) as string);
+                const bucketVal = await getAttribute(entry, p) as string;
+                const bucketNumber = groupSetting.buckets.findIndex(bucket => bucket.value === bucketVal);
+                (precomputedGroupValues[groupSetting.name] as number[]).push(bucketNumber === -1 ? groupSetting.buckets.length : bucketNumber);
             }
         }
     }
