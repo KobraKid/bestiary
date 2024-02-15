@@ -22,8 +22,8 @@ interface IBucket {
     entries: IEntryMetadata[]
 }
 
-const emptyGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [], "direction": 1 };
-const emptySortOption: ISortSettings = { "name": "None", "path": "", "sortType": "string", "direction": 1 };
+const emptyGroupOption: IGroupSettings = { "name": "None", "path": "", "buckets": [], "direction": -1 };
+const emptySortOption: ISortSettings = { "name": "None", "path": "", "sortType": "string", "direction": -1 };
 
 export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & IPageProps) => {
     const { group, currentPage, totalPages, prevPage, nextPage } = props;
@@ -42,7 +42,7 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
         setGroupOption(prevOption => {
             const newOption: IGroupSettings = { ...option };
             if (!newOption.direction) {
-                newOption.direction = 1;
+                newOption.direction = -1;
             }
             if (option.name === prevOption.name) {
                 newOption.direction = (prevOption?.direction === 1) ? -1 : 1;

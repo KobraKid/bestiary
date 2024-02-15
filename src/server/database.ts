@@ -119,12 +119,12 @@ export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata,
         for (const bucket of option.buckets) {
             buckets.push({ ...bucket, name: await getResource(pkg.ns, bucket.name, ISO639Code.English) });
         }
-        groupSettings.push({ ...option, buckets, direction: 1 as SortOrder });
+        groupSettings.push({ ...option, buckets, direction: -1 as SortOrder });
     }
 
     const sortSettings: ISortSettings[] = [];
     for (const option of groupMetadata?.sortSettings ?? []) {
-        sortSettings.push({ ...option, direction: 1 as SortOrder });
+        sortSettings.push({ ...option, direction: -1 as SortOrder });
     }
 
     return {
