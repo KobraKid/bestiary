@@ -192,7 +192,7 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
 
         // Load all entries for the page
         entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-            .sort(groupOption.concat(sortOption))
+            .sort(groupOption.concat(sortOption).concat([["bid", 1]]))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
             .lean()
@@ -226,7 +226,7 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
 
         // Load all entries for the page
         entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
-            .sort(groupOption.concat(sortOption))
+            .sort(groupOption.concat(sortOption).concat([["bid", 1]]))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
             .lean()
