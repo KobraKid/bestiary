@@ -4,10 +4,10 @@ import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IAppConfig, IGroupConfig, IPackageConfig } from "../model/Config";
 
 interface IAppContext {
-    config: IAppConfig | null
+    config?: IAppConfig
 }
 
-export const AppContext = createContext<IAppContext>({ config: null });
+export const AppContext = createContext<IAppContext>({});
 
 interface IPackageContext {
     pkg: IPackageMetadata,

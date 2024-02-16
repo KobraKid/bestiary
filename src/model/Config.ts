@@ -1,10 +1,36 @@
+//#region App Config
+/**
+ * Application config
+ */
 export interface IAppConfig {
-    server: string,
-    username: string,
-    password: string,
-    bgColor: string
+    serverConfig: IServerConfig,
+    appearance: IAppearanceConfig
 }
 
+/**
+ * Server config
+ */
+export interface IServerConfig {
+    serverList: IServerInstance[]
+}
+
+export interface IServerInstance {
+    url: string,
+    username: string,
+    password: string
+}
+
+/**
+ * Appearance config
+ */
+export interface IAppearanceConfig {
+    bgColor: string,
+}
+//#endregion
+//#region Package config
+/**
+ * Package config
+ */
 export interface IPackageConfig {
     /**
      * The group configuration list
@@ -12,6 +38,9 @@ export interface IPackageConfig {
     groups?: IGroupConfig[]
 }
 
+/**
+ * Group config
+ */
 export interface IGroupConfig {
     /** 
      * The group ID
@@ -22,9 +51,13 @@ export interface IGroupConfig {
      */
     collections: ICollection[]
 }
-
+//#endregion
+//#region Collection config
 export type CollectionType = "boolean" | "number";
 
+/**
+ * Collection config
+ */
 export interface ICollection {
     /**
      * The collection ID
@@ -75,3 +108,4 @@ export interface ICollection {
 
 export type CollectionForConfig = Omit<ICollection, "available">;
 export type GroupForConfig = Omit<IGroupConfig, "collections"> & { collections: CollectionForConfig[] };
+//#endregion
