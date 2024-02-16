@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import parse from "html-react-parser";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../../model/Group";
 import { PackageContext } from "../context";
@@ -28,6 +28,8 @@ const emptySortOption: ISortSettings = { "name": "None", "path": "", "sortType":
 export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & IPageProps) => {
     const { group, currentPage, totalPages, prevPage, nextPage } = props;
     const { selectEntry, updateGroup } = useContext(PackageContext);
+
+    const skeleton = useMemo<string | JSX.Element | JSX.Element[]>(() => parse(group.skeleton ?? ""), [group.skeleton]);
 
     const [groupOption, setGroupOption] = useState<IGroupSettings>(group.groupSettings.at(0) || emptyGroupOption);
     const [sortOption, setSortOption] = useState<ISortSettings>(group.sortSettings.at(0) || emptySortOption);
@@ -67,7 +69,7 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
         });
     }, [group.ns]);
 
-    const buckets: IBucket[] = (group.entries.every(entry => entry.groupValues))
+    const buckets: IBucket[] = (group.entries.every(entry => entry.groupValues) && (groupOption.buckets.length > 1 || groupOption.buckets.at(0)?.name))
         ? groupOption.buckets.map((bucket, index) =>
             ({ name: bucket.name, entries: group.entries.filter(entry => entry.groupValues![groupOption.name] === index) }))
         : [{ entries: group.entries }];
@@ -135,6 +137,7 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
                                     key={entry.packageId + entry.groupId + entry.bid}
                                     entry={entry}
                                     group={group}
+                                    skeleton={skeleton}
                                     onClick={() => selectEntry(group.ns, entry.bid)} />
                             )}
                         </> : null;

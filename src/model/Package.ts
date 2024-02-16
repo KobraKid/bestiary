@@ -42,6 +42,10 @@ export interface IPackageMetadata {
      */
     icon: string,
     /**
+     * Server key to connect to for this package
+     */
+    connectionKey: string,
+    /**
      * List of groups contained in this package
      */
     groups: IGroupMetadata[],
@@ -83,7 +87,8 @@ const PkgSchema = new Schema<IPackageSchema>({
                 sortType: { type: String, required: true }
             }],
             required: false
-        }
+        },
+        skeleton: { type: String, required: false }
     }],
     langs: { type: [String], required: true }
 }, { collection: "packages" });

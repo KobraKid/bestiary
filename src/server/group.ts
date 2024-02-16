@@ -61,8 +61,10 @@ export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGro
         await createOrLoadPkgConfig(pkg);
     }
     const groupConfig = pkgConfig?.groups?.find(c => c.groupId === group.ns) ?? { groupId: group.ns, collections: [] };
-    await setCollectionMaximums(pkg, group, groupConfig);
-    return groupConfig;
+    return {
+        ...groupConfig,
+        collections: await setCollectionMaximums(pkg, group, groupConfig)
+    };
 }
 
 /**
@@ -81,7 +83,7 @@ export async function loadGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata
  */
 export function savePkgConfig(): void {
     try {
-        writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig));
+        writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig, undefined, 4));
     } catch (err: unknown) {
         console.log(chalk.white.bgRed("❌ Error saving package config at \"" + pkgConfigFile + "\"", err));
     }

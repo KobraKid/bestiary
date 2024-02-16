@@ -5,7 +5,7 @@ import "../styles/menu.scss";
 import upArrow from "../../assets/icons/up.png";
 import downArrow from "../../assets/icons/down.png";
 import leftArrow from "../../assets/icons/left.png";
-import { PackageContext } from "../context";
+import { AppContext, PackageContext } from "../context";
 
 /**
  * Props for the package menu
@@ -33,6 +33,7 @@ interface IPackageMenuProps {
 export const PackageMenu = (props: IPackageMenuProps) => {
     const { expanded, setExpanded, onPackageClicked } = props;
 
+    const { config } = useContext(AppContext);
     const [packages, setPackages] = useState(new Array<IPackageMetadata>());
 
     const onPkgClickedCallback = useCallback((pkg: IPackageMetadata) => {
@@ -41,14 +42,16 @@ export const PackageMenu = (props: IPackageMenuProps) => {
     }, []);
 
     useEffect(() => {
-        window.pkg.loadPackages().then((result: IPackageMetadata[]) => setPackages(result));
-    }, []);
+        if (config) {
+            window.pkg.loadPackages().then((result: IPackageMetadata[]) => setPackages(result));
+        }
+    }, [config]);
 
     return (
         <div className="package-menu">
-            {packages.map((pkg: IPackageMetadata) =>
+            {packages.map(pkg =>
                 <PackageMenuItem
-                    key={pkg.name}
+                    key={pkg.name + pkg.connectionKey}
                     name={pkg.name}
                     icon={pkg.icon}
                     expanded={expanded}

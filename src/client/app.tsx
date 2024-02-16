@@ -35,7 +35,7 @@ export interface ViewStackframe {
  * @returns The app
  */
 const App: React.FC = () => {
-    const [config, setConfig] = useState<IAppConfig | null>(null);
+    const [config, setConfig] = useState<IAppConfig | undefined>();
     const [optionsVisible, setOptionsVisible] = useState(false);
     const [pkgMenuExpanded, setPkgMenuExpanded] = useState(false);
     const {
@@ -81,7 +81,7 @@ const App: React.FC = () => {
                 window.menu.actionComplete();
             }} />
             <div className={pkgMenuExpanded ? "app-pkg-menu-expanded" : "app-pkg-menu-collapsed"}
-                style={{ backgroundColor: config?.bgColor }}>
+                style={{ backgroundColor: config?.appearance.bgColor }}>
                 <PackageContext.Provider value={{ pkg: view.pkg, selectGroup, selectEntry, updateGroup }}>
                     <ImportView />
                     <CompileView />
