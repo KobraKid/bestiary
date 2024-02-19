@@ -2,9 +2,11 @@ import { IpcMainInvokeEvent } from "electron";
 import { readFile } from "fs/promises";
 import { AsyncTemplateDelegate } from "handlebars-async-helpers";
 import mongoose, { SortOrder } from "mongoose";
+import NodeCache from "node-cache";
 import path from "path";
 import sass from "sass";
 import { pathToFileURL } from "url";
+import { IServerInstance } from "../model/Config";
 import Entry, { IEntryMetadata, IEntrySchema } from "../model/Entry";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import Layout, { ILayoutSchema } from "../model/Layout";
@@ -13,7 +15,6 @@ import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/
 import Resource from "../model/Resource";
 import { config, hb, isDev, paths, setWindowTitle } from "./electron";
 import { createOrLoadGroupConfig } from "./group";
-import { IServerInstance } from "../model/Config";
 
 type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code, scripts?: { [key: string]: string } };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
@@ -22,6 +23,7 @@ let connectionKey = "";
 
 const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema, lang: ISO639Code }> } = {};
 const entryCache: { [key: string]: [layout: string, style: string, script: string] } = {};
+const previewCache = new NodeCache({ stdTTL: 600, useClones: false });
 
 /** Number of entries per page */
 const entriesPerPage = 50;
@@ -321,17 +323,22 @@ async function getGroupEntriesProd(event: IpcMainInvokeEvent, params: GroupEntry
 
     for (const entry of entries) {
         if (currentPage !== page) { break; }
-        const e = await Layout.findById(entry._id).lean().exec();
-        if (e) {
-            event.sender.send("pkg:on-entry-loaded", {
-                packageId: pkg.ns,
-                groupId: group.ns,
-                bid: e.bid,
-                groupValues: e.groupValues,
-                sortValues: e.sortValues,
-                layout: e.values[lang]?.layout ?? ""
-            });
+        let preview = previewCache.get<string>(entry._id + lang);
+        if (preview === undefined) {
+            const e = await Layout.findById(entry._id).lean().exec();
+            if (e) {
+                preview = e.values[lang]?.layout ?? "";
+                previewCache.set<string>(entry._id + lang, preview);
+            }
         }
+        event.sender.send("pkg:on-entry-loaded", {
+            packageId: pkg.ns,
+            groupId: group.ns,
+            bid: entry.bid,
+            groupValues: entry.groupValues,
+            sortValues: entry.sortValues,
+            layout: preview ?? ""
+        });
     }
 }
 

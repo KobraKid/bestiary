@@ -61,8 +61,10 @@ export async function createOrLoadGroupConfig(pkg: IPackageMetadata, group: IGro
         await createOrLoadPkgConfig(pkg);
     }
     const groupConfig = pkgConfig?.groups?.find(c => c.groupId === group.ns) ?? { groupId: group.ns, collections: [] };
-    await setCollectionMaximums(pkg, group, groupConfig);
-    return groupConfig;
+    return {
+        ...groupConfig,
+        collections: await setCollectionMaximums(pkg, group, groupConfig)
+    };
 }
 
 /**
