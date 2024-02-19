@@ -15,9 +15,12 @@ export interface IServerConfig {
 }
 
 export interface IServerInstance {
+    connectionKey: string,
+    name: string,
     url: string,
     username: string,
-    password: string
+    password: string,
+    visiblePackages: string[]
 }
 
 /**

@@ -6,146 +6,146 @@ $menu-button-expanded-size: 128px;
 $menu-font-expanded-size: 1em;
 
 .package-menu {
-  grid-column: 1 / span 2;
-  grid-row: package-menu / span 1;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  background-color: rgba(colors.$medium, .5);
-  border-bottom: 2px solid colors.$medium;
-  width: 100%;
-  overflow-x: scroll;
-  z-index: 10;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-
-  .arrow-container {
-    flex-grow: 1;
-    height: 100%;
+    grid-column: 1 / span 2;
+    grid-row: package-menu / span 1;
     display: flex;
-    flex-direction: row-reverse;
-    flex-wrap: wrap;
-    align-content: flex-end;
+    flex-direction: row;
+    align-items: flex-end;
+    background-color: rgba(colors.$medium, .5);
+    border-bottom: 2px solid colors.$medium;
+    width: 100%;
+    overflow-x: scroll;
+    z-index: 10;
 
-    img {
-      padding: 16px;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
+    &::-webkit-scrollbar {
+        display: none;
     }
-  }
+
+    .arrow-container {
+        flex-grow: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: row-reverse;
+        flex-wrap: wrap;
+        align-content: flex-end;
+
+        img {
+            padding: 16px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+        }
+    }
 }
 
 @mixin menu-button {
-  background-color: colors.$text-dark;
-  border: none;
-  color: colors.$text-light;
-  flex-shrink: 0;
-  padding: 0;
-  transition: width .5s ease, height .5s ease, flex-basis .5s ease;
+    background-color: colors.$text-dark;
+    border: none;
+    color: colors.$text-light;
+    flex-shrink: 0;
+    padding: 0;
+    transition: width .5s ease, height .5s ease, flex-basis .5s ease;
 
-  .package {
-    width: 100%;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-    border-radius: 50%;
-    transition: border-radius .5s ease .2s;
+    .package {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        border-radius: 50%;
+        transition: border-radius .5s ease .2s;
 
-    .package-icon {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+        .package-icon {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .package-name {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 0%;
+            opacity: 0;
+            background-color: colors.$text-dark;
+            transition: opacity 1s ease, background-color 1s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        &:hover {
+            border-radius: 0%;
+            transition: border-radius .5s ease;
+
+            .package-name {
+                color: colors.$text-dark;
+                background-color: colors.$text-light;
+                opacity: 1;
+                transition: opacity .5s ease .3s, color .5s ease, background-color .5s ease;
+            }
+        }
+
+        &:last-child {
+            align-self: flex-end;
+        }
     }
-
-    .package-name {
-      height: 100%;
-      width: 100%;
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      border-radius: 0%;
-      opacity: 0;
-      background-color: colors.$text-dark;
-      transition: opacity 1s ease, background-color 1s ease;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-
-    &:hover {
-      border-radius: 0%;
-      transition: border-radius .5s ease;
-
-      .package-name {
-        color: colors.$text-dark;
-        background-color: colors.$text-light;
-        opacity: 1;
-        transition: opacity .5s ease .3s, color .5s ease, background-color .5s ease;
-      }
-    }
-
-    &:last-child {
-      align-self: flex-end;
-    }
-  }
 }
 
 .package-menu-button-collapsed {
-  @include menu-button;
-  flex-basis: $menu-button-collapsed-size;
-  height: $menu-button-collapsed-size;
-  font-size: $menu-font-collapsed-size;
+    @include menu-button;
+    flex-basis: $menu-button-collapsed-size;
+    height: $menu-button-collapsed-size;
+    font-size: $menu-font-collapsed-size;
 }
 
 .package-menu-button-expanded {
-  @include menu-button;
-  flex-basis: $menu-button-expanded-size;
-  height: $menu-button-expanded-size;
-  font-size: $menu-font-expanded-size;
+    @include menu-button;
+    flex-basis: $menu-button-expanded-size;
+    height: $menu-button-expanded-size;
+    font-size: $menu-font-expanded-size;
 }
 
 @mixin group-menu {
-  grid-column: group-menu / span 1;
-  grid-row: group-options / span 2;
-  display: flex;
-  flex-direction: column;
-  transition: top .5s ease;
-  overflow: auto;
+    grid-column: group-menu / span 1;
+    grid-row: group-options / span 2;
+    display: flex;
+    flex-direction: column;
+    transition: top .5s ease;
+    overflow: auto;
 }
 
 .group-menu-expanded {
-  @include group-menu;
-  top: $menu-button-expanded-size;
+    @include group-menu;
+    top: $menu-button-expanded-size;
 }
 
 .group-menu-collapsed {
-  @include group-menu;
-  top: $menu-button-collapsed-size;
+    @include group-menu;
+    top: $menu-button-collapsed-size;
 }
 
 .group-menu-button {
-  background-color: colors.$text-dark;
-  border: none;
-  color: colors.$text-light;
-  padding: 0;
-  width: $menu-button-collapsed-size;
-  height: $menu-button-collapsed-size;
-  font-size: $menu-font-collapsed-size;
-  transition: background-color .5s ease 0.05s, color .5s ease 0.05s;
+    background-color: colors.$text-dark;
+    border: none;
+    color: colors.$text-light;
+    padding: 0;
+    width: $menu-button-collapsed-size;
+    height: $menu-button-collapsed-size;
+    font-size: $menu-font-collapsed-size;
+    transition: background-color .5s ease 0.05s, color .5s ease 0.05s;
 
-  &:hover {
-    background-color: colors.$text-light;
-    color: colors.$text-dark;
-  }
+    &:hover {
+        background-color: colors.$text-light;
+        color: colors.$text-dark;
+    }
 }
 
 .package,
 .group-menu-button {
-  cursor: pointer;
+    cursor: pointer;
 }

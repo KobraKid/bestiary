@@ -157,13 +157,13 @@ export function useViewModel(): BestiaryData {
         }
     }, []);
     const [views, viewStackDispatch] = useReducer<(state: ViewStackframe[], action: IViewStackframeDispatchAction) => ViewStackframe[]>(viewStackReducer, [{
-        pkg: { ns: "", name: "", path: "", icon: "", groups: [], langs: [] },
+        pkg: { ns: "", name: "", path: "", icon: "", connectionKey: "", groups: [], langs: [] },
         group: { ns: "", name: "", entries: [], groupSettings: [], sortSettings: [] },
         displayMode: DISPLAY_MODE.group
     }]);
 
     const view = useRef<ViewStackframe>({
-        pkg: { ns: "", name: "", path: "", icon: "", groups: [], langs: [] },
+        pkg: { ns: "", name: "", path: "", icon: "", connectionKey: "", groups: [], langs: [] },
         group: { ns: "", name: "", entries: [], groupSettings: [], sortSettings: [] },
         displayMode: DISPLAY_MODE.group
     });
@@ -172,7 +172,7 @@ export function useViewModel(): BestiaryData {
     //#endregion
     //#region Navigation
     const selectPkg = useCallback((newPkg: IPackageMetadata) => {
-        if (newPkg.ns === view.current.pkg.ns) { return; }
+        if (newPkg.ns === view.current.pkg.ns && newPkg.connectionKey === view.current.pkg.connectionKey) { return; }
         selectGroup(newPkg, getFirstVisibleGroup(newPkg), lang);
     }, []);
 
@@ -180,6 +180,7 @@ export function useViewModel(): BestiaryData {
         setIsLoading(true);
         newGroup.entries = [];
         window.pkg.loadGroup(pkg, newGroup).then(group => {
+            if (!group) { return; }
             viewStackDispatch({ type: ViewStackframeActionType.RESET, targetView: { pkg, group } });
             window.pkg.loadGroupEntries(pkg, group, lang, sortBy || group.sortSettings.at(0), groupBy || group.groupSettings.at(0)).then(entryList => {
                 viewStackDispatch({ type: ViewStackframeActionType.UPDATE_ENTRY_LIST, entryList });

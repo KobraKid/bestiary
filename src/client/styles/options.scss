@@ -29,34 +29,83 @@
 
     .options {
         display: grid;
-        grid-template-columns: 150px 500px 24px;
+        grid-template-columns: 32px 150px 500px 27px;
         align-items: center;
         padding: 8px 32px;
         row-gap: 8px;
 
         .option-section {
-            grid-column: 1 / span 3;
+            grid-column: 1 / span 4;
             font-weight: bold;
         }
 
         label {
-            margin-left: 32px;
+            grid-column: 2;
         }
 
-        .options-server-group {
-            display: flex;
-            flex-direction: row;
-
-            input {
-                flex-grow: 1;
-            }
+        .options-help-toggle {
+            width: 24px;
         }
 
         .options-helptext {
-            grid-column: 1 / span 3;
-            margin-left: 32px;
+            grid-column: 3 / span 2;
             background-color: lightgrey;
             padding: 2px 4px;
+            margin: -6px 8px 2px 8px;
+            border-radius: 8px 0 8px 8px;
+        }
+
+        .options-add-server,
+        .options-remove-server {
+            grid-column: 1;
+        }
+
+        .options-server-instance {
+            display: grid;
+            grid-column: 2 / span 3;
+            grid-template-columns: 0 146px 500px 24px;
+            border: 1px solid black;
+            box-shadow: 3px 3px 3px black;
+            margin-left: 4px;
+
+            .options-server-group {
+                display: flex;
+                flex-direction: row;
+
+                input {
+                    flex-grow: 1;
+                }
+            }
+
+            .options-helptext {
+                margin: 4px 8px 2px 8px;
+            }
+
+            .options-server-pkgs {
+                grid-column: 2 / span 3;
+
+                .options-server-pkg-list {
+                    display: grid;
+                    grid-auto-flow: column;
+
+                    .options-server-pkg-icon {
+                        width: 128px;
+                        height: 128px;
+                        object-fit: cover;
+                    }
+
+                    .options-server-pkg-hidden {
+                        filter: grayscale(1) brightness(0.5);
+                    }
+
+                    .options-server-pkg-name {
+                        width: 128px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        text-wrap: nowrap;
+                    }
+                }
+            }
         }
     }
 

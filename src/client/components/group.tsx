@@ -67,7 +67,7 @@ export const Group: React.FC<IGroupProps & IPageProps> = (props: IGroupProps & I
         });
     }, [group.ns]);
 
-    const buckets: IBucket[] = (group.entries.every(entry => entry.groupValues))
+    const buckets: IBucket[] = (group.entries.every(entry => entry.groupValues) && (groupOption.buckets.length > 1 || groupOption.buckets.at(0)?.name))
         ? groupOption.buckets.map((bucket, index) =>
             ({ name: bucket.name, entries: group.entries.filter(entry => entry.groupValues![groupOption.name] === index) }))
         : [{ entries: group.entries }];

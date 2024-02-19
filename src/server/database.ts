@@ -11,11 +11,14 @@ import Layout, { ILayoutSchema } from "../model/Layout";
 import { ILandmark, IMap } from "../model/Map";
 import Package, { IPackageMetadata, IPackageSchema, ISO639Code } from "../model/Package";
 import Resource from "../model/Resource";
-import { hb, isDev, paths } from "./electron";
+import { config, hb, isDev, paths, setWindowTitle } from "./electron";
 import { createOrLoadGroupConfig } from "./group";
+import { IServerInstance } from "../model/Config";
 
 type EntryLayoutContext = { entry: Partial<IEntrySchema>, lang: ISO639Code, scripts?: { [key: string]: string } };
 type EntryLayoutFile = AsyncTemplateDelegate<EntryLayoutContext>;
+
+let connectionKey = "";
 
 const layoutCache: { [key: string]: AsyncTemplateDelegate<{ entry: IEntrySchema, lang: ISO639Code }> } = {};
 const entryCache: { [key: string]: [layout: string, style: string, script: string] } = {};
@@ -59,15 +62,17 @@ interface GroupEntryParams {
  * @param username The username to connect with
  * @param password The password to connect with
  */
-export async function setup(server: string, username: string, password: string): Promise<void> {
+export async function setup(server: IServerInstance): Promise<void> {
     const connectionState = mongoose.connection.readyState;
     if (connectionState === mongoose.ConnectionStates.disconnected || connectionState === mongoose.ConnectionStates.uninitialized) {
-        const encodedServerUrl = server.replace("<username>", username).replace("<password>", password);
+        const encodedServerUrl = server.url.replace("<username>", server.username).replace("<password>", server.password);
         await mongoose.connect(encodedServerUrl, { dbName: "bestiary" });
+        connectionKey = server.connectionKey;
+        setWindowTitle(server.name);
     }
     else {
         await disconnect();
-        setup(server, username, password);
+        await setup(server);
     }
 }
 
@@ -82,13 +87,43 @@ export async function disconnect(): Promise<void> {
  * Gets the list of available packages.
  * @returns The list of available packages.
  */
-export function getPackageList(): Promise<IPackageSchema[]> {
-    return Package.find({}).transform(pkgs => {
+export async function getPackageList(): Promise<IPackageSchema[]> {
+    try {
+        const pkgList: IPackageSchema[] = [];
+
+        for (const server of config.config.serverConfig.serverList) {
+            (await getPackageListForServer(server)).forEach(pkg => {
+                if (server.visiblePackages.includes(pkg.ns)) {
+                    pkgList.push(pkg);
+                }
+            });
+        }
+
+        return pkgList;
+    }
+    catch (e) {
+        console.debug(e);
+        return [];
+    }
+}
+
+/**
+ * Gets the list of available packages for a given server.
+ * @param server The server to load packages from.
+ * @returns The list of available packages for a given server.
+ */
+export async function getPackageListForServer(server: IServerInstance): Promise<IPackageSchema[]> {
+    await setup(server);
+
+    const pkgs = await Package.find({}).transform(pkgs => {
         pkgs.forEach(pkg => {
             pkg.path = path.join(paths.data, pkg.ns);
+            pkg.connectionKey = server.connectionKey;
         });
         return pkgs;
     }).lean().exec();
+
+    return pkgs;
 }
 
 /**
@@ -99,7 +134,17 @@ export function getPackageList(): Promise<IPackageSchema[]> {
  * @param _lang The language to display in.
  * @returns A group.
  */
-export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> {
+export async function getGroup(event: IpcMainInvokeEvent, pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata | null> {
+    if (pkg.connectionKey !== connectionKey) {
+        const server = config.config.serverConfig.serverList.find(server => server.connectionKey === pkg.connectionKey);
+        if (server) {
+            await setup(server);
+        }
+        else {
+            return null;
+        }
+    }
+
     // Send page count
     pages = Math.max(Math.ceil(await Entry.countDocuments({ packageId: pkg.ns, groupId: group.ns }).exec() / entriesPerPage), 1);
     event.sender.send("pkg:update-page-count", pages);
@@ -192,6 +237,7 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
 
         // Load all entries for the page
         entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
+            .projection({ "bid": 1 })
             .sort(groupOption.concat(sortOption).concat([["bid", 1]]))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
@@ -225,11 +271,13 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
         }
 
         // Load all entries for the page
-        entries = await Layout.find({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
-            .sort(groupOption.concat(sortOption).concat([["bid", 1]]))
+        entries = await Layout.aggregate()
+            .match({ packageId: pkg.ns, groupId: group.ns, viewType: ViewType.preview })
+            .project({ "bid": 1, "groupValues": 1, "sortValues": 1 })
+            .sort(groupOption.concat(sortOption).concat([["bid", 1]]).reduce((prev, curr) => ({ ...prev, [curr[0]]: curr[1] }), {}))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
-            .lean()
+            .option({ allowDiskUse: true })
             .exec();
 
         // Kick off individual entry load
@@ -246,20 +294,23 @@ async function getGroupEntriesDev(event: IpcMainInvokeEvent, params: GroupEntryP
     const layout = await getLayout(pkg.ns, group.ns, ViewType.preview);
 
     for (const entry of entries) {
-        if (currentPage !== page) { continue; }
-        const key = getEntryCacheKey(pkg.ns, group.ns, entry.bid, ViewType.preview);
-        if ((entryCache[key] ?? "").length === 0) {
-            entryCache[key] = [await layout({ entry, lang }), "", ""];
+        if (currentPage !== page) { break; }
+        const e = await Entry.findById(entry._id).lean().exec();
+        if (e) {
+            const key = getEntryCacheKey(pkg.ns, group.ns, e.bid, ViewType.preview);
+            if ((entryCache[key] ?? "").length === 0) {
+                entryCache[key] = [await layout({ entry: e, lang }), "", ""];
+            }
+
+            const [entryLayout] = entryCache[key] ?? ["", "", ""];
+
+            event.sender.send("pkg:on-entry-loaded", {
+                packageId: pkg.ns,
+                groupId: group.ns,
+                bid: e.bid,
+                layout: entryLayout
+            });
         }
-
-        const [entryLayout] = entryCache[key] ?? ["", "", ""];
-
-        event.sender.send("pkg:on-entry-loaded", {
-            packageId: pkg.ns,
-            groupId: group.ns,
-            bid: entry.bid,
-            layout: entryLayout
-        });
     }
 }
 
@@ -269,15 +320,18 @@ async function getGroupEntriesProd(event: IpcMainInvokeEvent, params: GroupEntry
     const currentPage = page;
 
     for (const entry of entries) {
-        if (currentPage !== page) { continue; }
-        event.sender.send("pkg:on-entry-loaded", {
-            packageId: pkg.ns,
-            groupId: group.ns,
-            bid: entry.bid,
-            groupValues: entry.groupValues,
-            sortValues: entry.sortValues,
-            layout: entry.values[lang]?.layout ?? ""
-        });
+        if (currentPage !== page) { break; }
+        const e = await Layout.findById(entry._id).lean().exec();
+        if (e) {
+            event.sender.send("pkg:on-entry-loaded", {
+                packageId: pkg.ns,
+                groupId: group.ns,
+                bid: e.bid,
+                groupValues: e.groupValues,
+                sortValues: e.sortValues,
+                layout: e.values[lang]?.layout ?? ""
+            });
+        }
     }
 }
 

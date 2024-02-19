@@ -1,4 +1,4 @@
-import { GroupForConfig, IAppConfig, IGroupConfig } from "../model/Config";
+import { GroupForConfig, IAppConfig, IGroupConfig, IServerInstance } from "../model/Config";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IEntryMetadata } from "../model/Entry";
@@ -7,7 +7,8 @@ import { RecompileOption } from "../client/components/tasks/compileView";
 
 export interface IPkgAPI {
     loadPackages: () => Promise<IPackageMetadata[]>,
-    loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata) => Promise<IGroupMetadata>,
+    loadPackagesForServer: (server: IServerInstance) => Promise<IPackageMetadata[]>,
+    loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata) => Promise<IGroupMetadata | null>,
     loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) => Promise<IEntryMetadata[]>,
     onLoadGroupEntry: (callback: (entry: IEntryMetadata) => void) => void,
     onUpdatePageCount: (callback: (pageCount: number) => void) => void,

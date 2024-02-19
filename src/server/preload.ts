@@ -3,7 +3,7 @@ import path = require("path");
 import chalk from "chalk";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
-import { GroupForConfig, IAppConfig, IGroupConfig } from "../model/Config";
+import { GroupForConfig, IAppConfig, IGroupConfig, IServerInstance } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IMap } from "../model/Map";
 import { RecompileOption } from "../client/components/tasks/compileView";
@@ -11,7 +11,9 @@ import { RecompileOption } from "../client/components/tasks/compileView";
 contextBridge.exposeInMainWorld("pkg", {
     loadPackages: (): Promise<IPackageMetadata[]> =>
         ipcRenderer.invoke("pkg:load-pkgs"),
-    loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata> =>
+    loadPackagesForServer: (server: IServerInstance): Promise<IPackageMetadata[]> =>
+        ipcRenderer.invoke("pkg:load-pkgs-for-server", server),
+    loadGroup: (pkg: IPackageMetadata, group: IGroupMetadata): Promise<IGroupMetadata | null> =>
         ipcRenderer.invoke("pkg:load-group", pkg, group),
     loadGroupEntries: (pkg: IPackageMetadata, group: IGroupMetadata, lang: ISO639Code, sortBy?: ISortSettings, groupBy?: IGroupSettings) =>
         ipcRenderer.invoke("pkg:load-group-entries", pkg, group, lang, sortBy, groupBy),

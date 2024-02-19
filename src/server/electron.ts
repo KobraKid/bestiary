@@ -3,17 +3,18 @@ import { app, BrowserWindow, dialog, ipcMain, IpcMainEvent, IpcMainInvokeEvent, 
 import envPaths from "env-paths";
 import Formula from "fparser";
 import Handlebars from "handlebars";
+import NodeCache from "node-cache";
 import path from "path";
+import { IServerInstance } from "../model/Config";
 import { IEntryMetadata } from "../model/Entry";
 import { IGroupMetadata, IGroupSettings, ISortSettings } from "../model/Group";
 import { IMap } from "../model/Map";
 import { IPackageMetadata, ISO639Code } from "../model/Package";
 import { Config } from "./config";
-import { clearEntryCache, clearLayoutCache, disconnect, getEntry, getGroup, getGroupEntries, getPackageList, getResource, nextPage, prevPage } from "./database";
+import { clearEntryCache, clearLayoutCache, disconnect, getEntry, getGroup, getGroupEntries, getPackageList, getPackageListForServer, getResource, nextPage, prevPage } from "./database";
 import { loadGroupConfig, savePkgConfig, updateCollectedStatusForEntry, updateGroupConfig } from "./group";
 import { onCompile, onImport } from "./importer";
 import { registerHelpers } from "./layout-builder";
-import NodeCache from "node-cache";
 
 enum Action {
     NONE,
@@ -33,7 +34,7 @@ ${isDev ? "⚡ " : ""}Electron: ${process.versions.electron}
 ${isDev ? "📦 " : ""}Package directory: ${paths.data}
 ${isDev ? "⚙ " : ""}Config directory: ${paths.config}
 `));
-const config = new Config();
+export const config = new Config();
 let window: BrowserWindow | null = null;
 let currentAction: Action = Action.NONE;
 const imgCache = new NodeCache({ stdTTL: 600, useClones: false });
@@ -52,6 +53,8 @@ function main() {
 
         //#region Package API
         ipcMain.handle("pkg:load-pkgs", getPackageList);
+
+        ipcMain.handle("pkg:load-pkgs-for-server", (_event: IpcMainEvent, server: IServerInstance) => getPackageListForServer(server));
 
         ipcMain.handle("pkg:load-group", getGroup);
 
@@ -183,6 +186,7 @@ function main() {
             });
             createMenu();
             window = createWindow();
+            setWindowTitle();
         });
     }
 
@@ -271,7 +275,6 @@ function createWindow(): BrowserWindow {
     const win = new BrowserWindow({
         width: 1280,
         height: 720,
-        title: isDev ? `Bestiary | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}` : `Bestiary ${app.getVersion()}`,
         darkTheme: true,
         webPreferences: {
             sandbox: false,
@@ -294,6 +297,11 @@ function createWindow(): BrowserWindow {
     });
 
     return win;
+}
+
+export function setWindowTitle(serverName?: string): void {
+    const title = isDev ? `Bestiary${serverName ? " @ " + serverName : ""} | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}` : `Bestiary ${app.getVersion()}`;
+    window?.setTitle(title);
 }
 
 main();

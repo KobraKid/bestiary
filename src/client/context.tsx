@@ -22,6 +22,7 @@ export const PackageContext = createContext<IPackageContext>({
         ns: "",
         path: "",
         icon: "",
+        connectionKey: "",
         groups: [],
         langs: []
     },

@@ -42,6 +42,10 @@ export interface IPackageMetadata {
      */
     icon: string,
     /**
+     * Server key to connect to for this package
+     */
+    connectionKey: string,
+    /**
      * List of groups contained in this package
      */
     groups: IGroupMetadata[],
