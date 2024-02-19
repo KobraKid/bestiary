@@ -238,12 +238,13 @@ export async function getGroupEntries(event: IpcMainInvokeEvent, params: GroupEn
         }
 
         // Load all entries for the page
-        entries = await Entry.find({ packageId: pkg.ns, groupId: group.ns })
-            .projection({ "bid": 1 })
-            .sort(groupOption.concat(sortOption).concat([["bid", 1]]))
+        entries = await Entry.aggregate()
+            .match({ packageId: pkg.ns, groupId: group.ns })
+            .project({ "bid": 1 })
+            .sort(groupOption.concat(sortOption).concat([["bid", 1]]).reduce((prev, curr) => ({ ...prev, [curr[0]]: curr[1] }), {}))
             .skip(entriesPerPage * page)
             .limit(entriesPerPage)
-            .lean()
+            .option({ allowDiskUse: true })
             .exec();
 
         // Kick off individual entry load

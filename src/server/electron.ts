@@ -300,7 +300,7 @@ function createWindow(): BrowserWindow {
 }
 
 export function setWindowTitle(serverName?: string): void {
-    const title = isDev ? `Bestiary${serverName ? " @ " + serverName : ""} | DEVELOPMENT | ${app.getVersion()} | ${app.getLocale()}` : `Bestiary ${app.getVersion()}`;
+    const title = `Bestiary${serverName ? " @ " + serverName : ""} v${app.getVersion()}` + isDev ? ` | DEVELOPMENT | ${app.getLocale()}` : "";
     window?.setTitle(title);
 }
 
