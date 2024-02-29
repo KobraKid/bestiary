@@ -49,7 +49,7 @@ export class Config {
 
     public async saveConfig(): Promise<void> {
         if (this._config) {
-            await writeFile(this._configFilePath, JSON.stringify(this._config));
+            await writeFile(this._configFilePath, JSON.stringify(this._config, undefined, 4));
         }
     }
 

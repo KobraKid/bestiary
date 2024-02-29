@@ -83,7 +83,7 @@ export async function loadGroupConfig(event: IpcMainEvent, pkg: IPackageMetadata
  */
 export function savePkgConfig(): void {
     try {
-        writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig));
+        writeFileSync(pkgConfigFile, JSON.stringify(pkgConfig, undefined, 4));
     } catch (err: unknown) {
         console.log(chalk.white.bgRed("❌ Error saving package config at \"" + pkgConfigFile + "\"", err));
     }
