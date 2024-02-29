@@ -100,4 +100,8 @@ export interface IGroupMetadata {
      * Group configuration
      */
     config?: IGroupConfig,
+    /**
+     * HTML to render for a skeleton view while entries are loading
+     */
+    skeleton?: string,
 }

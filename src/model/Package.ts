@@ -87,7 +87,8 @@ const PkgSchema = new Schema<IPackageSchema>({
                 sortType: { type: String, required: true }
             }],
             required: false
-        }
+        },
+        skeleton: { type: String, required: false }
     }],
     langs: { type: [String], required: true }
 }, { collection: "packages" });

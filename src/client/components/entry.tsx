@@ -16,13 +16,17 @@ export interface IEntryProps {
      */
     group?: IGroupMetadata,
     /**
+     * The skeleton to render for this entry if it has not yet been loaded
+     */
+    skeleton?: string | JSX.Element | JSX.Element[],
+    /**
      * Callback for when this entry is clicked
      */
     onClick?: () => void
 }
 
 export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
-    const { entry, group, onClick } = props;
+    const { entry, group, skeleton, onClick } = props;
 
     const { selectEntry } = useContext(PackageContext);
 
@@ -52,18 +56,16 @@ export const Entry: React.FC<IEntryProps> = (props: IEntryProps) => {
     });
     const style = parse(entry.style ?? "");
 
-    if (entry.layout.length === 0) { return null; }
-
     return (
         <div className={group ? "preview" : "details"} ref={entryRef}>
-            {(group && entry.layout.length > 0) &&
+            {group &&
                 <div className="collection-tabs">
                     {group.config?.collections.map(collection =>
                         <Collection key={collection.id} {...collection} entry={entry} group={group} />
                     )}
                 </div>
             }
-            <div onClick={onClick}>{layout}</div>
+            <div onClick={onClick}>{entry.layout.length > 0 ? layout : skeleton}</div>
             {style}
         </div>
     );
