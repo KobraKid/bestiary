@@ -243,7 +243,8 @@ const ServerInstance: React.FC<IServerInstanceProps> = (props: IServerInstancePr
             <HelpSection>Enter the password to use when connecting to the server.</HelpSection>
             <div className="options-server-pkgs">
                 <div>
-                    <span>Click on a package to toggle its visibility.</span>
+                    <span>Click on a package to toggle its visibility. Note: if all packages are set to hidden, they will instead all be shown.</span>
+                    <br/>
                     <button className="options-server-load-pkgs" onClick={() => loadPackages(props)}>Load Packages</button>
                 </div>
                 <div className="options-server-pkg-list">

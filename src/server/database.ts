@@ -95,7 +95,7 @@ export async function getPackageList(): Promise<IPackageSchema[]> {
 
         for (const server of config.config.serverConfig.serverList) {
             (await getPackageListForServer(server)).forEach(pkg => {
-                if (server.visiblePackages.includes(pkg.ns)) {
+                if (server.visiblePackages.includes(pkg.ns) || server.visiblePackages.length === 0) {
                     pkgList.push(pkg);
                 }
             });

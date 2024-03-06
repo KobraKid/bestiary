@@ -88,18 +88,26 @@ export class Config {
     }
 }
 
-function isAppConfig(config: unknown): config is AppConfigWithVersion {
-    return config !== null && config !== undefined && typeof config === "object" && "version" in config;
+function isAppConfig(config: unknown): config is IAppConfig {
+    return config !== null && config !== undefined && typeof config === "object";
+}
+
+function isAppConfigWithVersion(config: IAppConfig): config is AppConfigWithVersion {
+    return "version" in config;
 }
 
 function parseConfig(config: unknown): AppConfigWithVersion {
     if (isAppConfig(config)) {
-        // Current version
-        if (config.version === app.getVersion()) {
-            return config as AppConfigWithVersion;
+        if (isAppConfigWithVersion(config)) {
+            // Current version
+            if (config.version === app.getVersion()) {
+                return config as AppConfigWithVersion;
+            }
+            // Unknown version
+            else { }
         }
-        // Previous versions
-        else /* if (config.version === "0.1.0" || config.version === "0.1.1") */ {
+        // Versions 0.1.0, 0.1.1
+        else {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const prevConfig = config as any;
             return {
