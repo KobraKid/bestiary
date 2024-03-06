@@ -114,8 +114,8 @@ function parseConfig(config: unknown): AppConfigWithVersion {
                 serverConfig: {
                     serverList: [{
                         connectionKey: `0|${prevConfig.server ?? defaultServer.url}`,
-                        url: prevConfig.server ?? defaultServer.url,
                         name: "Bestiary",
+                        url: prevConfig.server ?? defaultServer.url,
                         username: "Bestiary",
                         password: "Bestiary",
                         visiblePackages: []
