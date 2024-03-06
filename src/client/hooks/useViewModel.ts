@@ -136,11 +136,19 @@ export function useViewModel(): BestiaryData {
                 if (state.length >= 1 && action.newEntry?.groupId === state.at(-1)!.group.ns) {
                     const currentView = state.at(-1)!;
                     const entries = currentView.group.entries;
+                    let found = false;
                     for (let i = 0; i < entries.length; i++) {
                         if (entries[i]?.bid === action.newEntry.bid) {
                             entries[i] = action.newEntry;
+                            found = true;
                             break;
                         }
+                    }
+                    if (!found && entries.length === 0) {
+                        // It's possible this entry was updated before the group was,
+                        // so resubmit the action and try again
+                        setTimeout((action: IViewStackframeDispatchAction) => viewStackDispatch(action), 10, action);
+                        return state;
                     }
                     const view = {
                         ...currentView!,
