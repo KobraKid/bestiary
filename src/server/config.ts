@@ -2,7 +2,7 @@ import chalk from "chalk";
 import path from "path";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { paths } from "./electron";
-import { IAppConfig, IAppearanceConfig, IServerConfig, IServerInstance } from "../model/Config";
+import { IAppConfig, IAppearanceConfig, IServerInstance } from "../model/Config";
 import { IpcMainEvent, app } from "electron";
 import { setup } from "./database";
 
@@ -88,19 +88,33 @@ export class Config {
     }
 }
 
+function isAppConfig(config: unknown): config is AppConfigWithVersion {
+    return config !== null && config !== undefined && typeof config === "object" && "version" in config;
+}
+
 function parseConfig(config: unknown): AppConfigWithVersion {
-    if (typeof config === "object" && config !== null && config !== undefined) {
-        if ("version" in config && config.version === app.getVersion()) {
-            return config as unknown as AppConfigWithVersion;
+    if (isAppConfig(config)) {
+        // Current version
+        if (config.version === app.getVersion()) {
+            return config as AppConfigWithVersion;
         }
-        else {
+        // Previous versions
+        else /* if (config.version === "0.1.0" || config.version === "0.1.1") */ {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const prevConfig = config as any;
             return {
-                serverConfig: ("serverConfig" in config) ? (config.serverConfig as IServerConfig) : {
-                    serverList: [defaultServer]
+                serverConfig: {
+                    serverList: [{
+                        connectionKey: `0|${prevConfig.server ?? defaultServer.url}`,
+                        url: prevConfig.server ?? defaultServer.url,
+                        name: "Bestiary",
+                        username: "Bestiary",
+                        password: "Bestiary",
+                        visiblePackages: []
+                    }]
                 },
                 appearance: {
-                    bgColor: ("appearance" in config && typeof config.appearance === "object" && config.appearance !== null && "bgColor" in config.appearance) ?
-                        "" + config.appearance.bgColor : "#808080"
+                    bgColor: prevConfig.bgColor ?? defaultAppearance.bgColor
                 },
                 version: app.getVersion()
             };
